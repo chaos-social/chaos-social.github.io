@@ -5,7 +5,6 @@ import {useLingui} from '@lingui/react'
 
 import {urls} from '#/lib/constants'
 import {getUserDisplayName} from '#/lib/getUserDisplayName'
-import {NON_BREAKING_SPACE} from '#/lib/strings/constants'
 import {logger} from '#/logger'
 import {useDeerVerificationEnabled} from '#/state/preferences/deer-verification'
 import {useSession} from '#/state/session'
@@ -100,13 +99,11 @@ function Inner({
           </Text>
           <Text style={[a.text_md, a.leading_snug]}>
             <Trans>
-              Accounts with a scalloped blue check mark
+              Accounts with a scalloped blue check mark{' '}
               <RNText>
-                {NON_BREAKING_SPACE}
                 <VerifierCheck width={14} />
-                {NON_BREAKING_SPACE}
-              </RNText>
-              can verify others. These trusted verifiers are selected by{' '}
+              </RNText>{' '}
+              can verify others. These trusted verifiers are selected by
               {deerVerificationEnabled ? 'you' : 'Bluesky'}.
             </Trans>
           </Text>
