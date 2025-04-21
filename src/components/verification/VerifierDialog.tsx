@@ -31,6 +31,7 @@ export function VerifierDialog({
 }) {
   return (
     <Dialog.Outer control={control}>
+      <Dialog.Handle />
       <Inner
         control={control}
         profile={profile}
@@ -68,8 +69,6 @@ function Inner({
       style={[
         gtMobile ? {width: 'auto', maxWidth: 400, minWidth: 200} : a.w_full,
       ]}>
-      <Dialog.Handle />
-
       <View style={[a.gap_lg]}>
         {!deerVerificationEnabled && (
           <View
