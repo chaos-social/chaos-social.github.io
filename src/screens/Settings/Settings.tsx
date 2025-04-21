@@ -297,6 +297,10 @@ function ProfilePreview({
   if (!moderationOpts) return null
 
   const moderation = moderateProfile(profile, moderationOpts)
+  const displayName = sanitizeDisplayName(
+    profile.displayName || sanitizeHandle(profile.handle),
+    moderation.ui('displayName'),
+  )
 
   return (
     <>
@@ -307,7 +311,14 @@ function ProfilePreview({
         type={shadow.associated?.labeler ? 'labeler' : 'user'}
       />
 
-      <View style={[a.flex_row, a.gap_xs, a.align_center]}>
+      <View
+        style={[
+          a.flex_row,
+          a.gap_xs,
+          a.align_center,
+          a.justify_center,
+          a.w_full,
+        ]}>
         <Text
           emoji
           testID="profileHeaderDisplayName"
@@ -318,10 +329,7 @@ function ProfilePreview({
             gtMobile ? a.text_4xl : a.text_3xl,
             a.font_heavy,
           ]}>
-          {sanitizeDisplayName(
-            profile.displayName || sanitizeHandle(profile.handle),
-            moderation.ui('displayName'),
-          )}
+          {displayName}
         </Text>
         {shouldShowVerificationCheckButton(verificationState) && (
           <View
