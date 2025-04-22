@@ -18,7 +18,6 @@ import {
   useDeerVerificationTrusted,
   useSetDeerVerificationTrust,
 } from '#/state/preferences/deer-verification'
-import {useDevModeEnabled} from '#/state/preferences/dev-mode'
 import {
   RQKEY as profileQueryKey,
   useProfileBlockMutationQueue,
@@ -53,6 +52,7 @@ import * as Prompt from '#/components/Prompt'
 import {useFullVerificationState} from '#/components/verification'
 import {VerificationCreatePrompt} from '#/components/verification/VerificationCreatePrompt'
 import {VerificationRemovePrompt} from '#/components/verification/VerificationRemovePrompt'
+import {useDevMode} from '#/storage/hooks/dev-mode'
 
 let ProfileMenu = ({
   profile,
@@ -70,7 +70,7 @@ let ProfileMenu = ({
   const isBlocked = profile.viewer?.blocking || profile.viewer?.blockedBy
   const isFollowingBlockedAccount = isFollowing && isBlocked
   const isLabelerAndNotBlocked = !!profile.associated?.labeler && !isBlocked
-  const [devModeEnabled] = useDevModeEnabled()
+  const [devModeEnabled] = useDevMode()
   const verification = useFullVerificationState({profile})
 
   const deerVerificationEnabled = useDeerVerificationEnabled()
