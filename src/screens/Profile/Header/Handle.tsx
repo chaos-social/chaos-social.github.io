@@ -3,7 +3,7 @@ import {type AppBskyActorDefs} from '@atproto/api'
 import {msg, Trans} from '@lingui/macro'
 import {useLingui} from '@lingui/react'
 
-import {isInvalidHandle} from '#/lib/strings/handles'
+import {isInvalidHandle, sanitizeHandle} from '#/lib/strings/handles'
 import {isIOS} from '#/platform/detection'
 import {type Shadow} from '#/state/cache/types'
 import {useShowLinkInHandle} from '#/state/preferences/show-link-in-handle.tsx'
@@ -60,11 +60,11 @@ export function ProfileHeaderHandle({
             to={`https://${profile.handle}`}
             label={profile.handle}>
             <Text style={[a.text_md, {color: t.palette.primary_500}]}>
-              @{profile.handle}
+              {sanitizeHandle(profile.handle, '@')}
             </Text>
           </InlineLinkText>
         ) : (
-          `@${profile.handle}`
+          sanitizeHandle(profile.handle, '@')
         )}
       </Text>
     </View>
