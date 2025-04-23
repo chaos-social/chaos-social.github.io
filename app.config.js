@@ -2,7 +2,7 @@ const pkg = require('./package.json')
 
 const DARK_SPLASH_ANDROID_BACKGROUND = '#0e1610'
 
-module.exports = function (config) {
+module.exports = function (_config) {
   /**
    * App version number. Should be incremented as part of a release cycle.
    */
@@ -361,16 +361,6 @@ module.exports = function (config) {
           },
         ],
         ['expo-screen-orientation', {initialOrientation: 'PORTRAIT_UP'}],
-        [
-          'react-native-vision-camera',
-          {
-            enableLocation: false,
-            cameraPermissionText: 'deer.social needs access to your camera.',
-            enableMicrophonePermission: true,
-            microphonePermissionText:
-              'deer.social needs access to your microphone.',
-          },
-        ],
       ].filter(Boolean),
       extra: {
         eas: {
