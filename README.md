@@ -76,8 +76,8 @@ Without an overriding motivation, opinionated features should exist behind a tog
   - This isn't strictly necessary, but I'd love to give my thoughts and scope out your willingness to maintain the feature before you write it.
 - Stay away from PRs like...
   - Changing "Post" to "Skeet."
-  - Refactoring the codebase, e.g., to replace MobX with Redux or something.
-- Include a new toggle and preference for your feature.
+  - Refactoring the codebase, e.g., to replace React Query with Redux Toolkit or something.
+  - Adding entirely new features without prior discussion. 
 
 If we don't merge your PR for whatever reason, you are welcome to fork and/or self host:
 
