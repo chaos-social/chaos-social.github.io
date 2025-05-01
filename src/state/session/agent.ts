@@ -1,8 +1,13 @@
-import {AtpSessionData, AtpSessionEvent, BskyAgent} from '@atproto/api'
+import {
+  type AtpSessionData,
+  type AtpSessionEvent,
+  BskyAgent,
+} from '@atproto/api'
 import {TID} from '@atproto/common-web'
 
 import {networkRetry} from '#/lib/async/retry'
 import {
+  APPVIEW_DID_PROXY,
   BSKY_SERVICE,
   DISCOVER_SAVED_FEED,
   IS_PROD_SERVICE,
@@ -14,12 +19,13 @@ import {getAge} from '#/lib/strings/time'
 import {logger} from '#/logger'
 import {snoozeEmailConfirmationPrompt} from '#/state/shell/reminders'
 import {emitNetworkConfirmed, emitNetworkLost} from '../events'
+import {readCustomAppViewDidUri} from '../preferences/custom-appview-did'
 import {addSessionErrorLog} from './logging'
 import {
   configureModerationForAccount,
   configureModerationForGuest,
 } from './moderation'
-import {SessionAccount} from './types'
+import {type SessionAccount} from './types'
 import {isSessionExpired, isSignupQueued} from './util'
 
 export function createPublicAgent() {
@@ -266,6 +272,11 @@ class BskyAppAgent extends BskyAgent {
         }
       },
     })
+
+    const proxyDid = readCustomAppViewDidUri() || APPVIEW_DID_PROXY
+    if (proxyDid) {
+      this.configureProxy(proxyDid)
+    }
   }
 
   async prepare(

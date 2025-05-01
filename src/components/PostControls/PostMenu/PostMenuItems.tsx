@@ -13,6 +13,7 @@ import {
   AppBskyFeedPost,
   type AppBskyFeedThreadgate,
   AtUri,
+  isDid,
   type RichText as RichTextAPI,
 } from '@atproto/api'
 import {msg} from '@lingui/macro'
@@ -367,7 +368,7 @@ let PostMenuItems = ({
     const video = post.embed as AppBskyEmbedVideo.View
     const did = post.author.did
     const cid = video.cid
-    if (!did.startsWith('did:')) return
+    if (!isDid(did)) return
     const pdsUrl = await resolvePdsServiceUrl(did as `did:${string}`)
     const uri = `${pdsUrl}/xrpc/com.atproto.sync.getBlob?did=${did}&cid=${cid}`
 
