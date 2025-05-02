@@ -18,6 +18,7 @@ import {
 
 import {AuthorFeedAPI} from '#/lib/api/feed/author'
 import {CustomFeedAPI} from '#/lib/api/feed/custom'
+import {DemoFeedAPI} from '#/lib/api/feed/demo'
 import {FollowingFeedAPI} from '#/lib/api/feed/following'
 import {HomeFeedAPI} from '#/lib/api/feed/home'
 import {LikesFeedAPI} from '#/lib/api/feed/likes'
@@ -60,6 +61,7 @@ export type FeedDescriptor =
   | `feedgen|${FeedUri}`
   | `likes|${ActorDid}`
   | `list|${ListUri}`
+  | 'demo'
 export interface FeedParams {
   mergeFeedEnabled?: boolean
   mergeFeedSources?: string[]
@@ -486,6 +488,8 @@ function createApi({
   } else if (feedDesc.startsWith('list')) {
     const [_, list] = feedDesc.split('|')
     return new ListFeedAPI({agent, feedParams: {list}})
+  } else if (feedDesc === 'demo') {
+    return new DemoFeedAPI({agent})
   } else {
     // shouldnt happen
     return new FollowingFeedAPI({agent})
