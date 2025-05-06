@@ -1,4 +1,4 @@
-import React, {memo, useMemo, useState} from 'react'
+import {memo, useCallback, useMemo, useState} from 'react'
 import {StyleSheet, View} from 'react-native'
 import {
   type AppBskyActorDefs,
@@ -25,7 +25,11 @@ import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {countLines} from '#/lib/strings/helpers'
 import {s} from '#/lib/styles'
-import {POST_TOMBSTONE, type Shadow, usePostShadow} from '#/state/cache/post-shadow'
+import {
+  POST_TOMBSTONE,
+  type Shadow,
+  usePostShadow,
+} from '#/state/cache/post-shadow'
 import {useFeedFeedbackContext} from '#/state/feed-feedback'
 import {precacheProfile} from '#/state/queries/profile'
 import {useSession} from '#/state/session'
@@ -87,10 +91,12 @@ export function PostFeedItem({
   isParentBlocked,
   isParentNotFound,
   rootPost,
+  onShowLess,
   isCarouselItem,
 }: FeedItemProps & {
   post: AppBskyFeedDefs.PostView
   rootPost: AppBskyFeedDefs.PostView
+  onShowLess?: (interaction: AppBskyFeedDefs.Interaction) => void
 }): React.ReactNode {
   const postShadowed = usePostShadow(post)
   const richText = useMemo(
@@ -125,6 +131,7 @@ export function PostFeedItem({
         isParentNotFound={isParentNotFound}
         isCarouselItem={isCarouselItem}
         rootPost={rootPost}
+        onShowLess={onShowLess}
       />
     )
   }
@@ -148,15 +155,19 @@ let FeedItemInner = ({
   isParentNotFound,
   isCarouselItem,
   rootPost,
+  onShowLess,
 }: FeedItemProps & {
   richText: RichTextAPI
   post: Shadow<AppBskyFeedDefs.PostView>
   rootPost: AppBskyFeedDefs.PostView
+  onShowLess?: (interaction: AppBskyFeedDefs.Interaction) => void
 }): React.ReactNode => {
   const queryClient = useQueryClient()
   const {openComposer} = useComposerControls()
   const pal = usePalette('default')
   const {_} = useLingui()
+
+  const [hover, setHover] = useState(false)
 
   const href = useMemo(() => {
     const urip = new AtUri(post.uri)
@@ -164,7 +175,7 @@ let FeedItemInner = ({
   }, [post.uri, post.author])
   const {sendInteraction} = useFeedFeedbackContext()
 
-  const onPressReply = React.useCallback(() => {
+  const onPressReply = useCallback(() => {
     sendInteraction({
       item: post.uri,
       event: 'app.bsky.feed.defs#interactionReply',
@@ -182,7 +193,7 @@ let FeedItemInner = ({
     })
   }, [post, record, openComposer, moderation, sendInteraction, feedContext])
 
-  const onOpenAuthor = React.useCallback(() => {
+  const onOpenAuthor = useCallback(() => {
     sendInteraction({
       item: post.uri,
       event: 'app.bsky.feed.defs#clickthroughAuthor',
@@ -190,7 +201,7 @@ let FeedItemInner = ({
     })
   }, [sendInteraction, post, feedContext])
 
-  const onOpenReposter = React.useCallback(() => {
+  const onOpenReposter = useCallback(() => {
     sendInteraction({
       item: post.uri,
       event: 'app.bsky.feed.defs#clickthroughReposter',
@@ -198,7 +209,7 @@ let FeedItemInner = ({
     })
   }, [sendInteraction, post, feedContext])
 
-  const onOpenEmbed = React.useCallback(() => {
+  const onOpenEmbed = useCallback(() => {
     sendInteraction({
       item: post.uri,
       event: 'app.bsky.feed.defs#clickthroughEmbed',
@@ -206,7 +217,7 @@ let FeedItemInner = ({
     })
   }, [sendInteraction, post, feedContext])
 
-  const onBeforePress = React.useCallback(() => {
+  const onBeforePress = useCallback(() => {
     sendInteraction({
       item: post.uri,
       event: 'app.bsky.feed.defs#clickthroughItem',
@@ -244,7 +255,6 @@ let FeedItemInner = ({
     ? rootPost.threadgate.record
     : undefined
 
-  const [hover, setHover] = useState(false)
   return (
     <Link
       testID={`feedItem-by-${post.author.handle}`}
@@ -431,6 +441,7 @@ let FeedItemInner = ({
             logContext="FeedItem"
             feedContext={feedContext}
             threadgateRecord={threadgateRecord}
+            onShowLess={onShowLess}
           />
         </View>
       </View>
@@ -465,7 +476,7 @@ let PostContent = ({
   const threadgateHiddenReplies = useMergedThreadgateHiddenReplies({
     threadgateRecord,
   })
-  const additionalPostAlerts: AppModerationCause[] = React.useMemo(() => {
+  const additionalPostAlerts: AppModerationCause[] = useMemo(() => {
     const isPostHiddenByThreadgate = threadgateHiddenReplies.has(post.uri)
     const rootPostUri = bsky.dangerousIsType<AppBskyFeedPost.Record>(
       post.record,
@@ -486,7 +497,7 @@ let PostContent = ({
       : []
   }, [post, currentAccount?.did, threadgateHiddenReplies])
 
-  const onPressShowMore = React.useCallback(() => {
+  const onPressShowMore = useCallback(() => {
     setLimitLines(false)
   }, [setLimitLines])
 

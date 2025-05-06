@@ -60,6 +60,7 @@ let PostCtrls = ({
   onPostReply,
   logContext,
   threadgateRecord,
+  onShowLess,
 }: {
   big?: boolean
   post: Shadow<AppBskyFeedDefs.PostView>
@@ -71,6 +72,7 @@ let PostCtrls = ({
   onPostReply?: (postUri: string | undefined) => void
   logContext: 'FeedItem' | 'PostThreadItem' | 'Post' | 'ImmersiveVideo'
   threadgateRecord?: AppBskyFeedThreadgate.Record
+  onShowLess?: (interaction: AppBskyFeedDefs.Interaction) => void
 }): React.ReactNode => {
   const t = useTheme()
   const {_, i18n} = useLingui()
@@ -378,6 +380,7 @@ let PostCtrls = ({
           hitSlop={POST_CTRL_HITSLOP}
           timestamp={post.indexedAt}
           threadgateRecord={threadgateRecord}
+          onShowLess={onShowLess}
         />
       </View>
       {isDiscoverDebugUser && feedContext && (
