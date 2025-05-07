@@ -104,8 +104,10 @@ import {Wizard} from '#/screens/StarterPack/Wizard'
 import TopicScreen from '#/screens/Topic'
 import {VideoFeed} from '#/screens/VideoFeed'
 import {useTheme} from '#/alf'
-import {useDialogControl} from '#/components/Dialog'
-import {VerifyEmailDialog} from '#/components/dialogs/VerifyEmailDialog'
+import {
+  EmailDialogScreenID,
+  useEmailDialogControl,
+} from '#/components/dialogs/EmailDialog'
 import {router} from '#/routes'
 import {Referrer} from '../modules/expo-bluesky-swiss-army'
 import {DeerSettingsScreen} from './screens/Settings/DeerSettings'
@@ -747,12 +749,14 @@ function RoutesContainer({children}: React.PropsWithChildren<{}>) {
   const theme = useColorSchemeStyle(DefaultTheme, DarkTheme)
   const {currentAccount} = useSession()
   const prevLoggedRouteName = React.useRef<string | undefined>(undefined)
-  const verifyEmailDialogControl = useDialogControl()
+  const emailDialogControl = useEmailDialogControl()
 
   function onReady() {
     prevLoggedRouteName.current = getCurrentRouteName()
     if (currentAccount && shouldRequestEmailConfirmation(currentAccount)) {
-      verifyEmailDialogControl.open()
+      emailDialogControl.open({
+        id: EmailDialogScreenID.VerificationReminder,
+      })
       snoozeEmailConfirmationPrompt()
     }
   }
@@ -777,7 +781,6 @@ function RoutesContainer({children}: React.PropsWithChildren<{}>) {
         }}>
         {children}
       </NavigationContainer>
-      <VerifyEmailDialog control={verifyEmailDialogControl} reminder />
     </>
   )
 }
