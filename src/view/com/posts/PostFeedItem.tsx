@@ -70,6 +70,7 @@ interface FeedItemProps {
   isThreadLastChild?: boolean
   isThreadParent?: boolean
   feedContext: string | undefined
+  reqId: string | undefined
   hideTopBorder?: boolean
   isParentBlocked?: boolean
   isParentNotFound?: boolean
@@ -81,6 +82,7 @@ export function PostFeedItem({
   record,
   reason,
   feedContext,
+  reqId,
   moderation,
   parentAuthor,
   showReplyTo,
@@ -119,6 +121,7 @@ export function PostFeedItem({
         record={record}
         reason={reason}
         feedContext={feedContext}
+        reqId={reqId}
         richText={richText}
         parentAuthor={parentAuthor}
         showReplyTo={showReplyTo}
@@ -143,6 +146,7 @@ let FeedItemInner = ({
   record,
   reason,
   feedContext,
+  reqId,
   richText,
   moderation,
   parentAuthor,
@@ -175,11 +179,12 @@ let FeedItemInner = ({
   }, [post.uri, post.author])
   const {sendInteraction} = useFeedFeedbackContext()
 
-  const onPressReply = useCallback(() => {
+  const onPressReply = () => {
     sendInteraction({
       item: post.uri,
       event: 'app.bsky.feed.defs#interactionReply',
       feedContext,
+      reqId,
     })
     openComposer({
       replyTo: {
@@ -191,40 +196,44 @@ let FeedItemInner = ({
         moderation,
       },
     })
-  }, [post, record, openComposer, moderation, sendInteraction, feedContext])
+  }
 
-  const onOpenAuthor = useCallback(() => {
+  const onOpenAuthor = () => {
     sendInteraction({
       item: post.uri,
       event: 'app.bsky.feed.defs#clickthroughAuthor',
       feedContext,
+      reqId,
     })
-  }, [sendInteraction, post, feedContext])
+  }
 
-  const onOpenReposter = useCallback(() => {
+  const onOpenReposter = () => {
     sendInteraction({
       item: post.uri,
       event: 'app.bsky.feed.defs#clickthroughReposter',
       feedContext,
+      reqId,
     })
-  }, [sendInteraction, post, feedContext])
+  }
 
-  const onOpenEmbed = useCallback(() => {
+  const onOpenEmbed = () => {
     sendInteraction({
       item: post.uri,
       event: 'app.bsky.feed.defs#clickthroughEmbed',
       feedContext,
+      reqId,
     })
-  }, [sendInteraction, post, feedContext])
+  }
 
-  const onBeforePress = useCallback(() => {
+  const onBeforePress = () => {
     sendInteraction({
       item: post.uri,
       event: 'app.bsky.feed.defs#clickthroughItem',
       feedContext,
+      reqId,
     })
     precacheProfile(queryClient, post.author)
-  }, [queryClient, post, sendInteraction, feedContext])
+  }
 
   const outerStyles = [
     styles.outer,
@@ -441,6 +450,7 @@ let FeedItemInner = ({
             onPressReply={onPressReply}
             logContext="FeedItem"
             feedContext={feedContext}
+            reqId={reqId}
             threadgateRecord={threadgateRecord}
             onShowLess={onShowLess}
           />
