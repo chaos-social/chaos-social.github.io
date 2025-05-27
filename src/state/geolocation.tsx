@@ -29,7 +29,7 @@ export const DEFAULT_GEOLOCATION: Device['geolocation'] = {
 /**
  * Local promise used within this file only.
  */
-let geolocationResolution: Promise<void> | undefined
+let geolocationResolution: Promise<{success: boolean}> | undefined
 
 /**
  * Begin the process of resolving geolocation. This should be called once at
@@ -71,10 +71,14 @@ export async function ensureGeolocationResolved() {
     logger.debug(`geolocation: using cache`, {cached})
   } else {
     logger.debug(`geolocation: no cache`)
-    await geolocationResolution
-    logger.debug(`geolocation: resolved`, {
-      resolved: device.get(['geolocation']),
-    })
+    const {success} = await geolocationResolution
+    if (success) {
+      logger.debug(`geolocation: resolved`, {
+        resolved: device.get(['geolocation']),
+      })
+    } else {
+      logger.error(`geolocation: failed to resolve`)
+    }
   }
 }
 
