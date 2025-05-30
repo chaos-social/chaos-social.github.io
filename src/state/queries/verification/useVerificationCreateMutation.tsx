@@ -83,7 +83,7 @@ export function useVerificationCreateMutation() {
       }
     },
     async onSuccess(_, {profile}) {
-      logger.metric('verification:create', {})
+      logger.metric('verification:create', {}, {statsig: true})
       await updateProfileVerificationCache({profile})
       qc.invalidateQueries({
         queryKey: DEER_VERIFICATION_RQKEY(profile.did, deerVerificationTrusted),

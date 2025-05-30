@@ -99,7 +99,7 @@ export function useVerificationsRemoveMutation() {
       }
     },
     async onSuccess(_, {profile}) {
-      logger.metric('verification:revoke', {})
+      logger.metric('verification:revoke', {}, {statsig: true})
       await updateProfileVerificationCache({profile})
       qc.invalidateQueries({
         queryKey: DEER_VERIFICATION_RQKEY(profile.did, deerVerificationTrusted),

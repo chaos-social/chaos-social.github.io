@@ -102,7 +102,7 @@ export class Logger {
        * Optionally also send to StatSig
        */
       statsig?: boolean
-    } = {statsig: false},
+    } = {statsig: true},
   ) {
     logEvent(event, metadata, {
       lake: !options.statsig,
