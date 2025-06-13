@@ -3,9 +3,9 @@ import {type StyleProp, StyleSheet, View, type ViewStyle} from 'react-native'
 import {type AnimatedRef, useAnimatedRef} from 'react-native-reanimated'
 import {type AppBskyEmbedImages} from '@atproto/api'
 
-import { isAndroid } from '#/platform/detection'
-import {PostEmbedViewContext} from '#/view/com/util/post-embeds/types'
+import {isAndroid} from '#/platform/detection'
 import {atoms as a, useBreakpoints} from '#/alf'
+import {PostEmbedViewContext} from '#/components/Post/Embed'
 import {type Dimensions} from '../../lightbox/ImageViewing/@types'
 import {GalleryItem} from './Gallery'
 
