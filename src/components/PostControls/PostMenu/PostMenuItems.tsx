@@ -678,8 +678,8 @@ let PostMenuItems = ({
                         isDetachPending
                           ? Loader
                           : quoteEmbed.isDetached
-                          ? Eye
-                          : EyeSlash
+                            ? Eye
+                            : EyeSlash
                       }
                       position="right"
                     />

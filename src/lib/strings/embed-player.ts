@@ -11,8 +11,8 @@ const IFRAME_HOST = isWeb
     ? 'http://localhost:8100'
     : 'https://deer.social'
   : __DEV__ && !process.env.JEST_WORKER_ID
-  ? 'http://localhost:8100'
-  : 'https://deer.social'
+    ? 'http://localhost:8100'
+    : 'https://deer.social'
 
 export const embedPlayerSources = [
   'youtube',

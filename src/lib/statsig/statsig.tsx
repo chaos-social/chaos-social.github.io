@@ -1,7 +1,7 @@
 import React from 'react'
 import {Platform} from 'react-native'
 import {AppState, type AppStateStatus} from 'react-native'
-import {Statsig} from 'statsig-react-native-expo'
+import {Statsig, StatsigProvider} from 'statsig-react-native-expo'
 
 import {BUNDLE_DATE, BUNDLE_IDENTIFIER} from '#/lib/app-info'
 import {logger} from '#/logger'
@@ -10,7 +10,7 @@ import {isWeb} from '#/platform/detection'
 import * as persisted from '#/state/persisted'
 import {device} from '#/storage'
 import {timeout} from '../async/timeout'
-// import {useNonReactiveCallback} from '../hooks/useNonReactiveCallback'
+import {useNonReactiveCallback} from '../hooks/useNonReactiveCallback'
 import {type Gate} from './gates'
 
 // const SDK_KEY = 'client-SXJakO39w9vIhl3D44u8UupyzFl4oZ2qPIkjwcvuPsV'
@@ -51,8 +51,8 @@ export type {MetricEvents as LogEvents}
 //         process.env.NODE_ENV === 'development'
 //           ? 'development'
 //           : IS_TESTFLIGHT
-//           ? 'staging'
-//           : 'production',
+//             ? 'staging'
+//             : 'production',
 //     },
 //     // Don't block on waiting for network. The fetched config will kick in on next load.
 //     // This ensures the UI is always consistent and doesn't update mid-session.
