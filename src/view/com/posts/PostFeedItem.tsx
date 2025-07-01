@@ -323,7 +323,7 @@ let FeedItemInner = ({
           )}
         </View>
 
-        <View style={{paddingTop: 12, flexShrink: 1}}>
+        <View style={{paddingTop: 10, flexShrink: 1}}>
           {isReasonFeedSource(reason) ? (
             <Link href={reason.href}>
               <Text
@@ -664,7 +664,6 @@ const styles = StyleSheet.create({
   includeReason: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
     marginBottom: 2,
     marginLeft: -16,
   },
