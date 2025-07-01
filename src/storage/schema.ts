@@ -11,6 +11,7 @@ export type Device = {
   trendingBetaEnabled: boolean
   devMode: boolean
   demoMode: boolean
+  activitySubscriptionsNudged?: boolean
 
   // deer
   deerGateCache: string
