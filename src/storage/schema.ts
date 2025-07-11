@@ -15,6 +15,7 @@ export type Device = {
 
   // deer
   deerGateCache: string
+  customAppViewDid: string | undefined
 }
 
 export type Account = {
