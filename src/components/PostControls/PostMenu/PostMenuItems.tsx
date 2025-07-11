@@ -768,6 +768,20 @@ let PostMenuItems = ({
             </Menu.Group>
           </>
         )}
+        
+        {(post.record as { bridgyOriginalUrl?: string }).bridgyOriginalUrl && ( 
+          <>
+            <Menu.Divider />
+            <Menu.Group>
+              <Menu.Item
+                testID="postDropdownBlockBtn"
+                label={_(msg`View on Fediverse`)}
+                onPress={() => document.location.href = (post.record as { bridgyOriginalUrl: string }).bridgyOriginalUrl}>
+                <Menu.ItemText>{_(msg`View on Fediverse`)}</Menu.ItemText>
+              </Menu.Item>
+            </Menu.Group>
+          </>
+        )}
       </Menu.Outer>
 
       <Prompt.Basic
