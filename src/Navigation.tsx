@@ -39,6 +39,7 @@ import {
   shouldRequestEmailConfirmation,
   snoozeEmailConfirmationPrompt,
 } from '#/state/shell/reminders'
+import {BookmarksScreen} from '#/view/screens/Bookmarks'
 import {CommunityGuidelinesScreen} from '#/view/screens/CommunityGuidelines'
 import {CopyrightPolicyScreen} from '#/view/screens/CopyrightPolicy'
 import {DebugModScreen} from '#/view/screens/DebugMod'
@@ -138,6 +139,11 @@ const MessagesTab =
 const Flat = createNativeStackNavigatorWithAuth<FlatNavigatorParams>()
 const Tab = createBottomTabNavigator<BottomTabNavigatorParams>()
 
+// maxine
+const BookmarksTab =
+  createNativeStackNavigatorWithAuth<BookmarksTabNavigatorParams>()
+// end maxine
+
 /**
  * These "common screens" are reused across stacks.
  */
@@ -152,6 +158,13 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         getComponent={() => NotFoundScreen}
         options={{title: title(msg`Not Found`)}}
       />
+      {/* maxine */}
+      <Stack.Screen
+        name="Bookmarks"
+        getComponent={() => BookmarksScreen}
+        options={{title: title(msg`Bookmarks`), requireAuth: true}}
+      />
+      {/* end maxine */}
       <Stack.Screen
         name="Lists"
         component={ListsScreen}
@@ -627,6 +640,12 @@ function TabsNavigator() {
         name="NotificationsTab"
         getComponent={() => NotificationsTabNavigator}
       />
+      {/* maxine */}
+      <Tab.Screen
+        name="BookmarksTab"
+        getComponent={() => BookmarksTabNavigator}
+      />
+      {/* end maxine */}
       <Tab.Screen
         name="MyProfileTab"
         getComponent={() => MyProfileTabNavigator}
@@ -682,6 +701,29 @@ function NotificationsTabNavigator() {
     </NotificationsTab.Navigator>
   )
 }
+
+// maxine
+function BookmarksTabNavigator() {
+  const t = useTheme()
+  return (
+    <BookmarksTab.Navigator
+      screenOptions={{
+        animationDuration: 285,
+        gestureEnabled: true,
+        fullScreenGestureEnabled: true,
+        headerShown: false,
+        contentStyle: t.atoms.bg,
+      }}>
+      <BookmarksTab.Screen
+        name="Bookmarks"
+        getComponent={() => BookmarksScreen}
+        options={{requireAuth: true}}
+      />
+      {commonScreens(BookmarksTab as typeof HomeTab)}
+    </BookmarksTab.Navigator>
+  )
+}
+// end maxine
 
 function MyProfileTabNavigator() {
   const t = useTheme()

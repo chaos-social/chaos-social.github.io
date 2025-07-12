@@ -8,6 +8,9 @@ export type {NativeStackScreenProps} from '@react-navigation/native-stack'
 export type CommonNavigatorParams = {
   NotFound: undefined
   Lists: undefined
+  // maxine
+  Bookmarks: undefined
+  // end maxine
   Moderation: undefined
   ModerationModlists: undefined
   ModerationMutedAccounts: undefined
@@ -88,6 +91,9 @@ export type BottomTabNavigatorParams = CommonNavigatorParams & {
   HomeTab: undefined
   SearchTab: undefined
   NotificationsTab: undefined
+  // maxine
+  BookmarksTab: undefined
+  // end maxine
   MyProfileTab: undefined
   MessagesTab: undefined
 }
@@ -103,6 +109,12 @@ export type SearchTabNavigatorParams = CommonNavigatorParams & {
 export type NotificationsTabNavigatorParams = CommonNavigatorParams & {
   Notifications: undefined
 }
+
+// maxine
+export type BookmarksTabNavigatorParams = CommonNavigatorParams & {
+  Bookmarks: undefined
+}
+// end maxine
 
 export type MyProfileTabNavigatorParams = CommonNavigatorParams & {
   MyProfile: {name: 'me'; hideBackButton: true}

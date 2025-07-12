@@ -275,6 +275,17 @@
     multiformats "^9.9.0"
     zod "^3.23.8"
 
+"@atproto/lexicon@^0.4.10":
+  version "0.4.12"
+  resolved "https://registry.yarnpkg.com/@atproto/lexicon/-/lexicon-0.4.12.tgz#89a704789d983f8405a52095769b5b58d87f5af7"
+  integrity sha512-fcEvEQ1GpQYF5igZ4IZjPWEoWVpsEF22L9RexxLS3ptfySXLflEyH384e7HITzO/73McDeaJx3lqHIuqn9ulnw==
+  dependencies:
+    "@atproto/common-web" "^0.4.2"
+    "@atproto/syntax" "^0.4.0"
+    iso-datestring-validator "^2.2.2"
+    multiformats "^9.9.0"
+    zod "^3.23.8"
+
 "@atproto/lexicon@^0.4.11":
   version "0.4.11"
   resolved "https://registry.yarnpkg.com/@atproto/lexicon/-/lexicon-0.4.11.tgz#d5d09be1faf1d28d1e57051dab4064101f8b1617"
@@ -475,6 +486,14 @@
     rate-limiter-flexible "^2.4.1"
     uint8arrays "3.0.0"
     ws "^8.12.0"
+    zod "^3.23.8"
+
+"@atproto/xrpc@^0.6.5":
+  version "0.6.12"
+  resolved "https://registry.yarnpkg.com/@atproto/xrpc/-/xrpc-0.6.12.tgz#a21ee5b87fde63994c98c34098d5e092252e25d0"
+  integrity sha512-Ut3iISNLujlmY9Gu8sNU+SPDJDvqlVzWddU8qUr0Yae5oD4SguaUFjjhireMGhQ3M5E0KljQgDbTmnBo1kIZ3w==
+  dependencies:
+    "@atproto/lexicon" "^0.4.10"
     zod "^3.23.8"
 
 "@atproto/xrpc@^0.7.0":
@@ -5013,6 +5032,13 @@
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/@leichtgewicht/ip-codec/-/ip-codec-2.0.4.tgz#b2ac626d6cb9c8718ab459166d4bb405b8ffa78b"
   integrity sha512-Hcv+nVC0kZnQ3tD9GVu5xSMR4VVYOteQIr/hwFPVEvPdlXqgGEuRjiheChHgdM+JyqdgNcmzZOX/tnl0JOiI7A==
+
+"@lexicon-community/types@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@lexicon-community/types/-/types-1.0.0.tgz#e86f37b58c08ac5def1fd34845ab9c12be41f88e"
+  integrity sha512-y7zNrgjzgeKfhoG9K5DfN+mFG7G/vBUHus1OKe4pj4rc/XKO/15cI+slfzzNRYEZ3b9+9BE1Jl6/HVH/odARsg==
+  dependencies:
+    "@atproto/xrpc" "^0.6.5"
 
 "@lingui/babel-plugin-extract-messages@4.14.1":
   version "4.14.1"

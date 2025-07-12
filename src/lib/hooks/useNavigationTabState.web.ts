@@ -9,6 +9,9 @@ export function useNavigationTabState() {
       isAtHome: currentRoute === 'Home',
       isAtSearch: currentRoute === 'Search',
       isAtNotifications: currentRoute === 'Notifications',
+      // maxine
+      isAtBookmarks: currentRoute === 'Bookmarks',
+      // end maxine
       isAtMyProfile: currentRoute === 'MyProfile',
       isAtMessages: currentRoute === 'Messages',
     }
