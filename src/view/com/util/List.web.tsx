@@ -32,6 +32,10 @@ export type ListProps<ItemT> = Omit<
    * @deprecated Should be using Layout components
    */
   sideBorders?: boolean
+
+  // maxine
+  onItemSeenShort?: (item: ItemT) => void
+  // end maxine
 }
 export type ListRef = React.MutableRefObject<any | null> // TODO: Better types.
 
@@ -63,6 +67,11 @@ function ListImpl<ItemT>(
     renderItem,
     extraData,
     style,
+    
+    // maxine
+    onItemSeenShort,
+    // end maxine
+    
     ...props
   }: ListProps<ItemT>,
   ref: React.Ref<ListMethods>,
@@ -357,6 +366,10 @@ function ListImpl<ItemT>(
                     renderItem={renderItem}
                     extraData={extraData}
                     onItemSeen={onItemSeen}
+                    
+                    // maxine
+                    onItemSeenShort={onItemSeenShort}
+                    // end maxine
                   />
                 )
               })}
@@ -435,6 +448,9 @@ let Row = function RowImpl<ItemT>({
   renderItem,
   extraData: _unused,
   onItemSeen,
+  // maxine
+  onItemSeenShort,
+  // end maxine
 }: {
   item: ItemT
   index: number
@@ -444,11 +460,21 @@ let Row = function RowImpl<ItemT>({
     | ((data: {index: number; item: any; separators: any}) => React.ReactNode)
   extraData: any
   onItemSeen: ((item: any) => void) | undefined
+
+  // maxine
+  onItemSeenShort?: (item: any) => void
+  // end maxine
 }): React.ReactNode {
   const rowRef = React.useRef(null)
   const intersectionTimeout = React.useRef<
     ReturnType<typeof setTimeout> | undefined
   >(undefined)
+
+  // maxine
+  const shortIntersectionTimeout = React.useRef<
+    ReturnType<typeof setTimeout> | undefined
+  >(undefined)
+  // end maxine
 
   const handleIntersection = useNonReactiveCallback(
     (entries: IntersectionObserverEntry[]) => {
@@ -472,11 +498,34 @@ let Row = function RowImpl<ItemT>({
           }
         })
       })
+      
+      // maxine
+      batchedUpdates(() => {
+        if (!onItemSeenShort) {
+          return
+        }
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            if (!shortIntersectionTimeout.current) {
+              shortIntersectionTimeout.current = setTimeout(() => {
+                shortIntersectionTimeout.current = undefined
+                onItemSeenShort!(item)
+              }, 100)
+            }
+          } else {
+            if (shortIntersectionTimeout.current) {
+              clearTimeout(shortIntersectionTimeout.current as NodeJS.Timeout)
+              shortIntersectionTimeout.current = undefined
+            }
+          }
+        })
+      })
+      // end maxine
     },
   )
 
   React.useEffect(() => {
-    if (!onItemSeen) {
+    if (!onItemSeen && !onItemSeenShort) { // maxine
       return
     }
     const observer = new IntersectionObserver(
@@ -488,7 +537,7 @@ let Row = function RowImpl<ItemT>({
     return () => {
       observer.unobserve(row)
     }
-  }, [handleIntersection, onItemSeen])
+  }, [handleIntersection, onItemSeen, onItemSeenShort]) // maxine
 
   if (!renderItem) {
     return null

@@ -38,6 +38,10 @@ export type ListProps<ItemT = any> = Omit<
   disableFullWindowScroll?: boolean
   sideBorders?: boolean
   progressViewOffset?: number
+
+  // maxine
+  onItemSeenShort?: (item: ItemT) => void
+  // end maxine
 }
 export type ListRef = React.MutableRefObject<FlatList_INTERNAL | null>
 
@@ -54,6 +58,9 @@ let List = React.forwardRef<ListMethods, ListProps>(
       style,
       progressViewOffset,
       automaticallyAdjustsScrollIndicatorInsets = false,
+      // maxine
+      onItemSeenShort,
+      // end maxine
       ...props
     },
     ref,
@@ -128,6 +135,30 @@ let List = React.forwardRef<ListMethods, ListProps>(
       ]
     }, [onItemSeen])
 
+    // maxine
+    const [onShortViewableItemsChanged, shortViewabilityConfig] = React.useMemo(() => {
+      if (!onItemSeenShort) {
+        return [undefined, undefined] as const
+      }
+      return [
+        (info: {
+          viewableItems: Array<ViewToken>
+          changed: Array<ViewToken>
+        }) => {
+          for (const item of info.changed) {
+            if (item.isViewable) {
+              onItemSeenShort(item.item)
+            }
+          }
+        },
+        {
+          itemVisiblePercentThreshold: 40,
+          minimumViewTime: 100,
+        },
+      ] as const
+    }, [onItemSeenShort])
+    // end maxine
+
     let refreshControl
     if (refreshing !== undefined || onRefresh !== undefined) {
       refreshControl = (
@@ -149,12 +180,20 @@ let List = React.forwardRef<ListMethods, ListProps>(
       })
       contentOffset = {x: 0, y: headerOffset * -1}
     }
+    
+    // maxine
+    const viewabilityConfigCallbackPairs = React.useMemo(() => [
+      ...(!!viewabilityConfig && !!onViewableItemsChanged ? [{onViewableItemsChanged, viewabilityConfig}] : []),
+      ...(!!shortViewabilityConfig && !!onShortViewableItemsChanged ? [{onViewableItemsChanged: onShortViewableItemsChanged, viewabilityConfig: shortViewabilityConfig}] : []),   
+    ], [viewabilityConfig, onViewableItemsChanged, shortViewabilityConfig, onShortViewableItemsChanged])
+    // end maxine
 
     return (
       <FlatList_INTERNAL
         showsVerticalScrollIndicator // overridable
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
+        // maxine
+        viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs}
+        // end maxine
         {...props}
         automaticallyAdjustsScrollIndicatorInsets={
           automaticallyAdjustsScrollIndicatorInsets
