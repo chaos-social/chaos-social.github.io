@@ -19,6 +19,13 @@ Get the app itself:
 - configure the location used to determine regional labelers
 - entirely ignore `!no-unauthenticated` labels, even for logged out users
 
+### Added by Maxine
+
+- bookmark posts using [@bookmarks.bluecanary.dev](https://bookmarks.bluecanary.dev)
+- post seen tracking + hide already seen posts
+- 'view on fediverse' button for posts bridged via Bridgy Fed
+- define and use a custom appview
+
 ### WIP/Planned
 
 - rewrite shared URLs to reference deer.social
