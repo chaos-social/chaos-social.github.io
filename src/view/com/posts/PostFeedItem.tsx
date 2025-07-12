@@ -33,6 +33,7 @@ import {
   usePostShadow,
 } from '#/state/cache/post-shadow'
 import {useFeedFeedbackContext} from '#/state/feed-feedback'
+import { type FeedPostSlice } from '#/state/queries/post-feed'
 import {unstableCacheProfileView} from '#/state/queries/profile'
 import {useSession} from '#/state/session'
 import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
@@ -60,6 +61,7 @@ import {DiscoverDebug} from '#/components/PostControls/DiscoverDebug'
 import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import {RichText} from '#/components/RichText'
 import {SubtleWebHover} from '#/components/SubtleWebHover'
+import { useHideSeenPosts, useIsSliceSeen } from '#/maxine/seen-posts'
 import * as bsky from '#/types/bsky'
 
 interface FeedItemProps {
@@ -102,10 +104,16 @@ export function PostFeedItem({
   rootPost,
   onShowLess,
   isCarouselItem,
+  // maxine
+  slice,
+  // end maxine
 }: FeedItemProps & {
   post: AppBskyFeedDefs.PostView
   rootPost: AppBskyFeedDefs.PostView
   onShowLess?: (interaction: AppBskyFeedDefs.Interaction) => void
+  // maxine
+  slice: FeedPostSlice
+  // end maxine
 }): React.ReactNode {
   const postShadowed = usePostShadow(post)
   const richText = useMemo(
@@ -116,6 +124,14 @@ export function PostFeedItem({
       }),
     [record],
   )
+  // maxine
+  const [hideSeenPosts] = useHideSeenPosts()
+  const isSeen = useIsSliceSeen(slice, hideSeenPosts)
+  console.log(`rendering post`, post, `isSeen`, isSeen)
+  if (hideSeenPosts && isSeen) {
+    return null
+  }
+  // end maxine
   if (postShadowed === POST_TOMBSTONE) {
     return null
   }

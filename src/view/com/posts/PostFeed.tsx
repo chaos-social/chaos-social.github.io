@@ -15,7 +15,7 @@ import {
   AppBskyEmbedVideo,
   AppBskyFeedDefs,
 } from '@atproto/api'
-import {msg} from '@lingui/macro'
+import {msg, Trans} from '@lingui/macro'
 import {useLingui} from '@lingui/react'
 import {useQueryClient} from '@tanstack/react-query'
 
@@ -48,7 +48,7 @@ import {List, type ListRef} from '#/view/com/util/List'
 import {PostFeedLoadingPlaceholder} from '#/view/com/util/LoadingPlaceholder'
 import {LoadMoreRetryBtn} from '#/view/com/util/LoadMoreRetryBtn'
 import {type VideoFeedSourceContext} from '#/screens/VideoFeed/types'
-import {useBreakpoints, useLayoutBreakpoints} from '#/alf'
+import {useBreakpoints, useLayoutBreakpoints, atoms as a} from '#/alf'
 import {ProgressGuide, SuggestedFollows} from '#/components/FeedInterstitials'
 import {
   PostFeedVideoGridRow,
@@ -63,6 +63,8 @@ import {PostFeedItem} from './PostFeedItem'
 import {PostFeedItemCarousel} from './PostFeedItemCarousel'
 import {ShowLessFollowup} from './ShowLessFollowup'
 import {ViewFullThread} from './ViewFullThread'
+import {setSeenPost, useHideSeenPosts} from '#/maxine/seen-posts'
+import * as Toggle from '#/components/forms/Toggle'
 
 type FeedRow =
   | {
@@ -136,6 +138,10 @@ type FeedRow =
     }
   | {
       type: 'showLessFollowup'
+      key: string
+    }
+  | {
+      type: 'hideSeenPosts'
       key: string
     }
 
@@ -283,6 +289,10 @@ let PostFeed = ({
   const {gtMobile} = useBreakpoints()
   const {rightNavVisible} = useLayoutBreakpoints()
   const areVideoFeedsEnabled = isNative
+
+  // maxine
+  const [hideSeenPosts, setHideSeenPosts] = useHideSeenPosts()
+  // end maxine
 
   const [hasPressedShowLessUris, setHasPressedShowLessUris] = useState(
     () => new Set<string>(),
@@ -438,6 +448,14 @@ let PostFeed = ({
     }
 
     let arr: FeedRow[] = []
+
+    // maxine
+    arr.push({
+      type: 'hideSeenPosts',
+      key: 'hideSeenPosts',
+    })
+    // end maxine
+
     if (KNOWN_SHUTDOWN_FEEDS.includes(feedUriOrActorDid)) {
       arr.push({
         type: 'feedShutdownMsg',
@@ -666,6 +684,9 @@ let PostFeed = ({
     areVideoFeedsEnabled,
     hasPressedShowLessUris,
     useRepostCarousel,
+    // maxine
+    hideSeenPosts,
+    // end maxine
   ])
 
   // events
@@ -787,6 +808,9 @@ let PostFeed = ({
             hideTopBorder={rowIndex === 0 && indexInSlice === 0}
             rootPost={slice.items[0].post}
             onShowLess={onPressShowLess}
+            // maxine
+            slice={slice}
+            // end maxine
           />
         )
       } else if (row.type === 'reposts') {
@@ -825,7 +849,24 @@ let PostFeed = ({
         )
       } else if (row.type === 'showLessFollowup') {
         return <ShowLessFollowup />
-      } else {
+      } else if (row.type === 'hideSeenPosts') { // maxine
+        return (
+          <View style={[a.p_xl]}>
+            <Toggle.Item
+              label={_(msg`Hide already seen posts`)}
+              name="hide_seen_posts"
+              value={hideSeenPosts}
+              onChange={setHideSeenPosts}>
+              <View style={[a.flex_1, a.flex_row, a.align_center, a.gap_sm]}>
+                <Toggle.Checkbox />
+                <Toggle.LabelText style={[a.flex_1, a.leading_tight]}>
+                  <Trans>Hide already seen posts</Trans>
+                </Toggle.LabelText>
+              </View>
+            </Toggle.Item>
+          </View>
+        )
+      } else { // end maxine
         return null
       }
     },
@@ -842,6 +883,9 @@ let PostFeed = ({
       feedTab,
       feedCacheKey,
       onPressShowLess,
+      // maxine
+      hideSeenPosts,
+      // end maxine
     ],
   )
 
@@ -898,6 +942,17 @@ let PostFeed = ({
     [feedFeedback, feed, liveNowConfig],
   )
 
+  // maxine
+  const onItemSeenShort = useCallback((item: FeedRow) => {
+    console.log('onItemSeenShort', item)
+    if (item.type === 'sliceItem') {
+      const post = item.slice.items[item.indexInSlice].post
+      console.log('onItemSeenShort', post)
+      setSeenPost(post, feed)
+    }
+  }, [feed, setSeenPost])
+  // end maxine
+
   return (
     <View testID={testID} style={style}>
       <List
@@ -928,6 +983,9 @@ let PostFeed = ({
         maxToRenderPerBatch={isIOS ? 5 : 1}
         updateCellsBatchingPeriod={40}
         onItemSeen={onItemSeen}
+        // maxine
+        onItemSeenShort={onItemSeenShort}
+        // end maxine
       />
     </View>
   )
