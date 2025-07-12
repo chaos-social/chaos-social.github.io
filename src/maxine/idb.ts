@@ -24,21 +24,10 @@ SOFTWARE.
 
 export default class IdbKV<K extends IDBValidKey, V> {
     storeName: string
-    batchInterval: number
     db: Promise<IDBDatabase>
-    private _actions: Array<{
-        type: 'delete'
-        key: K
-    } | {
-        type: 'set'
-        key: K
-        value: V
-    }>
-    private _commitPromise: null | Promise<void>
 
-    constructor(dbName: string, { batchInterval = 10 }: { batchInterval?: number } = {}) {
+    constructor(dbName: string) {
         this.storeName = 'idb-kv'
-        this.batchInterval = batchInterval
 
         // Promise for the indexeddb DB object
         this.db = new Promise((resolve, reject) => {
@@ -52,19 +41,6 @@ export default class IdbKV<K extends IDBValidKey, V> {
             // if db doesn't already exist
             request.onupgradeneeded = () => request.result.createObjectStore(this.storeName)
         })
-
-        this._actions = []
-        // ^^ A list of pending actions for the next batch transaction
-        // {
-        //   type: (set, get, or delete)
-        //   key:
-        //   value:
-        //   resolve: (resolve get() promise)
-        //   reject: (reject get() promise)
-        // }
-
-        // promise for the currently pending commit to the database if it exists
-        this._commitPromise = null
     }
 
     async get(key: K) {
@@ -137,6 +113,55 @@ export default class IdbKV<K extends IDBValidKey, V> {
         return new Promise<void>((resolve, reject) => {
             request.onsuccess = () => resolve()
             request.onerror = () => reject(request.error)
+        })
+    }
+}
+
+export class IdbWithInMemoryCache<K extends IDBValidKey, V> {
+    private readonly idb: IdbKV<K, V>
+    private readonly cache: Map<K, V | undefined>
+    constructor(dbName: string) {
+        this.idb = new IdbKV(dbName)
+        this.cache = new Map()
+    }
+
+    set(key: K, value: V) {
+        this.cache.set(key, value)
+        this.idb.set(key, value)
+    }
+
+    get(key: K): Promise<V | undefined> {
+        if (this.cache.has(key)) {
+            return Promise.resolve(this.cache.get(key))
+        }
+        return this.idb.get(key).then(value => {
+            this.cache.set(key, value)
+            return value
+        })
+    }
+
+    getBatch(keys: K[]): Promise<Map<K, V | undefined>> {
+        let readAllKeysFromCache = true
+
+        const result = new Map<K, V | undefined>()
+        for (const key of keys) {
+            if (this.cache.has(key)) {
+                result.set(key, this.cache.get(key))
+            } else {
+                readAllKeysFromCache = false
+                break
+            }
+        }
+
+        if (readAllKeysFromCache) {
+            return Promise.resolve(result)
+        }
+
+        return this.idb.getBatch(keys).then(batch => {
+            for (const [key, value] of batch) {
+                this.cache.set(key, value)
+            }
+            return batch
         })
     }
 }

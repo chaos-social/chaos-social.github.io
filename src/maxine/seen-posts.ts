@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { type FeedDescriptor,type FeedPostSlice } from "#/state/queries/post-feed";
-import IdbKV from "./idb";
+import { IdbWithInMemoryCache } from "./idb";
 import { useLocalStorage } from "./local-store";
 
 export function useHideSeenPosts() {
@@ -10,62 +10,11 @@ export function useHideSeenPosts() {
     return [hideSeenPosts === 'true', (value: boolean) => setHideSeenPosts(value ? 'true' : 'false')] as const
 }
 
-class IdbWithInMemoryCache<K extends IDBValidKey, V> {
-    private readonly idb: IdbKV<K, V>
-    private readonly cache: Map<K, V | undefined>
-    constructor(dbName: string, { batchInterval = 10 }: { batchInterval?: number } = {}) {
-        this.idb = new IdbKV(dbName, { batchInterval })
-        this.cache = new Map()
-    }
-
-    set(key: K, value: V) {
-        this.cache.set(key, value)
-        this.idb.set(key, value)
-    }
-
-    get(key: K): Promise<V | undefined> {
-        if (this.cache.has(key)) {
-            return Promise.resolve(this.cache.get(key))
-        }
-        return this.idb.get(key).then(value => {
-            this.cache.set(key, value)
-            return value
-        })
-    }
-
-    getBatch(keys: K[]): Promise<Map<K, V | undefined>> {
-        let readAllKeysFromCache = true
-
-        const result = new Map<K, V | undefined>()
-        for (const key of keys) {
-            if (this.cache.has(key)) {
-                result.set(key, this.cache.get(key))
-            } else {
-                readAllKeysFromCache = false
-                break
-            }
-        }
-
-        if (readAllKeysFromCache) {
-            return Promise.resolve(result)
-        }
-
-        return this.idb.getBatch(keys).then(batch => {
-            for (const [key, value] of batch) {
-                this.cache.set(key, value)
-            }
-            return batch
-        })
-    }
-}
-
 const seenPosts = new IdbWithInMemoryCache<string, {
     post: { uri: string; cid: string }
     lastSeenAt: Date
     lastSeenFeed: FeedDescriptor
-}>('seen-posts', {
-    batchInterval: 10,
-})
+}>('seen-posts')
 
 export function setSeenPost(post: { uri: string; cid: string }, feed: FeedDescriptor) {
     const key = `${post.uri}:${post.cid}`

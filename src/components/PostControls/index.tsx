@@ -1,6 +1,9 @@
 import {memo, useState} from 'react'
 import {type StyleProp, View, type ViewStyle} from 'react-native'
 import {
+  $Typed,
+  ChatBskyConvoDefs,
+  ComAtprotoModerationCreateReport,
   type AppBskyFeedDefs,
   type AppBskyFeedPost,
   type AppBskyFeedThreadgate,
@@ -19,7 +22,7 @@ import {
   usePostLikeMutationQueue,
   usePostRepostMutationQueue,
 } from '#/state/queries/post'
-import {useRequireAuth} from '#/state/session'
+import {useAgent, useRequireAuth} from '#/state/session'
 import {
   ProgressGuideAction,
   useProgressGuideControls,
@@ -36,6 +39,9 @@ import {
 import {PostMenuButton} from './PostMenu'
 import {RepostButton} from './RepostButton'
 import {ShareMenuButton} from './ShareMenu'
+import { BookmarkButton } from './BookmarkButton'
+import { useSubmitReportMutation } from '../moderation/ReportDialog/action'
+import { useIsBookmarked } from '#/maxine/bookmarked'
 
 let PostControls = ({
   big,
@@ -184,6 +190,36 @@ let PostControls = ({
     })
   }
 
+  // maxine
+  const [isBookmarked, setIsBookmarked] = useIsBookmarked(post)
+  const agent = useAgent()
+  async function onBookmark() {
+    if (isBookmarked) {
+      return
+    }
+
+    const report:
+      | ComAtprotoModerationCreateReport.InputSchema
+      | (Omit<ComAtprotoModerationCreateReport.InputSchema, 'subject'> & {
+          subject: $Typed<ChatBskyConvoDefs.MessageRef>
+        }) = {
+      reasonType: 'com.atproto.moderation.defs#reasonOther',
+      subject: {
+        $type: 'com.atproto.repo.strongRef',
+        uri: post.uri,
+        cid: post.cid,
+      },
+    }
+    await agent.createModerationReport(report, {
+      encoding: 'application/json',
+      headers: {
+        'atproto-proxy': `did:plc:w6yx4bltuzdmiolooi4kd6zt#atproto_labeler`, // bookmarks.bluecanary.dev
+      },
+    })
+    setIsBookmarked(true)
+  }
+  // end maxine
+
   return (
     <View
       style={[
@@ -232,6 +268,15 @@ let PostControls = ({
           embeddingDisabled={Boolean(post.viewer?.embeddingDisabled)}
         />
       </View>
+      {/* maxine */}
+      <View style={big ? a.align_center : [a.flex_1, a.align_start]}>
+        <BookmarkButton
+          isBookmarked={isBookmarked}
+          onBookmark={onBookmark}
+          big={big}
+          />
+      </View>
+      {/* end maxine */}
       <View style={big ? a.align_center : [a.flex_1, a.align_start]}>
         <PostControlButton
           testID="likeBtn"
