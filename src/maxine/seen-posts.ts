@@ -49,10 +49,10 @@ export function useIsSliceSeen(slice: FeedPostSlice, hideSeenPostsToggle: boolea
             return
         }
 
-        console.log('slice items: ', slice.items.map(item => ({
-            ...item,
-            seenCacheState: seenPosts.get(`${item.post.uri}:${item.post.cid}`),
-        })))
+        // console.log('slice items: ', slice.items.map(item => ({
+        //     ...item,
+        //     seenCacheState: seenPosts.get(`${item.post.uri}:${item.post.cid}`),
+        // })))
 
         seenPosts.getBatch(keys).then(seenPostMap => {
             const isAllSeen = [...seenPostMap.values()].every(seenPost => !!seenPost)

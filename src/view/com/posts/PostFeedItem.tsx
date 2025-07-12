@@ -127,7 +127,6 @@ export function PostFeedItem({
   // maxine
   const [hideSeenPosts] = useHideSeenPosts()
   const isSeen = useIsSliceSeen(slice, hideSeenPosts)
-  console.log(`rendering post`, post, `isSeen`, isSeen)
   if (hideSeenPosts && isSeen) {
     return null
   }

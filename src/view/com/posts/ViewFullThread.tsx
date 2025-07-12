@@ -7,12 +7,14 @@ import {useLingui} from '@lingui/react'
 
 import {usePalette} from '#/lib/hooks/usePalette'
 import {makeProfileLink} from '#/lib/routes/links'
+import { type FeedPostSlice } from '#/state/queries/post-feed'
 import {useInteractionState} from '#/components/hooks/useInteractionState'
 import {SubtleWebHover} from '#/components/SubtleWebHover'
+import { useHideSeenPosts, useIsSliceSeen } from '#/maxine/seen-posts'
 import {Link} from '../util/Link'
 import {Text} from '../util/text/Text'
 
-export function ViewFullThread({uri}: {uri: string}) {
+export function ViewFullThread({uri, slice}: {uri: string, slice: FeedPostSlice}) {
   const {
     state: hover,
     onIn: onHoverIn,
@@ -24,6 +26,14 @@ export function ViewFullThread({uri}: {uri: string}) {
     return makeProfileLink({did: urip.hostname, handle: ''}, 'post', urip.rkey)
   }, [uri])
   const {_} = useLingui()
+  
+  // maxine
+  const [hideSeenPosts] = useHideSeenPosts()
+  const isSeen = useIsSliceSeen(slice, hideSeenPosts)
+  if (hideSeenPosts && isSeen) {
+    return null
+  }
+  // end maxine
 
   return (
     <Link

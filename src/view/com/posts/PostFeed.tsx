@@ -119,6 +119,9 @@ type FeedRow =
       type: 'sliceViewFullThread'
       key: string
       uri: string
+      // maxine
+      slice: FeedPostSlice
+      // end maxine
     }
   | {
       type: 'interstitialFollows'
@@ -606,6 +609,9 @@ let PostFeed = ({
                   type: 'sliceViewFullThread',
                   key: slice._reactKey + '-viewFullThread',
                   uri: slice.items[0].uri,
+                  // maxine
+                  slice: slice,
+                  // end maxine
                 })
                 arr.push(
                   sliceItem({
@@ -816,7 +822,7 @@ let PostFeed = ({
       } else if (row.type === 'reposts') {
         return <PostFeedItemCarousel items={row.items} />
       } else if (row.type === 'sliceViewFullThread') {
-        return <ViewFullThread uri={row.uri} />
+        return <ViewFullThread uri={row.uri} slice={row.slice} /> // maxine
       } else if (row.type === 'videoGridRowPlaceholder') {
         return (
           <View>
