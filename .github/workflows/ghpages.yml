@@ -37,6 +37,8 @@ jobs:
         run: yarn
       - name: Build
         run: ./pages_build.sh
+      - name: Copy index.html to 404.html for SPA redirection
+        run: cp ./web-build/index.html ./web-build/404.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
