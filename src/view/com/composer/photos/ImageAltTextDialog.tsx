@@ -16,6 +16,7 @@ import {type DialogControlProps} from '#/components/Dialog'
 import * as TextField from '#/components/forms/TextField'
 import {CircleInfo_Stroke2_Corner0_Rounded as CircleInfo} from '#/components/icons/CircleInfo'
 import {Text} from '#/components/Typography'
+import { generateAltTextViaProxy } from '#/maxine/alt-text'
 
 type Props = {
   control: Dialog.DialogOuterProps['control']
@@ -149,6 +150,19 @@ const ImageAltTextInner = ({
         </View>
 
         <AltTextCounterWrapper altText={altText}>
+          <Button
+            label={_(msg`Generate`)}
+            size="tiny"
+            color="secondary"
+            variant="solid"
+            onPress={() => {
+              generateAltTextViaProxy(image.transformed)
+            }}
+            style={[a.flex_grow]}>
+            <ButtonText>
+              <Trans>Generate</Trans>
+            </ButtonText>
+          </Button>
           <Button
             label={_(msg`Save`)}
             disabled={altText === image.alt}
