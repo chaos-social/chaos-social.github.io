@@ -44,6 +44,10 @@ import {PostAlerts} from '#/components/moderation/PostAlerts'
 import {type AppModerationCause} from '#/components/Pills'
 import {Embed} from '#/components/Post/Embed'
 import {PostEmbedViewContext} from '#/components/Post/Embed/types'
+import {
+  MastodonHtmlContent,
+  useHasMastodonHtmlContent,
+} from '#/components/Post/MastodonHtmlContent'
 import {PostRepliedTo} from '#/components/Post/PostRepliedTo'
 import {ShowMoreTextButton} from '#/components/Post/ShowMoreTextButton'
 import {PostControls} from '#/components/PostControls'
@@ -418,6 +422,9 @@ let PostContent = ({
   threadgateRecord?: AppBskyFeedThreadgate.Record
 }): React.ReactNode => {
   const {currentAccount} = useSession()
+  const hasMastodonHtml = useHasMastodonHtmlContent(
+    post.record as AppBskyFeedPost.Record,
+  )
   const [limitLines, setLimitLines] = useState(
     () => countLines(richText.text) >= MAX_POST_LINES,
   )
@@ -460,32 +467,57 @@ let PostContent = ({
         style={[a.pb_xs]}
         additionalCauses={additionalPostAlerts}
       />
-      {richText.text ? (
+      {hasMastodonHtml ? (
         <>
-          <RichText
-            enableTags
-            testID="postText"
-            value={richText}
-            numberOfLines={limitLines ? MAX_POST_LINES : undefined}
+          <MastodonHtmlContent
+            record={post.record as AppBskyFeedPost.Record}
             style={[a.flex_1, a.text_md]}
-            authorHandle={postAuthor.handle}
-            shouldProxyLinks={true}
+            numberOfLines={limitLines ? MAX_POST_LINES : undefined}
           />
-          {limitLines && (
-            <ShowMoreTextButton style={[a.text_md]} onPress={onPressShowMore} />
-          )}
+          {postEmbed ? (
+            <View style={[a.pb_xs]}>
+              <Embed
+                embed={postEmbed}
+                moderation={moderation}
+                onOpen={onOpenEmbed}
+                viewContext={PostEmbedViewContext.Feed}
+              />
+            </View>
+          ) : null}
         </>
-      ) : undefined}
-      {postEmbed ? (
-        <View style={[a.pb_xs]}>
-          <Embed
-            embed={postEmbed}
-            moderation={moderation}
-            onOpen={onOpenEmbed}
-            viewContext={PostEmbedViewContext.Feed}
-          />
-        </View>
-      ) : null}
+      ) : (
+        <>
+          {richText.text ? (
+            <>
+              <RichText
+                enableTags
+                testID="postText"
+                value={richText}
+                numberOfLines={limitLines ? MAX_POST_LINES : undefined}
+                style={[a.flex_1, a.text_md]}
+                authorHandle={postAuthor.handle}
+                shouldProxyLinks={true}
+              />
+              {limitLines && (
+                <ShowMoreTextButton
+                  style={[a.text_md]}
+                  onPress={onPressShowMore}
+                />
+              )}
+            </>
+          ) : undefined}
+          {postEmbed ? (
+            <View style={[a.pb_xs]}>
+              <Embed
+                embed={postEmbed}
+                moderation={moderation}
+                onOpen={onOpenEmbed}
+                viewContext={PostEmbedViewContext.Feed}
+              />
+            </View>
+          ) : null}
+        </>
+      )}
     </ContentHider>
   )
 }

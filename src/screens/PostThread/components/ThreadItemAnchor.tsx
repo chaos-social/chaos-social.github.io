@@ -56,6 +56,7 @@ import {LabelsOnMyPost} from '#/components/moderation/LabelsOnMe'
 import {PostAlerts} from '#/components/moderation/PostAlerts'
 import {type AppModerationCause} from '#/components/Pills'
 import {Embed, PostEmbedViewContext} from '#/components/Post/Embed'
+import {MastodonHtmlContent, useHasMastodonHtmlContent} from '#/components/Post/MastodonHtmlContent'
 import {PostControls, PostControlsSkeleton} from '#/components/PostControls'
 import {useFormatPostStatCount} from '#/components/PostControls/util'
 import {ProfileHoverCard} from '#/components/ProfileHoverCard'
@@ -193,6 +194,7 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
   const moderation = item.moderation
   const authorShadow = useProfileShadow(post.author)
   const {isActive: live} = useActorStatus(post.author)
+  const hasMastodonHtml = useHasMastodonHtmlContent(record)
   const richText = useMemo(
     () =>
       new RichTextAPI({
@@ -398,25 +400,47 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
               style={[a.pb_sm]}
               additionalCauses={additionalPostAlerts}
             />
-            {richText?.text ? (
-              <RichText
-                enableTags
-                selectable
-                value={richText}
-                style={[a.flex_1, a.text_lg]}
-                authorHandle={post.author.handle}
-                shouldProxyLinks={true}
-              />
-            ) : undefined}
-            {post.embed && (
-              <View style={[a.py_xs]}>
-                <Embed
-                  embed={post.embed}
-                  moderation={moderation}
-                  viewContext={PostEmbedViewContext.ThreadHighlighted}
-                  onOpen={onOpenEmbed}
+            {hasMastodonHtml ? (
+              <>
+                <MastodonHtmlContent
+                  record={record}
+                  style={[a.flex_1]}
+                  textStyle={[a.text_lg]}
                 />
-              </View>
+                {post.embed && (
+                  <View style={[a.py_xs]}>
+                    <Embed
+                      embed={post.embed}
+                      moderation={moderation}
+                      viewContext={PostEmbedViewContext.ThreadHighlighted}
+                      onOpen={onOpenEmbed}
+                    />
+                  </View>
+                )}
+              </>
+            ) : (
+              <>
+                {richText?.text ? (
+                  <RichText
+                    enableTags
+                    selectable
+                    value={richText}
+                    style={[a.flex_1, a.text_lg]}
+                    authorHandle={post.author.handle}
+                    shouldProxyLinks={true}
+                  />
+                ) : undefined}
+                {post.embed && (
+                  <View style={[a.py_xs]}>
+                    <Embed
+                      embed={post.embed}
+                      moderation={moderation}
+                      viewContext={PostEmbedViewContext.ThreadHighlighted}
+                      onOpen={onOpenEmbed}
+                    />
+                  </View>
+                )}
+              </>
             )}
           </ContentHider>
           <ExpandedPostDetails

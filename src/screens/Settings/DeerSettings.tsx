@@ -106,6 +106,10 @@ import {
   useSetNoDiscoverFallback,
 } from '#/state/preferences/no-discover-fallback'
 import {
+  useRenderMastodonHtml,
+  useSetRenderMastodonHtml,
+} from '#/state/preferences/render-mastodon-html'
+import {
   useRepostCarouselEnabled,
   useSetRepostCarouselEnabled,
 } from '#/state/preferences/repost-carousel-enabled'
@@ -450,6 +454,9 @@ export function DeerSettingsScreen({}: Props) {
   const hideUnreplyablePosts = useHideUnreplyablePosts()
   const setHideUnreplyablePosts = useSetHideUnreplyablePosts()
 
+  const renderMastodonHtml = useRenderMastodonHtml()
+  const setRenderMastodonHtml = useSetRenderMastodonHtml()
+
   const disableVerifyEmailReminder = useDisableVerifyEmailReminder()
   const setDisableVerifyEmailReminder = useSetDisableVerifyEmailReminder()
 
@@ -764,6 +771,24 @@ export function DeerSettingsScreen({}: Props) {
               <Trans>
                 Hides posts from feeds where replies are disabled (e.g. due to
                 postgates or other restrictions). Does not affect thread views.
+              </Trans>
+            </Admonition>
+
+            <Toggle.Item
+              name="render_mastodon_html"
+              label={_(msg`Render Mastodon HTML from bridged posts`)}
+              value={renderMastodonHtml}
+              onChange={value => setRenderMastodonHtml(value)}
+              style={[a.w_full]}>
+              <Toggle.LabelText style={[a.flex_1]}>
+                <Trans>Render Mastodon HTML from bridged posts</Trans>
+              </Toggle.LabelText>
+              <Toggle.Platform />
+            </Toggle.Item>
+            <Admonition type="info" style={[a.flex_1]}>
+              <Trans>
+                When enabled, posts bridged from Mastodon will display their
+                original HTML formatting instead of the plain text version.
               </Trans>
             </Admonition>
 

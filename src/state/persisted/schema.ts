@@ -167,6 +167,7 @@ const schema = z.object({
     .optional(),
   highQualityImages: z.boolean().optional(),
   hideUnreplyablePosts: z.boolean().optional(),
+  renderMastodonHtml: z.boolean().optional(),
 
   showExternalShareButtons: z.boolean().optional(),
 
@@ -271,6 +272,7 @@ export const defaults: Schema = {
   },
   highQualityImages: false,
   hideUnreplyablePosts: false,
+  renderMastodonHtml: false,
   showExternalShareButtons: false,
 }
 

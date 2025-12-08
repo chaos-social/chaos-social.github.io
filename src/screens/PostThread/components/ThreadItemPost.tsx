@@ -38,6 +38,10 @@ import {PostAlerts} from '#/components/moderation/PostAlerts'
 import {PostHider} from '#/components/moderation/PostHider'
 import {type AppModerationCause} from '#/components/Pills'
 import {Embed, PostEmbedViewContext} from '#/components/Post/Embed'
+import {
+  MastodonHtmlContent,
+  useHasMastodonHtmlContent,
+} from '#/components/Post/MastodonHtmlContent'
 import {ShowMoreTextButton} from '#/components/Post/ShowMoreTextButton'
 import {PostControls, PostControlsSkeleton} from '#/components/PostControls'
 import {RichText} from '#/components/RichText'
@@ -191,6 +195,7 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
   const post = item.value.post
   const record = item.value.post.record
   const moderation = item.moderation
+  const hasMastodonHtml = useHasMastodonHtmlContent(post.record)
   const richText = useMemo(
     () =>
       new RichTextAPI({
@@ -301,32 +306,53 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
                 style={[a.pb_2xs]}
                 additionalCauses={additionalPostAlerts}
               />
-              {richText?.text ? (
+              {hasMastodonHtml ? (
                 <>
-                  <RichText
-                    enableTags
-                    value={richText}
+                  <MastodonHtmlContent
+                    record={post.record}
                     style={[a.flex_1, a.text_md]}
                     numberOfLines={limitLines ? MAX_POST_LINES : undefined}
-                    authorHandle={post.author.handle}
-                    shouldProxyLinks={true}
                   />
-                  {limitLines && (
-                    <ShowMoreTextButton
-                      style={[a.text_md]}
-                      onPress={onPressShowMore}
-                    />
+                  {post.embed && (
+                    <View style={[a.pb_xs]}>
+                      <Embed
+                        embed={post.embed}
+                        moderation={moderation}
+                        viewContext={PostEmbedViewContext.Feed}
+                      />
+                    </View>
                   )}
                 </>
-              ) : undefined}
-              {post.embed && (
-                <View style={[a.pb_xs]}>
-                  <Embed
-                    embed={post.embed}
-                    moderation={moderation}
-                    viewContext={PostEmbedViewContext.Feed}
-                  />
-                </View>
+              ) : (
+                <>
+                  {richText?.text ? (
+                    <>
+                      <RichText
+                        enableTags
+                        value={richText}
+                        style={[a.flex_1, a.text_md]}
+                        numberOfLines={limitLines ? MAX_POST_LINES : undefined}
+                        authorHandle={post.author.handle}
+                        shouldProxyLinks={true}
+                      />
+                      {limitLines && (
+                        <ShowMoreTextButton
+                          style={[a.text_md]}
+                          onPress={onPressShowMore}
+                        />
+                      )}
+                    </>
+                  ) : undefined}
+                  {post.embed && (
+                    <View style={[a.pb_xs]}>
+                      <Embed
+                        embed={post.embed}
+                        moderation={moderation}
+                        viewContext={PostEmbedViewContext.Feed}
+                      />
+                    </View>
+                  )}
+                </>
               )}
               <PostControls
                 post={postShadow}

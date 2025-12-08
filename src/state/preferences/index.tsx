@@ -34,6 +34,7 @@ import {Provider as LanguagesProvider} from './languages'
 import {Provider as LargeAltBadgeProvider} from './large-alt-badge'
 import {Provider as NoAppLabelersProvider} from './no-app-labelers'
 import {Provider as NoDiscoverProvider} from './no-discover-fallback'
+import {Provider as RenderMastodonHtmlProvider} from './render-mastodon-html'
 import {Provider as RepostCarouselProvider} from './repost-carousel-enabled'
 import {Provider as ShowLinkInHandleProvider} from './show-link-in-handle'
 import {Provider as SubtitlesProvider} from './subtitles'
@@ -98,13 +99,15 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
                                                                     <DisablePostsMetricsProvider>
                                                                       <HideSimilarAccountsRecommProvider>
                                                                         <HideUnreplyablePostsProvider>
-                                                                          <EnableSquareAvatarsProvider>
-                                                                            <EnableSquareButtonsProvider>
-                                                                              <DisableVerifyEmailReminderProvider>
-                                                                                {children}
-                                                                              </DisableVerifyEmailReminderProvider>
-                                                                            </EnableSquareButtonsProvider>
-                                                                          </EnableSquareAvatarsProvider>
+                                                                          <RenderMastodonHtmlProvider>
+                                                                            <EnableSquareAvatarsProvider>
+                                                                              <EnableSquareButtonsProvider>
+                                                                                <DisableVerifyEmailReminderProvider>
+                                                                                  {children}
+                                                                                </DisableVerifyEmailReminderProvider>
+                                                                              </EnableSquareButtonsProvider>
+                                                                            </EnableSquareAvatarsProvider>
+                                                                          </RenderMastodonHtmlProvider>
                                                                         </HideUnreplyablePostsProvider>
                                                                       </HideSimilarAccountsRecommProvider>
                                                                     </DisablePostsMetricsProvider>
