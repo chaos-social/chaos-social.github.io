@@ -20,8 +20,8 @@ export function useHasMastodonHtmlContent(record: AppBskyFeedPost.Record) {
   return useMemo(() => {
     if (!renderMastodonHtml) return false
 
-    const fullText = (record as any).fullText as string | undefined
-    const bridgyOriginalText = (record as any).bridgyOriginalText as
+    const fullText = record.fullText as string | undefined
+    const bridgyOriginalText = record.bridgyOriginalText as
       | string
       | undefined
 
@@ -40,8 +40,8 @@ export function MastodonHtmlContent({
   const renderedContent = useMemo(() => {
     if (!renderMastodonHtml) return null
 
-    const fullText = (record as any).fullText as string | undefined
-    const bridgyOriginalText = (record as any).bridgyOriginalText as
+    const fullText = record.fullText as string | undefined
+    const bridgyOriginalText = record.bridgyOriginalText as
       | string
       | undefined
 
