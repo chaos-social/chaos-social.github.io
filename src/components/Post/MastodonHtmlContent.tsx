@@ -117,7 +117,7 @@ function sanitizeAndRenderHtml(
   ]
 
   // Sanitize and render in a single pass
-  const renderNode = (node: Node, key: number, insideLink = false): React.ReactNode => {
+  const renderNode = (node: Node, key: string, insideLink = false, listItemIndex?: number): React.ReactNode => {
     if (node.nodeType === Node.TEXT_NODE) {
       // Don't wrap text in styled Text component if inside a link
       if (insideLink) {
@@ -135,7 +135,7 @@ function sanitizeAndRenderHtml(
       // Handle unsupported elements (h1-h6) - convert to <strong> wrapped in <p>
       if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
         const children = Array.from(element.childNodes).map((child, i) =>
-          renderNode(child, i, insideLink),
+          renderNode(child, String(i), insideLink),
         )
         return (
           <P key={key} style={textStyle}>
@@ -164,7 +164,7 @@ function sanitizeAndRenderHtml(
       sanitizeElementAttributes(element)
 
       const children = Array.from(element.childNodes).map((child, i) =>
-        renderNode(child, i, insideLink || tagName === 'a'),
+        renderNode(child, String(i), insideLink || tagName === 'a'),
       )
 
       switch (tagName) {
@@ -222,16 +222,20 @@ function sanitizeAndRenderHtml(
             </View>
           )
         case 'ol':
+          const start = element.getAttribute('start')
+          const startNum = start ? parseInt(start, 10) : 1
           return (
             <View key={key} style={{marginVertical: 4}}>
-              {children}
+              {Array.from(element.childNodes)
+                .filter(child => child.nodeType === Node.ELEMENT_NODE && (child as Element).tagName.toLowerCase() === 'li')
+                .map((child, i) => renderNode(child, `${key}-${i}`, insideLink, startNum + i))}
             </View>
           )
         case 'li':
-          const parentIsOl = element.parentElement?.tagName.toLowerCase() === 'ol'
+          const marker = listItemIndex !== undefined ? `${listItemIndex}.` : '\u2022'
           return (
             <View key={key} style={{flexDirection: 'row', marginVertical: 2}}>
-              <Text style={[textStyle, { marginRight: 8 }]}>{parentIsOl ? '•' : '•'}</Text>
+              <Text style={[textStyle, { marginRight: 8 }]}>{marker}</Text>
               <Text style={[textStyle, { flex: 1 }]}>{children}</Text>
             </View>
           )
