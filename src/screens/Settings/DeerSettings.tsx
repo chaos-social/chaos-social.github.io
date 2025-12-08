@@ -89,6 +89,10 @@ import {
   useSetHideSimilarAccountsRecomm,
 } from '#/state/preferences/hide-similar-accounts-recommendations'
 import {
+  useHideUnreplyablePosts,
+  useSetHideUnreplyablePosts,
+} from '#/state/preferences/hide-unreplyable-posts'
+import {
   useHighQualityImages,
   useSetHighQualityImages,
 } from '#/state/preferences/high-quality-images'
@@ -443,6 +447,9 @@ export function DeerSettingsScreen({}: Props) {
   const hideSimilarAccountsRecomm = useHideSimilarAccountsRecomm()
   const setHideSimilarAccountsRecomm = useSetHideSimilarAccountsRecomm()
 
+  const hideUnreplyablePosts = useHideUnreplyablePosts()
+  const setHideUnreplyablePosts = useSetHideUnreplyablePosts()
+
   const disableVerifyEmailReminder = useDisableVerifyEmailReminder()
   const setDisableVerifyEmailReminder = useSetDisableVerifyEmailReminder()
 
@@ -741,6 +748,24 @@ export function DeerSettingsScreen({}: Props) {
               </Toggle.LabelText>
               <Toggle.Platform />
             </Toggle.Item>
+
+            <Toggle.Item
+              name="hide_unreplyable_posts"
+              label={_(msg`Hide posts that cannot be replied to from feeds`)}
+              value={hideUnreplyablePosts}
+              onChange={value => setHideUnreplyablePosts(value)}
+              style={[a.w_full]}>
+              <Toggle.LabelText style={[a.flex_1]}>
+                <Trans>Hide posts that cannot be replied to from feeds</Trans>
+              </Toggle.LabelText>
+              <Toggle.Platform />
+            </Toggle.Item>
+            <Admonition type="info" style={[a.flex_1]}>
+              <Trans>
+                Hides posts from feeds where replies are disabled (e.g. due to
+                postgates or other restrictions). Does not affect thread views.
+              </Trans>
+            </Admonition>
 
             <Toggle.Item
               name="disable_verify_email_reminder"

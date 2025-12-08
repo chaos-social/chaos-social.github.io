@@ -26,6 +26,7 @@ import {Provider as GoLinksProvider} from './go-links-enabled'
 import {Provider as HiddenPostsProvider} from './hidden-posts'
 import {Provider as HideFeedsPromoTabProvider} from './hide-feeds-promo-tab'
 import {Provider as HideSimilarAccountsRecommProvider} from './hide-similar-accounts-recommendations'
+import {Provider as HideUnreplyablePostsProvider} from './hide-unreplyable-posts'
 import {Provider as HighQualityImagesProvider} from './high-quality-images'
 import {Provider as InAppBrowserProvider} from './in-app-browser'
 import {Provider as KawaiiProvider} from './kawaii'
@@ -96,13 +97,15 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
                                                                   <DisableFollowedByMetricsProvider>
                                                                     <DisablePostsMetricsProvider>
                                                                       <HideSimilarAccountsRecommProvider>
-                                                                        <EnableSquareAvatarsProvider>
-                                                                          <EnableSquareButtonsProvider>
-                                                                            <DisableVerifyEmailReminderProvider>
-                                                                              {children}
-                                                                            </DisableVerifyEmailReminderProvider>
-                                                                          </EnableSquareButtonsProvider>
-                                                                        </EnableSquareAvatarsProvider>
+                                                                        <HideUnreplyablePostsProvider>
+                                                                          <EnableSquareAvatarsProvider>
+                                                                            <EnableSquareButtonsProvider>
+                                                                              <DisableVerifyEmailReminderProvider>
+                                                                                {children}
+                                                                              </DisableVerifyEmailReminderProvider>
+                                                                            </EnableSquareButtonsProvider>
+                                                                          </EnableSquareAvatarsProvider>
+                                                                        </HideUnreplyablePostsProvider>
                                                                       </HideSimilarAccountsRecommProvider>
                                                                     </DisablePostsMetricsProvider>
                                                                   </DisableFollowedByMetricsProvider>
