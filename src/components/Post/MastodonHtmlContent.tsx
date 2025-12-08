@@ -270,9 +270,9 @@ function sanitizeAndRenderHtml(
           if (spanClass?.includes('ellipsis')) {
             // If inside a link, return plain text, otherwise wrapped
             if (insideLink) {
-              return '…'
+              return '\u2026'
             }
-            return <Text key={key} style={textStyle}>…</Text>
+            return <Text key={key} style={textStyle}>{'\u2026'}</Text>
           }
           // Handle mentions and hashtags
           if (spanClass?.includes('mention') || spanClass?.includes('hashtag')) {
