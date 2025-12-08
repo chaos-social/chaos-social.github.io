@@ -1,9 +1,18 @@
-import {useMemo} from 'react'
-import {type StyleProp, type TextStyle, View, type ViewStyle} from 'react-native'
+import {useMemo, useState} from 'react'
+import {
+  type LayoutChangeEvent,
+  type StyleProp,
+  type TextStyle,
+  View,
+  type ViewStyle,
+} from 'react-native'
 import {type AppBskyFeedPost} from '@atproto/api'
+import {msg, Trans} from '@lingui/macro'
+import {useLingui} from '@lingui/react'
 
 import {useRenderMastodonHtml} from '#/state/preferences/render-mastodon-html'
-import { atoms } from '#/alf'
+import {atoms as a} from '#/alf'
+import {Button, ButtonText} from '#/components/Button'
 import {InlineLinkText} from '#/components/Link'
 import {P, Text} from '#/components/Typography'
 
@@ -36,6 +45,10 @@ export function MastodonHtmlContent({
   numberOfLines,
 }: MastodonHtmlContentProps) {
   const renderMastodonHtml = useRenderMastodonHtml()
+  const {_} = useLingui()
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [contentHeight, setContentHeight] = useState<number | null>(null)
+  const [isTall, setIsTall] = useState(false)
 
   const renderedContent = useMemo(() => {
     if (!renderMastodonHtml) return null
@@ -53,9 +66,41 @@ export function MastodonHtmlContent({
     return sanitizeAndRenderHtml(rawHtml, numberOfLines, textStyle)
   }, [record, renderMastodonHtml, numberOfLines, textStyle])
 
+  const handleLayout = (event: LayoutChangeEvent) => {
+    const height = event.nativeEvent.layout.height
+    if (contentHeight === null) {
+      setContentHeight(height)
+      // Consider content "tall" if it's taller than 150px
+      setIsTall(height > 150)
+    }
+  }
+
   if (!renderedContent) return null
 
-  return <View style={style}>{renderedContent}</View>
+  const shouldCollapse = isTall && !isExpanded
+
+  return (
+    <View style={style}>
+      <View
+        style={shouldCollapse ? {maxHeight: 150, overflow: 'hidden'} : undefined}
+        onLayout={handleLayout}>
+        {renderedContent}
+      </View>
+      {shouldCollapse && (
+        <Button
+          label={_(msg`Show more`)}
+          onPress={() => setIsExpanded(true)}
+          variant="ghost"
+          color="primary"
+          size="small"
+          style={[a.mt_xs]}>
+          <ButtonText>
+            <Trans>Show more</Trans>
+          </ButtonText>
+        </Button>
+      )}
+    </View>
+  )
 }
 
 const LINK_PROTOCOLS = [
@@ -111,8 +156,8 @@ function sanitizeAndRenderHtml(
   const doc = parser.parseFromString(html, 'text/html')
 
   const textStyle: StyleProp<TextStyle> = [
-    atoms.leading_snug,
-    atoms.text_md,
+    a.leading_snug,
+    a.text_md,
     inputTextStyle,
   ]
 
@@ -300,7 +345,7 @@ function sanitizeAndRenderHtml(
   }
 
   const content = Array.from(doc.body.childNodes).map((node, i) =>
-    renderNode(node, i),
+    renderNode(node, String(i)),
   )
 
   return (
@@ -326,11 +371,11 @@ function sanitizeElementAttributes(element: Element): void {
   // Remove non-allowed attributes
   for (const attr of attrs) {
     const attrName = attr.name.toLowerCase()
-    const isAllowed = allowed.some(a => {
-      if (a.endsWith('*')) {
-        return attrName.startsWith(a.slice(0, -1))
+    const isAllowed = allowed.some(allowedAttr => {
+      if (allowedAttr.endsWith('*')) {
+        return attrName.startsWith(allowedAttr.slice(0, -1))
       }
-      return a === attrName
+      return allowedAttr === attrName
     })
 
     if (!isAllowed) {
