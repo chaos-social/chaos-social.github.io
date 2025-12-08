@@ -1,14 +1,16 @@
-import {useEffect, useRef, useState} from 'react'
+import {useCallback,useEffect, useMemo, useRef, useState} from 'react'
 import {KeyboardAvoidingView} from 'react-native'
 import Animated, {FadeIn, LayoutAnimationConfig} from 'react-native-reanimated'
 import {msg} from '@lingui/macro'
 import {useLingui} from '@lingui/react'
+import debounce from 'lodash.debounce'
 
 import {DEFAULT_SERVICE} from '#/lib/constants'
 import {logEvent} from '#/lib/statsig/statsig'
 import {logger} from '#/logger'
+import {resolvePdsServiceUrl} from '#/state/queries/resolve-identity'
 import {useServiceQuery} from '#/state/queries/service'
-import {type SessionAccount, useSession} from '#/state/session'
+import {type SessionAccount, useAgent, useSession} from '#/state/session'
 import {useLoggedOutView} from '#/state/shell/logged-out'
 import {LoggedOutLayout} from '#/view/com/util/layouts/LoggedOutLayout'
 import {ForgotPasswordForm} from '#/screens/Login/ForgotPasswordForm'
@@ -18,6 +20,7 @@ import {SetNewPasswordForm} from '#/screens/Login/SetNewPasswordForm'
 import {atoms as a, native} from '#/alf'
 import {ScreenTransition} from '#/components/ScreenTransition'
 import {ChooseAccountForm} from './ChooseAccountForm'
+import { Did } from '@atproto/api'
 
 enum Forms {
   Login,
@@ -40,15 +43,17 @@ export const Login = ({onPressBack}: {onPressBack: () => void}) => {
   const failedAttemptCountRef = useRef(0)
   const startTimeRef = useRef(Date.now())
 
+  const agent = useAgent()
   const {accounts} = useSession()
   const {requestedAccountSwitchTo} = useLoggedOutView()
   const requestedAccount = accounts.find(
     acc => acc.did === requestedAccountSwitchTo,
   )
 
-  const [error, setError] = useState('')
-  const [serviceUrl, setServiceUrl] = useState(
-    requestedAccount?.service || DEFAULT_SERVICE,
+  const [isResolvingService, setIsResolvingService] = useState(false)
+  const [error, setError] = useState<string>('')
+  const [serviceUrl, setServiceUrl] = useState<string | undefined>(
+    requestedAccount?.service,
   )
   const [initialHandle, setInitialHandle] = useState(
     requestedAccount?.handle || '',
@@ -68,7 +73,7 @@ export const Login = ({onPressBack}: {onPressBack: () => void}) => {
     data: serviceDescription,
     error: serviceError,
     refetch: refetchService,
-  } = useServiceQuery(serviceUrl)
+  } = useServiceQuery(serviceUrl ?? '')
 
   const onSelectAccount = (account?: SessionAccount) => {
     if (account?.service) {
@@ -101,6 +106,47 @@ export const Login = ({onPressBack}: {onPressBack: () => void}) => {
       setError('')
     }
   }, [serviceError, serviceUrl, _])
+
+  const resolveIdentity = useCallback(
+    async (identifier: string) => {
+      setIsResolvingService(true)
+
+      try {
+        const getDid = async () => {
+          if (identifier.startsWith('did:')) return identifier
+          else
+            return (
+              await agent.resolveHandle({
+                handle: identifier,
+              })
+            ).data.did
+        }
+
+        const did = (await getDid()) as Did
+        const pdsUrl = await resolvePdsServiceUrl(did)
+
+        if (!pdsUrl) {
+          throw new Error(`No PDS service found in DID document for ${did}`)
+        }
+
+        if (pdsUrl.endsWith('.bsky.network')) {
+          setServiceUrl('https://bsky.social')
+        } else {
+          setServiceUrl(pdsUrl)
+        }
+      } catch (err) {
+        logger.error(`Service auto-resolution failed: ${err}`)
+      } finally {
+        setIsResolvingService(false)
+      }
+    },
+    [agent],
+  )
+
+  const debouncedResolveService = useMemo(
+    () => debounce(resolveIdentity, 800),
+    [resolveIdentity],
+  )
 
   const onPressForgotPassword = () => {
     gotoForm(Forms.ForgotPassword)
@@ -150,6 +196,8 @@ export const Login = ({onPressBack}: {onPressBack: () => void}) => {
           }
           onPressForgotPassword={onPressForgotPassword}
           onPressRetryConnect={refetchService}
+          debouncedResolveService={debouncedResolveService}
+          isResolvingService={isResolvingService}
         />
       )
       break
@@ -169,7 +217,7 @@ export const Login = ({onPressBack}: {onPressBack: () => void}) => {
       content = (
         <ForgotPasswordForm
           error={error}
-          serviceUrl={serviceUrl}
+          serviceUrl={serviceUrl ?? DEFAULT_SERVICE}
           serviceDescription={serviceDescription}
           setError={setError}
           setServiceUrl={setServiceUrl}
@@ -184,7 +232,7 @@ export const Login = ({onPressBack}: {onPressBack: () => void}) => {
       content = (
         <SetNewPasswordForm
           error={error}
-          serviceUrl={serviceUrl}
+          serviceUrl={serviceUrl ?? DEFAULT_SERVICE}
           setError={setError}
           onPressBack={() => gotoForm(Forms.ForgotPassword)}
           onPasswordSet={() => gotoForm(Forms.PasswordUpdated)}
