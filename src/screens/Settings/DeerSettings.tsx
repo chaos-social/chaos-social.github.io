@@ -474,7 +474,19 @@ export function DeerSettingsScreen({}: Props) {
   const showLinkInHandle = useShowLinkInHandle()
   const setShowLinkInHandle = useSetShowLinkInHandle()
 
-  const [gates, setGatesView] = useState(Object.fromEntries(useGatesCache()))
+  const [gates, setGatesView] = useState(Object.assign({
+    alt_share_icon: false,
+    debug_show_feedcontext: false,
+    debug_subscriptions: false,
+    explore_show_suggested_feeds: false,
+    feed_reply_button_open_thread: false,
+    old_postonboarding: false,
+    onboarding_add_video_feed: false,
+    onboarding_suggested_starterpacks: false,
+    remove_show_latest_button: false,
+    test_gate_1: false,
+    test_gate_2: false,
+  } satisfies Record<Gate, false>, Object.fromEntries(useGatesCache())))
   const dangerousSetGate = useDangerousSetGate()
   const setGate = (gate: Gate, value: boolean) => {
     dangerousSetGate(gate, value)
