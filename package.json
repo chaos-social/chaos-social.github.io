@@ -287,7 +287,8 @@
     "**/expo-constants": "18.0.8",
     "**/expo-device": "7.1.4",
     "**/zod": "3.23.8",
-    "**/multiformats": "9.9.0"
+    "**/multiformats": "9.9.0",
+    "better-sqlite3": "12.5.0"
   },
   "jest": {
     "preset": "jest-expo/ios",
