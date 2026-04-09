@@ -12,6 +12,8 @@ import {useOpenLink} from '#/lib/hooks/useOpenLink'
 import {type NavigationProp} from '#/lib/routes/types'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {toNiceDomain} from '#/lib/strings/url-helpers'
+import {useImageCdnHost} from '#/state/preferences'
+import {maybeModifyImageCdnHost} from '#/state/preferences/image-cdn-host'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {unstableCacheProfileView} from '#/state/queries/profile'
 import {android, atoms as a, platform, tokens, useTheme, web} from '#/alf'
@@ -123,6 +125,7 @@ export function LiveStatus({
   const t = useTheme()
   const queryClient = useQueryClient()
   const openLink = useOpenLink()
+  const imageCdnHost = useImageCdnHost()
   const moderationOpts = useModerationOpts()
   const reportDialogControl = useGlobalReportDialogControl()
   const dialogContext = Dialog.useDialogContext()
@@ -144,7 +147,7 @@ export function LiveStatus({
             ]),
           ]}>
           <Image
-            source={embed.external.thumb}
+            source={maybeModifyImageCdnHost(embed.external.thumb, imageCdnHost)}
             contentFit="cover"
             style={[a.absolute, a.inset_0]}
             accessibilityIgnoresInvertColors

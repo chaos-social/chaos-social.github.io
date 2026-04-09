@@ -210,7 +210,7 @@ function DialogInner({
           displayName: displayName.trimEnd(),
           description: description.trimEnd(),
           pronouns: pronouns.trimEnd().toLowerCase(),
-          website: website.trimEnd().toLowerCase(),
+          website: website.trimEnd(),
         },
         newUserAvatar,
         newUserBanner,
@@ -543,7 +543,7 @@ function DialogInner({
                 {color: t.palette.negative_400},
               ]}>
               <Trans>
-                Website must be a valid URL (e.g., https://bsky.app)
+                Website must be a valid URI (e.g., https://bsky.app)
               </Trans>
             </Text>
           )}
