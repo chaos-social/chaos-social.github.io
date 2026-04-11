@@ -2549,11 +2549,6 @@
   resolved "https://registry.yarnpkg.com/@bsky.app/expo-translate-text/-/expo-translate-text-0.2.9.tgz#4ed4552cd50bca7d02d14e706e419bd728d4ab51"
   integrity sha512-VmqMhc/YavjgkGhxT/fB8mGSi+VZHJET1tsbpTg8peqKRXFSju2F294NsRxH/4aaMQFlt5oRfPCRnLm1H5o3lA==
 
-"@bsky.app/react-native-mmkv@2.12.5":
-  version "2.12.5"
-  resolved "https://registry.yarnpkg.com/@bsky.app/react-native-mmkv/-/react-native-mmkv-2.12.5.tgz#eb17d31a6158c74393f617a1763ac223ff3f83a6"
-  integrity sha512-3vUz1nQY1DiKIPAWRkpp5ZGxH5f2G6Ui0UuQuEYjYv81xx1qFcSzS9KQ2sHcOKYdkOM9amWV2Q8TQCxt1lrAHg==
-
 "@bsky.app/sift@^0.3.1":
   version "0.3.1"
   resolved "https://registry.yarnpkg.com/@bsky.app/sift/-/sift-0.3.1.tgz#f529832001bcd64950c214e85aec055a1f2edcdb"
@@ -14127,10 +14122,10 @@ react-native-keyboard-controller@^1.21.0:
   dependencies:
     react-native-is-edge-to-edge "^1.2.1"
 
-react-native-mmkv@^3.3.3:
-  version "3.3.3"
-  resolved "https://registry.yarnpkg.com/react-native-mmkv/-/react-native-mmkv-3.3.3.tgz#1f0326f6314e23725af8145964343224d074e6cd"
-  integrity sha512-GMsfOmNzx0p5+CtrCFRVtpOOMYNJXuksBVARSQrCFaZwjUyHJdQzcN900GGaFFNTxw2fs8s5Xje//RDKj9+PZA==
+react-native-mmkv@^3.3.3, "react-native-mmkv@npm:@bsky.app/react-native-mmkv@2.12.5":
+  version "2.12.5"
+  resolved "https://registry.yarnpkg.com/@bsky.app/react-native-mmkv/-/react-native-mmkv-2.12.5.tgz#eb17d31a6158c74393f617a1763ac223ff3f83a6"
+  integrity sha512-3vUz1nQY1DiKIPAWRkpp5ZGxH5f2G6Ui0UuQuEYjYv81xx1qFcSzS9KQ2sHcOKYdkOM9amWV2Q8TQCxt1lrAHg==
 
 react-native-pager-view@6.8.0:
   version "6.8.0"

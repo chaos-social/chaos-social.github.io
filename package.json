@@ -90,7 +90,7 @@
     "@bsky.app/alf": "^0.1.7",
     "@bsky.app/expo-image-crop-tool": "^0.5.0",
     "@bsky.app/expo-translate-text": "^0.2.9",
-    "@bsky.app/react-native-mmkv": "2.12.5",
+    "react-native-mmkv": "npm:@bsky.app/react-native-mmkv@2.12.5",
     "@bsky.app/sift": "^0.3.1",
     "@bsky.app/tapper": "^0.5.0",
     "@discord/bottom-sheet": "bluesky-social/react-native-bottom-sheet",
@@ -311,7 +311,8 @@
     "metro-core": "0.83.3",
     "metro-config": "0.83.3",
     "metro-runtime": "0.83.3",
-    "metro-source-map": "0.83.3"
+    "metro-source-map": "0.83.3",
+    "@atproto/oauth-client-expo/**/react-native-mmkv": "npm:@bsky.app/react-native-mmkv@2.12.5"
   },
   "jest": {
     "preset": "jest-expo/ios",
