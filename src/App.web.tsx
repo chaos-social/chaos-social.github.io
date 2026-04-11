@@ -39,6 +39,7 @@ import {
   useSession,
   useSessionApi,
 } from '#/state/session'
+import {getWebOAuthClient} from '#/state/session/oauth-web-client'
 import {readLastActiveAccount} from '#/state/session/util'
 import {Provider as ShellStateProvider} from '#/state/shell'
 import {Provider as ComposerProvider} from '#/state/shell/composer'
@@ -79,6 +80,26 @@ import {Splash} from '#/Splash'
 import {BackgroundNotificationPreferencesProvider} from '../modules/expo-background-notification-handler/src/BackgroundNotificationHandlerProvider'
 import {Provider as HideBottomBarBorderProvider} from './lib/hooks/useHideBottomBarBorder'
 
+// For local development: the OAuth loopback spec requires IP-based origins
+// (127.0.0.1), not "localhost". The auth server redirects to 127.0.0.1, but
+// IndexedDB is per-origin, so PKCE state stored on "localhost" is unreachable
+// from "127.0.0.1". Redirect immediately so both signIn() and the callback
+// use the same origin.
+if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+  const url = new URL(window.location.href)
+  url.hostname = '127.0.0.1'
+  window.location.replace(url.href)
+}
+
+function hasOAuthCallbackParams(): boolean {
+  // OAuth callback params come in the hash fragment (response_mode=fragment)
+  // or query string. Check both for "state" + ("code" or "error").
+  const hash = new URLSearchParams(window.location.hash.slice(1))
+  const query = new URLSearchParams(window.location.search)
+  const params = hash.has('state') ? hash : query
+  return params.has('state') && (params.has('code') || params.has('error'))
+}
+
 /**
  * Begin geolocation ASAP
  */
@@ -90,15 +111,43 @@ void prefetchAppConfig()
 function InnerApp() {
   const [isReady, setIsReady] = useState(false)
   const {currentAccount} = useSession()
-  const {resumeSession} = useSessionApi()
+  const {resumeSession, login} = useSessionApi()
   const theme = useColorModeTheme()
   const {t: l} = useLingui()
   const hasCheckedReferrer = useStarterPackEntry()
 
   // init
   useEffect(() => {
+    // Safety valve: if onLaunch hangs (e.g. stale IndexedDB blocking an
+    // upgrade, or a never-settling promise), the app will still load after
+    // this timeout fires.
+    const safetyTimeout = setTimeout(() => {
+      logger.warn('session: onLaunch safety timeout fired, forcing ready state')
+      setIsReady(true)
+    }, 15_000)
+
     async function onLaunch(account?: SessionAccount) {
       try {
+        // Check for OAuth callback params first (loopback redirects to /)
+        if (hasOAuthCallbackParams()) {
+          const client = getWebOAuthClient()
+          const result = await client.init()
+          if (result?.session) {
+            await login(
+              {
+                service: '',
+                identifier: '',
+                password: '',
+                oauthSession: result.session,
+              },
+              'LoginForm',
+            )
+            // Clear hash fragment after processing
+            window.history.replaceState(null, '', window.location.pathname)
+            return
+          }
+        }
+
         if (account) {
           await resumeSession(account)
         } else {
@@ -107,12 +156,13 @@ function InnerApp() {
       } catch (e) {
         logger.error('session: resumeSession failed', {message: e})
       } finally {
+        clearTimeout(safetyTimeout)
         setIsReady(true)
       }
     }
     const account = readLastActiveAccount()
     void onLaunch(account)
-  }, [resumeSession])
+  }, [resumeSession, login])
 
   useEffect(() => {
     return listenSessionDropped(() => {

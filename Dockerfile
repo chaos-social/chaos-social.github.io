@@ -43,6 +43,14 @@ ARG EXPO_PUBLIC_SENTRY_DSN
 ENV EXPO_PUBLIC_SENTRY_DSN=$EXPO_PUBLIC_SENTRY_DSN
 
 #
+# OAuth
+#
+ARG EXPO_PUBLIC_OAUTH_BASE_URL
+ENV EXPO_PUBLIC_OAUTH_BASE_URL=${EXPO_PUBLIC_OAUTH_BASE_URL:-https://witchsky.app}
+ARG EXPO_PUBLIC_OAUTH_CLIENT_NAME
+ENV EXPO_PUBLIC_OAUTH_CLIENT_NAME=${EXPO_PUBLIC_OAUTH_CLIENT_NAME:-Witchsky}
+
+#
 # Copy everything into the container
 #
 COPY . .
@@ -65,6 +73,8 @@ RUN \. "$NVM_DIR/nvm.sh" && \
   echo "EXPO_PUBLIC_BUNDLE_IDENTIFIER=$EXPO_PUBLIC_BUNDLE_IDENTIFIER" >> .env && \
   echo "EXPO_PUBLIC_BUNDLE_DATE=$(date -u +"%y%m%d%H")" >> .env && \
   echo "EXPO_PUBLIC_SENTRY_DSN=$EXPO_PUBLIC_SENTRY_DSN" >> .env && \
+  echo "EXPO_PUBLIC_OAUTH_BASE_URL=$EXPO_PUBLIC_OAUTH_BASE_URL" >> .env && \
+  echo "EXPO_PUBLIC_OAUTH_CLIENT_NAME=$EXPO_PUBLIC_OAUTH_CLIENT_NAME" >> .env && \
   npm install --global yarn && \
   yarn && \
   yarn intl:build 2>&1 | tee i18n.log && \

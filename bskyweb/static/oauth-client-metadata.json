@@ -1,0 +1,12 @@
+{
+  "client_id": "https://witchsky.app/oauth-client-metadata.json",
+  "client_name": "Witchsky",
+  "client_uri": "https://witchsky.app",
+  "redirect_uris": ["https://witchsky.app/auth/web/callback"],
+  "scope": "atproto transition:generic transition:email transition:chat.bsky identity:handle account:email?action=manage account:status?action=manage",
+  "token_endpoint_auth_method": "none",
+  "response_types": ["code"],
+  "grant_types": ["authorization_code", "refresh_token"],
+  "application_type": "web",
+  "dpop_bound_access_tokens": true
+}

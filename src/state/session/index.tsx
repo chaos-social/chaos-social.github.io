@@ -25,6 +25,11 @@ import {
   pdsAgent,
   sessionAccountToSession,
 } from './agent'
+import {
+  type OauthBskyAppAgent,
+  oauthCreateAgent,
+  oauthResumeSession,
+} from './oauth-agent'
 import {type Action, getInitialState, reducer, type State} from './reducer'
 export {isSignupQueued} from './util'
 import {addSessionDebugLog} from './logging'
@@ -158,10 +163,17 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
     async (params, logContext) => {
       addSessionDebugLog({type: 'method:start', method: 'login'})
       const signal = cancelPendingTask()
-      const {agent, account} = await createAgentAndLogin(
-        params,
-        onAgentSessionChange,
-      )
+
+      let agentAccount: {
+        agent: BskyAppAgent | OauthBskyAppAgent
+        account: persisted.PersistedAccount
+      }
+      if (params.oauthSession) {
+        agentAccount = await oauthCreateAgent(params.oauthSession)
+      } else {
+        agentAccount = await createAgentAndLogin(params, onAgentSessionChange)
+      }
+      const {agent, account} = agentAccount
 
       if (signal.aborted) {
         return
@@ -173,7 +185,7 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
       })
       ax.metric(
         'account:loggedIn',
-        {logContext, withPassword: true},
+        {logContext, withPassword: !params.oauthSession},
         {session: utils.accountToSessionMetadata(account)},
       )
       addSessionDebugLog({type: 'method:end', method: 'login', account})
@@ -253,10 +265,20 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
         account: storedAccount,
       })
       const signal = cancelPendingTask()
-      const {agent, account} = await createAgentAndResume(
-        storedAccount,
-        onAgentSessionChange,
-      )
+
+      let agentAccount: {
+        agent: BskyAppAgent | OauthBskyAppAgent
+        account: persisted.PersistedAccount
+      }
+      if (storedAccount.isOauthSession) {
+        agentAccount = await oauthResumeSession(storedAccount)
+      } else {
+        agentAccount = await createAgentAndResume(
+          storedAccount,
+          onAgentSessionChange,
+        )
+      }
+      const {agent, account} = agentAccount
 
       if (signal.aborted) {
         return
@@ -467,6 +489,6 @@ export function useBlankPrefAuthedAgent(): BskyAgent {
   }
 
   return useMemo(() => {
-    return (agent as BskyAppAgent).cloneWithoutProxy()
+    return (agent as BskyAppAgent | OauthBskyAppAgent).cloneWithoutProxy()
   }, [agent])
 }

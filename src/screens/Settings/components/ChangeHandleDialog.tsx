@@ -64,13 +64,13 @@ export function ChangeHandleDialog({
 function ChangeHandleDialogInner() {
   const control = Dialog.useDialogContext()
   const {_} = useLingui()
-  const agent = useAgent()
+  const {currentAccount} = useSession()
   const enableSquareButtons = useEnableSquareButtons()
   const {
     data: serviceInfo,
     error: serviceInfoError,
     refetch,
-  } = useServiceQuery(agent.serviceUrl.toString())
+  } = useServiceQuery(currentAccount!.service)
 
   const [page, setPage] = useState<'provided-handle' | 'own-handle'>(
     'provided-handle',
@@ -175,7 +175,11 @@ function ProvidedHandlePage({
           queryKey: RQKEY_PROFILE(currentAccount.did),
         })
       }
-      agent.resumeSession(agent.session!).then(() => control.close())
+      if ('resumeSession' in agent && agent.session) {
+        agent.resumeSession(agent.session).then(() => control.close())
+      } else {
+        control.close()
+      }
     },
   })
 
@@ -330,7 +334,11 @@ function OwnHandlePage({goToServiceHandle}: {goToServiceHandle: () => void}) {
           queryKey: RQKEY_PROFILE(currentAccount.did),
         })
       }
-      agent.resumeSession(agent.session!).then(() => control.close())
+      if ('resumeSession' in agent && agent.session) {
+        agent.resumeSession(agent.session).then(() => control.close())
+      } else {
+        control.close()
+      }
     },
   })
 

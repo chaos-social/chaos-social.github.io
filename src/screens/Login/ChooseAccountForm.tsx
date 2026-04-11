@@ -36,7 +36,7 @@ export const ChooseAccountForm = ({
         // The session API isn't resilient to race conditions so let's just ignore this.
         return
       }
-      if (!account.accessJwt) {
+      if (!account.isOauthSession && !account.accessJwt) {
         // Move to login form.
         onSelectAccount(account)
         return
@@ -48,7 +48,15 @@ export const ChooseAccountForm = ({
       }
       try {
         setPendingDid(account.did)
-        await resumeSession(account, true)
+        await Promise.race([
+          resumeSession(account, true),
+          new Promise<never>((_, reject) =>
+            setTimeout(
+              () => reject(new Error('Session resume timed out')),
+              15_000,
+            ),
+          ),
+        ])
         ax.metric('account:loggedIn', {
           logContext: 'ChooseAccountForm',
           withPassword: false,
@@ -58,6 +66,7 @@ export const ChooseAccountForm = ({
         logger.error('choose account: initSession failed', {
           message: e instanceof Error ? e.message : 'Unknown error',
         })
+        Toast.show(_(msg`Sign in failed. Please try again.`))
         // Move to login form.
         onSelectAccount(account)
       } finally {
