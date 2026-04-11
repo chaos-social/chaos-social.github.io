@@ -110,9 +110,7 @@ export function StepInfo({
     if (state.serviceUrl === DEFAULT_SERVICE) {
       return dispatch({
         type: 'setError',
-        value: _(
-          msg`Please choose a 3rd party service host, or sign up on bsky.app.`,
-        ),
+        value: l`Please choose a 3rd party service host, or sign up on bsky.app.`,
       })
     }
 
@@ -185,7 +183,7 @@ export function StepInfo({
                 Witchsky is part of the{' '}
                 {
                   <SimpleInlineLinkText
-                    label={_(msg`Atmosphere`)}
+                    label={l`Atmosphere`}
                     to="https://atproto.com/">
                     <Trans>Atmosphere</Trans>
                   </SimpleInlineLinkText>
@@ -203,10 +201,8 @@ export function StepInfo({
               <Button
                 testID="signInButton"
                 onPress={onPressSignIn}
-                label={_(msg`Sign in with an Atmosphere account`)}
-                accessibilityHint={_(
-                  msg`Opens flow to sign in to your existing Atmosphere account`,
-                )}
+                label={l`Sign in with an Atmosphere account`}
+                accessibilityHint={l`Opens flow to sign in to your existing Atmosphere account`}
                 size="large"
                 variant="solid"
                 color="primary">
@@ -230,9 +226,7 @@ export function StepInfo({
               create a new account on a Bluesky-hosted PDS, sign up through{' '}
               {/* TODO: Xan: change to say sign up for a Witchsky account */}
               {
-                <SimpleInlineLinkText
-                  label={_(msg`bsky.app`)}
-                  to="https://bsky.app">
+                <SimpleInlineLinkText label={l`bsky.app`} to="https://bsky.app">
                   <Trans>bsky.app</Trans>
                 </SimpleInlineLinkText>
               }{' '}
