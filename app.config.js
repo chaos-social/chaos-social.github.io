@@ -51,7 +51,7 @@ module.exports = function (_config) {
       version: VERSION,
       name: 'Witchsky',
       slug: 'witchsky',
-      scheme: ['bluesky', 'witchsky'],
+      scheme: ['bluesky', 'witchsky', 'app.witchsky'],
       // owner: 'blueskysocial',
       // owner: 'neema.brown',
       runtimeVersion: {

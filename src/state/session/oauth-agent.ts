@@ -6,7 +6,7 @@ import {BLUESKY_PROXY_HEADER, BSKY_SERVICE} from '#/lib/constants'
 import {logger} from '#/logger'
 import {sessionAccountToSession} from './agent'
 import {configureModerationForAccount} from './moderation'
-import {getWebOAuthClient} from './oauth-web-client'
+import {restoreOAuthSession} from './oauth-client-adapter'
 import {type SessionAccount} from './types'
 
 export async function oauthCreateAgent(session: OAuthSession) {
@@ -23,11 +23,10 @@ export async function oauthCreateAgent(session: OAuthSession) {
 const OAUTH_RESTORE_TIMEOUT_MS = 10_000
 
 export async function oauthResumeSession(account: SessionAccount) {
-  const client = getWebOAuthClient()
   let session: OAuthSession
   try {
     session = await Promise.race([
-      client.restore(account.did),
+      restoreOAuthSession(account.did),
       new Promise<never>((_, reject) =>
         setTimeout(
           () => reject(new Error('OAuth session restore timed out')),

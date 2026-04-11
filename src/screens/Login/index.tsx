@@ -20,7 +20,6 @@ import {SetNewPasswordForm} from '#/screens/Login/SetNewPasswordForm'
 import {atoms as a, native} from '#/alf'
 import {ScreenTransition} from '#/components/ScreenTransition'
 import {useAnalytics} from '#/analytics'
-import {IS_WEB} from '#/env'
 import {ChooseAccountForm} from './ChooseAccountForm'
 import * as AuthLayout from './components/AuthLayout'
 import {AuthLayoutNavigationContext} from './components/AuthLayout/context'
@@ -187,9 +186,7 @@ export const Login = ({onPressBack}: {onPressBack: () => void}) => {
   switch (currentForm) {
     case Forms.Login:
       title = _(msg`Sign in`)
-      description = IS_WEB
-        ? _(msg`Enter your handle to sign in`)
-        : _(msg`Enter your username and password`)
+      description = _(msg`Enter your handle to sign in`)
       goBack = () =>
         accounts.length ? gotoForm(Forms.ChooseAccount) : handlePressBack()
       content = (
