@@ -9,9 +9,10 @@ const templateFile = path.join(
   'scripts.html',
 )
 
-const {entrypoints} = require(
+const manifest = require(
   path.join(projectRoot, 'web-build/asset-manifest.json'),
 )
+const entrypoints = manifest.entrypoints || []
 
 console.log(`Found ${entrypoints.length} entrypoints`)
 console.log(`Writing ${templateFile}`)
@@ -34,10 +35,19 @@ const outputFile = entrypoints
 fs.writeFileSync(templateFile, outputFile)
 
 function copyFiles(sourceDir, targetDir) {
-  const files = fs.readdirSync(path.join(projectRoot, sourceDir))
+  const srcPath = path.join(projectRoot, sourceDir)
+  if (!fs.existsSync(srcPath)) {
+    console.log(`Skipping ${sourceDir} (does not exist)`)
+    return
+  }
+  const tgtPath = path.join(projectRoot, targetDir)
+  if (!fs.existsSync(tgtPath)) {
+    fs.mkdirSync(tgtPath, {recursive: true})
+  }
+  const files = fs.readdirSync(srcPath)
   files.forEach(file => {
-    const sourcePath = path.join(projectRoot, sourceDir, file)
-    const targetPath = path.join(projectRoot, targetDir, file)
+    const sourcePath = path.join(srcPath, file)
+    const targetPath = path.join(tgtPath, file)
     fs.copyFileSync(sourcePath, targetPath)
     console.log(`Copied ${sourcePath} to ${targetPath}`)
   })

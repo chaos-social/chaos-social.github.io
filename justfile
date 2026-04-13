@@ -21,7 +21,7 @@ prebuild-android:
 
 [group('build')]
 build-web: && postbuild-web
-    yarn build-web
+    NODE_ENV=production rspack build
 
 [group('build')]
 build-android-sideload: prebuild-android
@@ -34,18 +34,11 @@ build-android-gradle: prebuild-android
 
 [group('build')]
 postbuild-web:
-    # build system outputs some srcs and hrefs like src="static/"
-    # need to rewrite to be src="/static/" to handle non root pages
-    sed -i 's/\(src\|href\)="static/\1="\/static/g' web-build/index.html
-
     # we need to copy the static iframe html to support youtube embeds
     cp -r bskyweb/static/iframe/ web-build/iframe
 
     # copy our static pages over!
     cp -r witchsky-static-about web-build/about
-    
-    # copy a stylesheet
-    cp src/style.css web-build/style.css
 
 [group('dev')]
 dev-android-setup: prebuild-android
@@ -53,7 +46,7 @@ dev-android-setup: prebuild-android
 
 [group('dev')]
 dev-web:
-    yarn web
+    rspack serve
 
 [group('dev')]
 dev-web-functions: build-web

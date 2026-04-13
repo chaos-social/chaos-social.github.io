@@ -38,6 +38,8 @@ export default defineConfig(
       '*.e2e.tsx',
       'eslint.config.mjs',
       '.jscodeshift/**',
+      'rspack.config.ts',
+      'scripts/post-web-build.js',
     ],
   },
 
