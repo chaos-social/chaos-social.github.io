@@ -14,28 +14,28 @@ const setContext = createContext<SetContext>((_: string) => {})
 setContext.displayName = 'SelectedFeedSetContext'
 
 function getInitialFeed(did?: string): FeedDescriptor | null {
-  if (IS_WEB) {
-    if (window.location.pathname === '/') {
-      const params = new URLSearchParams(window.location.search)
-      const feedFromUrl = params.get('feed')
-      if (feedFromUrl) {
-        // If explicitly booted from a link like /?feed=..., prefer that.
-        return feedFromUrl as FeedDescriptor
-      }
-    }
-
-    const feedFromSession = sessionStorage.getItem('lastSelectedHomeFeed')
-    if (feedFromSession) {
-      // Fall back to a previously chosen feed for this browser tab.
-      return feedFromSession as FeedDescriptor
+  if (IS_WEB && window.location.pathname === '/') {
+    const params = new URLSearchParams(window.location.search)
+    const feedFromUrl = params.get('feed')
+    if (feedFromUrl) {
+      // If explicitly booted from a link like /?feed=..., prefer that.
+      return feedFromUrl as FeedDescriptor
     }
   }
 
   if (did) {
     const feedFromStorage = account.get([did, 'lastSelectedHomeFeed'])
     if (feedFromStorage) {
-      // Fall back to the last chosen one across all tabs.
+      // Fall back to the last chosen one across all tabs for this account.
       return feedFromStorage as FeedDescriptor
+    }
+  }
+
+  if (IS_WEB) {
+    const feedFromSession = sessionStorage.getItem('lastSelectedHomeFeed')
+    if (feedFromSession) {
+      // Fall back to a previously chosen feed for this browser tab.
+      return feedFromSession as FeedDescriptor
     }
   }
 
