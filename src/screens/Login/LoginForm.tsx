@@ -226,16 +226,18 @@ function OAuthLoginFields({
         return
       }
       if (isNetworkError(e)) {
-        logger.warn('Failed to start OAuth sign-in due to network error', {
-          error: errMsg,
-        })
+        logger.warn(
+          `Failed to start OAuth sign-in due to network error\n${e instanceof Error ? `${errMsg}\n${e.stack}\n${String(e.cause)}` : errMsg}`,
+        )
         setError(
           _(
             msg`Unable to contact your service. Please check your Internet connection.`,
           ),
         )
       } else {
-        logger.warn('Failed to start OAuth sign-in', {error: errMsg})
+        logger.warn(
+          `Failed to start OAuth sign-in\n${e instanceof Error ? `${errMsg}\n${e.stack}\n${String(e.cause)}` : errMsg}`,
+        )
         setError(cleanError(errMsg))
       }
     }
