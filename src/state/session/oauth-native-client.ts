@@ -7,7 +7,7 @@ const OAUTH_CLIENT_NAME: string =
   process.env.EXPO_PUBLIC_OAUTH_CLIENT_NAME || 'Witchsky'
 
 const OAUTH_SCOPE =
-  'atproto transition:generic transition:email transition:chat.bsky identity:handle account:email?action=manage account:status?action=manage'
+  'atproto transition:generic transition:email transition:chat.bsky'
 
 // Reverse-domain of witchsky.app → app.witchsky
 const NATIVE_REDIRECT_URI = 'app.witchsky:/auth/callback'

@@ -3,7 +3,7 @@
   "client_name": "Witchsky",
   "client_uri": "https://witchsky.app",
   "redirect_uris": ["app.witchsky:/auth/callback"],
-  "scope": "atproto transition:generic transition:email transition:chat.bsky identity:handle account:email?action=manage account:status?action=manage",
+  "scope": "atproto transition:generic transition:email transition:chat.bsky",
   "token_endpoint_auth_method": "none",
   "response_types": ["code"],
   "grant_types": ["authorization_code", "refresh_token"],
