@@ -79,7 +79,7 @@ function getTranspileModuleDirs({
 
   for (const pkg of packages) {
     const pkgDir = path.join(nodeModulesDir, ...pkg.split('/'))
-    if (fs.existsSync(pkgDir)) {
+    if (existsSync(pkgDir)) {
       dirs.add(pkgDir)
     }
   }
