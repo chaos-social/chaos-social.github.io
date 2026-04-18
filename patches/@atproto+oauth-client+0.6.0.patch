@@ -1,5 +1,5 @@
 diff --git a/node_modules/@atproto/oauth-client/dist/index.js b/node_modules/@atproto/oauth-client/dist/index.js
-index 7b40a89..1ed3949 100644
+index 7b40a89..4b8d430 100644
 --- a/node_modules/@atproto/oauth-client/dist/index.js
 +++ b/node_modules/@atproto/oauth-client/dist/index.js
 @@ -1,4 +1,21 @@
@@ -24,6 +24,17 @@ index 7b40a89..1ed3949 100644
  var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
      if (k2 === undefined) k2 = k;
      var desc = Object.getOwnPropertyDescriptor(m, k);
+@@ -15,7 +32,9 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
+ };
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.FetchResponseError = exports.FetchRequestError = exports.FetchError = void 0;
+-require("core-js/modules/es.symbol.dispose");
++if (typeof Symbol.dispose === 'undefined') {
++  Symbol.dispose = Symbol('Symbol.dispose');
++}
+ __exportStar(require("@atproto-labs/did-resolver"), exports);
+ var fetch_1 = require("@atproto-labs/fetch");
+ Object.defineProperty(exports, "FetchError", { enumerable: true, get: function () { return fetch_1.FetchError; } });
 diff --git a/node_modules/@atproto/oauth-client/dist/oauth-server-agent.js b/node_modules/@atproto/oauth-client/dist/oauth-server-agent.js
 index 239cb0e..e98b656 100644
 --- a/node_modules/@atproto/oauth-client/dist/oauth-server-agent.js
