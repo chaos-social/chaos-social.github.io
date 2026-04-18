@@ -1,0 +1,51 @@
+diff --git a/node_modules/@atproto/oauth-client-browser/dist/index.js b/node_modules/@atproto/oauth-client-browser/dist/index.js
+index 7ee0a48..8e91857 100644
+--- a/node_modules/@atproto/oauth-client-browser/dist/index.js
++++ b/node_modules/@atproto/oauth-client-browser/dist/index.js
+@@ -15,8 +15,14 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
+ };
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.buildLoopbackClientId = void 0;
+-require("core-js/modules/esnext.symbol.async-dispose");
+-require("core-js/modules/esnext.symbol.dispose");
++
++if (typeof Symbol.dispose === 'undefined') {
++  Symbol.dispose = Symbol('Symbol.dispose');
++}
++if (typeof Symbol.asyncDispose === 'undefined') {
++  Symbol.asyncDispose = Symbol('Symbol.asyncDispose');
++}
++
+ __exportStar(require("@atproto/jwk-webcrypto"), exports);
+ __exportStar(require("@atproto/oauth-client"), exports);
+ __exportStar(require("./browser-oauth-client.js"), exports);
+diff --git a/node_modules/@atproto/oauth-client-browser/dist/indexed-db/db-transaction.js b/node_modules/@atproto/oauth-client-browser/dist/indexed-db/db-transaction.js
+index d67da55..6605feb 100644
+--- a/node_modules/@atproto/oauth-client-browser/dist/indexed-db/db-transaction.js
++++ b/node_modules/@atproto/oauth-client-browser/dist/indexed-db/db-transaction.js
+@@ -13,7 +13,9 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
+ var _DBTransaction_tx;
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.DBTransaction = void 0;
+-require("core-js/modules/esnext.symbol.dispose");
++if (typeof Symbol.dispose === 'undefined') {
++  Symbol.dispose = Symbol('Symbol.dispose');
++}
+ const db_object_store_js_1 = require("./db-object-store.js");
+ class DBTransaction {
+     constructor(tx) {
+diff --git a/node_modules/@atproto/oauth-client-browser/dist/indexed-db/db.js b/node_modules/@atproto/oauth-client-browser/dist/indexed-db/db.js
+index eaaf61a..4315b95 100644
+--- a/node_modules/@atproto/oauth-client-browser/dist/indexed-db/db.js
++++ b/node_modules/@atproto/oauth-client-browser/dist/indexed-db/db.js
+@@ -13,7 +13,9 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
+ var _DB_db;
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.DB = void 0;
+-require("core-js/modules/esnext.symbol.dispose");
++if (typeof Symbol.dispose === 'undefined') {
++  Symbol.dispose = Symbol('Symbol.dispose');
++}
+ const db_transaction_js_1 = require("./db-transaction.js");
+ class DB {
+     static async open(dbName, migrations, txOptions) {
