@@ -17,13 +17,16 @@ import {
   deerscheme,
   evergardenscheme,
   kittyscheme,
+  material3scheme,
   type Palette,
   reddwarfscheme,
   themes,
   witchskyscheme,
   zeppelinscheme,
 } from '#/alf/themes'
+import {IS_ANDROID} from '#/env'
 import {type Device} from '#/storage'
+import {MaterialYouPaletteProvider} from './util/materialYou'
 
 export {
   type TextStyleProp,
@@ -170,6 +173,11 @@ export function selectScheme(colorScheme: string | undefined): SchemeType {
       return catppuccinscheme
     case 'evergarden':
       return evergardenscheme
+    case 'material3':
+      if (IS_ANDROID) {
+        return material3scheme
+      }
+      return witchskyscheme
     default:
       return themes
   }
@@ -233,7 +241,11 @@ export function ThemeProvider({
     setFontFamilyAndPersist,
   ])
 
-  return <Context.Provider value={value}>{children}</Context.Provider>
+  return (
+    <MaterialYouPaletteProvider>
+      <Context.Provider value={value}>{children}</Context.Provider>
+    </MaterialYouPaletteProvider>
+  )
 }
 
 export function useAlf() {

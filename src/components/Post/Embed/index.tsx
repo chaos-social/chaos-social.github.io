@@ -23,6 +23,7 @@ import {Link} from '#/view/com/util/Link'
 import {PostMeta} from '#/view/com/util/PostMeta'
 import {atoms as a, useTheme} from '#/alf'
 import {useInteractionState} from '#/components/hooks/useInteractionState'
+import {GalleryBleed} from '#/components/images/Gallery'
 import {ContentHider} from '#/components/moderation/ContentHider'
 import {PostAlerts} from '#/components/moderation/PostAlerts'
 import {RichText} from '#/components/RichText'
@@ -42,12 +43,11 @@ import {PostPlaceholder as PostPlaceholderText} from './PostPlaceholder'
 import {
   type CommonProps,
   type EmbedProps,
-  PostEmbedViewContext,
-  QuoteEmbedViewContext,
+  type PostEmbedViewContext,
 } from './types'
 import {VideoEmbed} from './VideoEmbed'
 
-export {PostEmbedViewContext, QuoteEmbedViewContext} from './types'
+export {PostEmbedViewContext} from './types'
 
 export function Embed({embed: rawEmbed, ...rest}: EmbedProps) {
   const embed = parseEmbed(rawEmbed)
@@ -181,11 +181,7 @@ function RecordEmbed({
         <QuoteEmbed
           {...rest}
           embed={embed}
-          viewContext={
-            rest.viewContext === PostEmbedViewContext.Feed
-              ? QuoteEmbedViewContext.FeedEmbedRecordWithMedia
-              : undefined
-          }
+          viewContext={rest.viewContext}
           isWithinQuote={rest.isWithinQuote}
           allowNestedQuotes={rest.allowNestedQuotes}
         />
@@ -263,11 +259,7 @@ export function DirectFetchEmbed({
       <QuoteEmbed
         {...rest}
         embed={embed}
-        viewContext={
-          rest.viewContext === PostEmbedViewContext.Feed
-            ? QuoteEmbedViewContext.FeedEmbedRecordWithMedia
-            : undefined
-        }
+        viewContext={rest.viewContext}
         isWithinQuote={rest.isWithinQuote}
         allowNestedQuotes={rest.allowNestedQuotes}
         visibilityLabel={
@@ -315,9 +307,10 @@ export function QuoteEmbed({
   isWithinQuote: parentIsWithinQuote,
   allowNestedQuotes: parentAllowNestedQuotes,
   showPronouns,
+  viewContext,
 }: Omit<CommonProps, 'viewContext'> & {
   embed: EmbedType<'post'>
-  viewContext?: QuoteEmbedViewContext
+  viewContext?: PostEmbedViewContext
   visibilityLabel?: string
   linkDisabled?: boolean
 }) {
@@ -397,6 +390,7 @@ export function QuoteEmbed({
         <Embed
           embed={quote.embed}
           moderation={moderation}
+          viewContext={viewContext}
           isWithinQuote={parentIsWithinQuote ?? true}
           // already within quote? override nested
           allowNestedQuotes={
@@ -408,43 +402,45 @@ export function QuoteEmbed({
   )
 
   return (
-    <View
-      style={[a.mt_sm]}
-      onPointerEnter={linkDisabled ? undefined : onPointerEnter}
-      onPointerLeave={linkDisabled ? undefined : onPointerLeave}>
-      <ContentHider
-        modui={moderation?.ui('contentList')}
-        style={[a.rounded_md, a.border, t.atoms.border_contrast_low, style]}
-        activeStyle={[a.p_md, a.pt_sm]}
-        childContainerStyle={[a.pt_sm]}>
-        {({active}) => (
-          <>
-            {!active && !linkDisabled && (
-              <SubtleHover
-                native
-                hover={hover || pressed}
-                style={[a.rounded_md]}
-              />
-            )}
-            {linkDisabled ? (
-              <View style={[!active && a.p_md]} pointerEvents="none">
-                {contents}
-              </View>
-            ) : (
-              <Link
-                style={[!active && a.p_md]}
-                hoverStyle={t.atoms.border_contrast_high}
-                href={itemHref}
-                title={itemTitle}
-                onBeforePress={onBeforePress}
-                onPressIn={onPressIn}
-                onPressOut={onPressOut}>
-                {contents}
-              </Link>
-            )}
-          </>
-        )}
-      </ContentHider>
-    </View>
+    <GalleryBleed>
+      <View
+        style={[a.mt_sm]}
+        onPointerEnter={linkDisabled ? undefined : onPointerEnter}
+        onPointerLeave={linkDisabled ? undefined : onPointerLeave}>
+        <ContentHider
+          modui={moderation?.ui('contentList')}
+          style={[a.rounded_md, a.border, t.atoms.border_contrast_low, style]}
+          activeStyle={[a.p_md, a.pt_sm]}
+          childContainerStyle={[a.pt_sm]}>
+          {({active}) => (
+            <>
+              {!active && !linkDisabled && (
+                <SubtleHover
+                  native
+                  hover={hover || pressed}
+                  style={[a.rounded_md]}
+                />
+              )}
+              {linkDisabled ? (
+                <View style={[!active && a.p_md]} pointerEvents="none">
+                  {contents}
+                </View>
+              ) : (
+                <Link
+                  style={[!active && a.p_md]}
+                  hoverStyle={t.atoms.border_contrast_high}
+                  href={itemHref}
+                  title={itemTitle}
+                  onBeforePress={onBeforePress}
+                  onPressIn={onPressIn}
+                  onPressOut={onPressOut}>
+                  {contents}
+                </Link>
+              )}
+            </>
+          )}
+        </ContentHider>
+      </View>
+    </GalleryBleed>
   )
 }

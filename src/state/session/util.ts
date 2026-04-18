@@ -14,13 +14,21 @@ export function readLastActiveAccount() {
 
 export function isSignupQueued(accessJwt: string | undefined) {
   if (accessJwt) {
-    const sessData = jwtDecode(accessJwt)
-    return (
-      hasProp(sessData, 'scope') &&
-      sessData.scope === 'com.atproto.signupQueued'
-    )
+    try {
+      const sessData = jwtDecode(accessJwt)
+      return (
+        hasProp(sessData, 'scope') &&
+        sessData.scope === 'com.atproto.signupQueued'
+      )
+    } catch {
+      return false
+    }
   }
   return false
+}
+
+export function canAttemptSessionResume(account: SessionAccount) {
+  return !!(account.isOauthSession || account.refreshJwt || account.accessJwt)
 }
 
 export function isSessionExpired(account: SessionAccount) {

@@ -110,21 +110,32 @@ export function FollowDialogWithoutGuide({
 let lastSelectedInterest = ''
 let lastSearchText = ''
 
+const FOR_YOU_TAB = 'all'
+
 function DialogInner({guide}: {guide?: Follow10ProgressGuide}) {
   const {t: l} = useLingui()
   const ax = useAnalytics()
-  const interestsDisplayNames = useInterestsDisplayNames()
+  const rawInterestsDisplayNames = useInterestsDisplayNames()
   const {data: preferences} = usePreferencesQuery()
   const personalizedInterests = preferences?.interests?.tags
-  const interests = Object.keys(interestsDisplayNames)
-    .sort(boostInterests(popularInterests))
-    .sort(boostInterests(personalizedInterests))
+  const interests = useMemo(
+    () => [
+      FOR_YOU_TAB,
+      ...Object.keys(rawInterestsDisplayNames)
+        .sort(boostInterests(popularInterests))
+        .sort(boostInterests(personalizedInterests)),
+    ],
+    [rawInterestsDisplayNames, personalizedInterests],
+  )
+  const interestsDisplayNames = useMemo(
+    () => ({
+      [FOR_YOU_TAB]: l`For You`,
+      ...rawInterestsDisplayNames,
+    }),
+    [l, rawInterestsDisplayNames],
+  )
   const [selectedInterest, setSelectedInterest] = useState(
-    () =>
-      lastSelectedInterest ||
-      (personalizedInterests && interests.includes(personalizedInterests[0])
-        ? personalizedInterests[0]
-        : interests[0]),
+    () => lastSelectedInterest || FOR_YOU_TAB,
   )
   const [searchText, setSearchText] = useState(lastSearchText)
   const moderationOpts = useModerationOpts()
@@ -138,14 +149,15 @@ function DialogInner({guide}: {guide?: Follow10ProgressGuide}) {
     lastSelectedInterest = selectedInterest
   }, [searchText, selectedInterest])
 
-  const {
-    data: suggestions,
-    isFetching: isFetchingSuggestions,
-    error: suggestionsError,
-  } = useGetSuggestedUsersForSeeMoreQuery({
-    category: selectedInterest,
+  const isForYou = selectedInterest === FOR_YOU_TAB
+
+  const seeMoreQuery = useGetSuggestedUsersForSeeMoreQuery({
+    category: isForYou ? undefined : selectedInterest,
     limit: 50,
   })
+  const suggestions = seeMoreQuery.data
+  const isFetchingSuggestions = seeMoreQuery.isFetching
+  const suggestionsError = seeMoreQuery.error
   const {
     data: searchResults,
     isFetching: isFetchingSearchResults,
@@ -278,7 +290,10 @@ function DialogInner({guide}: {guide?: Follow10ProgressGuide}) {
               recId: recIdForLogging,
               position: position !== -1 ? position : 0,
               suggestedDid: item.profile.did,
-              category: selectedInterestRef.current,
+              category:
+                selectedInterestRef.current === FOR_YOU_TAB
+                  ? null
+                  : selectedInterestRef.current,
             })
           }
         }

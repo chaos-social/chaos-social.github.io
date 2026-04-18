@@ -50,8 +50,11 @@ export function useSetHighQualityImages() {
 function modifyHighQualityImage(src: string) {
   try {
     const url = new URL(src)
-    if (url.hostname === 'cdn.bsky.app' && url.pathname.endsWith('@jpeg')) {
-      url.pathname = url.pathname.replace(/@jpeg$/, '@png')
+    if (url.hostname === 'cdn.bsky.app') {
+      // bluesky does not have this in urls anymore, but some forks like blacksky still do this so we need to still check for this
+      if (url.pathname.endsWith('@jpeg'))
+        url.pathname = url.pathname.replace(/@jpeg$/, '@png')
+      else url.pathname = url.pathname += '@png'
       return url.toString()
     }
   } catch {

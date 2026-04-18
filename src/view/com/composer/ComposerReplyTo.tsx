@@ -16,7 +16,6 @@ import {sanitizePronouns} from '#/lib/strings/pronouns'
 import {type ComposerOptsPostRef} from '#/state/shell/composer'
 import {PreviewableUserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme, web} from '#/alf'
-import {PdsBadge} from '#/components/PdsBadge'
 import {QuoteEmbed} from '#/components/Post/Embed'
 import {ProfileBadges} from '#/components/ProfileBadges'
 import {Text} from '#/components/Typography'
@@ -108,9 +107,6 @@ export function ComposerReplyTo({replyTo}: {replyTo: ComposerOptsPostRef}) {
                 sanitizeHandle(replyTo.author.handle),
             )}
           </Text>
-          <View style={[a.pl_xs]}>
-              <PdsBadge did={replyTo.author.did} size="sm" />
-          </View>
           <ProfileBadges profile={replyTo.author} size="sm" style={[a.pl_xs]} />
           {replyTo.author?.pronouns && (
             <Text
@@ -140,7 +136,11 @@ export function ComposerReplyTo({replyTo}: {replyTo: ComposerOptsPostRef}) {
           )}
         </View>
         {showFull && parsedQuoteEmbed && parsedQuoteEmbed.type === 'post' && (
-          <QuoteEmbed embed={parsedQuoteEmbed} showPronouns={true} linkDisabled />
+          <QuoteEmbed
+            embed={parsedQuoteEmbed}
+            showPronouns={true}
+            linkDisabled
+          />
         )}
       </View>
     </Pressable>

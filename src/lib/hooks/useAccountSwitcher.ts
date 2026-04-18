@@ -4,6 +4,7 @@ import {useLingui} from '@lingui/react'
 
 import {logger} from '#/logger'
 import {type SessionAccount, useSessionApi} from '#/state/session'
+import {canAttemptSessionResume} from '#/state/session/util'
 import {useLoggedOutViewControls} from '#/state/shell/logged-out'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
@@ -28,7 +29,7 @@ export function useAccountSwitcher() {
       }
       try {
         setPendingDid(account.did)
-        if (account.accessJwt) {
+        if (canAttemptSessionResume(account)) {
           // Store navigation state before switching so user stays on the same page
           storeNavigationStateForAccountSwitch()
           await resumeSession(account, true)
@@ -42,7 +43,7 @@ export function useAccountSwitcher() {
         }
       } catch (e: any) {
         logger.error(`switch account: selectAccount failed`, {
-          message: e.message,
+          message: e instanceof Error ? e.message : String(e),
         })
         requestSwitchToAccount({requestedAccount: account.did})
         Toast.show(_(msg`Please sign in as @${account.handle}`), {

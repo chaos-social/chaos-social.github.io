@@ -7,9 +7,10 @@ import {
   usePreferencesQuery,
 } from '#/state/queries/preferences'
 import {useAgent} from '#/state/session'
+import {pdsAgent} from '#/state/session/agent'
 import {useAnalytics} from '#/analytics'
-import {IS_WEB} from '#/env'
 import * as env from '#/env'
+import {IS_WEB} from '#/env'
 import {
   type LiveEventFeed,
   type LiveEventFeedMetricContext,
@@ -46,7 +47,7 @@ function useWebOnlyDebugLiveEventPreferences() {
       window.__updateLiveEventPreferences = async (
         action: LiveEventPreferencesAction,
       ) => {
-        await agent.updateLiveEventPreferences(action)
+        await pdsAgent(agent).updateLiveEventPreferences(action)
         // triggers a refetch
         await queryClient.invalidateQueries({
           queryKey: preferencesQueryKey,
@@ -108,7 +109,7 @@ export function useUpdateLiveEventPreferences(props: {
       }
     },
     mutationFn: async action => {
-      const updated = await agent.updateLiveEventPreferences(action)
+      const updated = await pdsAgent(agent).updateLiveEventPreferences(action)
       const prefs = updated.find(p =>
         asPredicate(AppBskyActorDefs.validateLiveEventPreferences)(p),
       )

@@ -804,3 +804,22 @@ Only use `useMemo`/`useCallback` when you have a specific reason, such as:
 | Query hooks | `src/state/queries/*.ts` |
 | Session state | `src/state/session/index.tsx` |
 | i18n setup | `src/locale/i18n.ts` |
+
+## Witchsky-Specific Notes
+
+Witchsky is a fork of the Bluesky Social app, but we don't control the backend (the Bluesky AppView or sometimes
+AppServer). This means we have to go off-spec to implement features sometimes. We have a few tools at our disposal
+for this:
+
+- Adding extra fields to records in atproto is valid and will not fail validation. If necessary, we can add extra fields
+to the data we send to the server, and these fields will be stored and returned by the server without issue. This is a
+common way to add custom data without needing backend changes. Many AppView XRPC endpoints return a `record` field which
+is just the original record. We can use `as any` on it and get extra fields in there without issue.
+- Sometimes we need to go around the AppView. For instance, to see through blocks, we call getRecord on the AT uri of
+the blocked post. This is a good pattern if the AppView doesn't return data we need.
+- Sometimes we want to find all records that reference another record by AT uri. The AppView does this by consuming the
+firehose server-side and maintaining an index. We have a generic index called Constellation. The API for this is
+documented at https://constellation.microcosm.blue/ and we have a client for it in `src/state/queries/constellation.ts`
+Constellation searches the firehose for anything that looks like a link, including AT uris in records, and maintains an
+index of all the links it finds. We can query this index to find all records that link to a given AT uri. This is how we
+implement custom verifiers, and you can see how it's queried at `src/state/queries/deer-verification.ts`.

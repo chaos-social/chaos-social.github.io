@@ -1,10 +1,7 @@
-import {memo, useCallback, useEffect, useMemo, useRef} from 'react'
+import {memo, useCallback, useEffect, useMemo} from 'react'
 import {Pressable, View} from 'react-native'
 import Animated, {
-  measure,
-  type MeasuredDimensions,
-  runOnJS,
-  runOnUI,
+  type AnimatedRef,
   useAnimatedRef,
 } from 'react-native-reanimated'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
@@ -75,17 +72,6 @@ let ProfileHeaderShell = ({
 
   const aviRef = useAnimatedRef()
   const bannerRef = useAnimatedRef<Animated.View>()
-  const containerRef = useRef<View>(null)
-
-  // Apply safe-area CSS on web
-  useEffect(() => {
-    if (containerRef.current && typeof window !== 'undefined') {
-      const element = containerRef.current as any
-      if (element.style) {
-        element.style.paddingTop = 'env(safe-area-inset-top)'
-      }
-    }
-  }, [])
 
   const onPressBack = useCallback(() => {
     if (navigation.canGoBack()) {
@@ -98,7 +84,7 @@ let ProfileHeaderShell = ({
   const _openLightbox = useCallback(
     (
       uri: string,
-      thumbRect: MeasuredDimensions | null,
+      thumbRef: AnimatedRef<any>,
       type: 'circle-avi' | 'rect-avi' | 'image' = 'circle-avi',
     ) => {
       openLightbox({
@@ -109,7 +95,8 @@ let ProfileHeaderShell = ({
               imageCdnHost,
               highQualityImages,
             }),
-            thumbRect,
+            thumbRect: null,
+            thumbRef,
             dimensions:
               type === 'circle-avi' || type === 'rect-avi'
                 ? {
@@ -123,36 +110,18 @@ let ProfileHeaderShell = ({
                     height: 1000,
                   },
             thumbDimensions: null,
-            type: enableSquareAvatars ? 'rect-avi' : 'circle-avi',
+            type:
+              type === 'image'
+                ? type
+                : enableSquareAvatars
+                  ? 'rect-avi'
+                  : 'circle-avi',
           },
         ],
         index: 0,
       })
     },
     [openLightbox, imageCdnHost, highQualityImages, enableSquareAvatars],
-  )
-
-  // theres probs a better way instead of just making a separate one but this works:tm: so its whatever
-  const _openLightboxBanner = useCallback(
-    (uri: string, thumbRect: MeasuredDimensions | null) => {
-      openLightbox({
-        images: [
-          {
-            uri: applyImageTransforms(uri, {imageCdnHost, highQualityImages}),
-            thumbUri: applyImageTransforms(uri, {
-              imageCdnHost,
-              highQualityImages,
-            }),
-            thumbRect,
-            dimensions: thumbRect,
-            thumbDimensions: null,
-            type: 'image',
-          },
-        ],
-        index: 0,
-      })
-    },
-    [openLightbox, imageCdnHost, highQualityImages],
   )
 
   const isMe = useMemo(
@@ -178,11 +147,7 @@ let ProfileHeaderShell = ({
       const avatar = profile.avatar
       const type = profile.associated?.labeler ? 'rect-avi' : 'circle-avi'
       if (avatar && !(modui.blur && modui.noOverride)) {
-        runOnUI(() => {
-          'worklet'
-          const rect = measure(aviRef)
-          runOnJS(_openLightbox)(avatar, rect, type)
-        })()
+        _openLightbox(avatar, aviRef, type)
       }
     }
   }, [
@@ -200,19 +165,12 @@ let ProfileHeaderShell = ({
     const modui = moderation.ui('banner')
     const banner = profile.banner
     if (banner && !(modui.blur && modui.noOverride)) {
-      runOnUI(() => {
-        'worklet'
-        const rect = measure(bannerRef)
-        runOnJS(_openLightboxBanner)(banner, rect)
-      })()
+      _openLightbox(banner, bannerRef, 'image')
     }
-  }, [profile.banner, moderation, _openLightboxBanner, bannerRef])
+  }, [profile.banner, moderation, _openLightbox, bannerRef])
 
   return (
-    <View
-      ref={containerRef}
-      style={t.atoms.bg}
-      pointerEvents={IS_IOS ? 'auto' : 'box-none'}>
+    <View style={t.atoms.bg} pointerEvents={IS_IOS ? 'auto' : 'box-none'}>
       <View
         pointerEvents={IS_IOS ? 'auto' : 'box-none'}
         style={[a.relative, {height: 150}]}>
@@ -361,12 +319,11 @@ let ProfileHeaderShell = ({
             onPressViewAvatar={() => {
               const modui = moderation.ui('avatar')
               const avatar = profile.avatar
+              const type = profile.associated?.labeler
+                ? 'rect-avi'
+                : 'circle-avi'
               if (avatar && !(modui.blur && modui.noOverride)) {
-                runOnUI(() => {
-                  'worklet'
-                  const rect = measure(aviRef)
-                  runOnJS(_openLightbox)(avatar, rect)
-                })()
+                _openLightbox(avatar, aviRef, type)
               }
             }}
           />

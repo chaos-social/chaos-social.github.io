@@ -1,20 +1,27 @@
 import {useCallback, useEffect, useMemo, useState} from 'react'
-import {View} from 'react-native'
+import {type LayoutChangeEvent, View} from 'react-native'
+import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {
   type AppBskyActorDefs,
   moderateProfile,
   type ModerationDecision,
 } from '@atproto/api'
+import {
+  ScrollEdgeEffect,
+  ScrollEdgeEffectProvider,
+} from '@bsky.app/expo-scroll-edge-effect'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 import {
   type RouteProp,
   useFocusEffect,
+  useIsFocused,
   useNavigation,
   useRoute,
 } from '@react-navigation/native'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
+import {RemoveScrollBar} from 'react-remove-scroll-bar'
 
 import {useNonReactiveCallback} from '#/lib/hooks/useNonReactiveCallback'
 import {
@@ -30,7 +37,7 @@ import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {useProfileQuery} from '#/state/queries/profile'
 import {useSetMinimalShellMode} from '#/state/shell'
 import {MessagesList} from '#/screens/Messages/components/MessagesList'
-import {atoms as a, useBreakpoints, useTheme, web} from '#/alf'
+import {atoms as a, useTheme, web} from '#/alf'
 import {AgeRestrictedScreen} from '#/components/ageAssurance/AgeRestrictedScreen'
 import {useAgeAssuranceCopy} from '#/components/ageAssurance/useAgeAssuranceCopy'
 import {
@@ -42,7 +49,7 @@ import {MessagesListHeader} from '#/components/dms/MessagesListHeader'
 import {Error} from '#/components/Error'
 import * as Layout from '#/components/Layout'
 import {Loader} from '#/components/Loader'
-import {IS_WEB} from '#/env'
+import {IS_LIQUID_GLASS, IS_WEB} from '#/env'
 
 type Props = NativeStackScreenProps<
   CommonNavigatorParams,
@@ -62,7 +69,6 @@ export function MessagesConversationScreen(props: Props) {
 }
 
 export function MessagesConversationScreenInner({route}: Props) {
-  const {gtMobile} = useBreakpoints()
   const setMinimalShellMode = useSetMinimalShellMode()
 
   const convoId = route.params.conversation
@@ -71,25 +77,25 @@ export function MessagesConversationScreenInner({route}: Props) {
   useFocusEffect(
     useCallback(() => {
       setCurrentConvoId(convoId)
-
-      if (IS_WEB && !gtMobile) {
-        setMinimalShellMode(true)
-      } else {
-        setMinimalShellMode(false)
-      }
+      setMinimalShellMode(true)
 
       return () => {
         setCurrentConvoId(undefined)
         setMinimalShellMode(false)
       }
-    }, [gtMobile, convoId, setCurrentConvoId, setMinimalShellMode]),
+    }, [convoId, setCurrentConvoId, setMinimalShellMode]),
   )
 
   return (
-    <Layout.Screen testID="convoScreen" style={web([{minHeight: 0}, a.flex_1])}>
-      <ConvoProvider key={convoId} convoId={convoId}>
-        <Inner />
-      </ConvoProvider>
+    <Layout.Screen
+      testID="convoScreen"
+      noInsetTop={IS_LIQUID_GLASS}
+      style={web([{minHeight: 0}, a.flex_1])}>
+      <ScrollEdgeEffectProvider>
+        <ConvoProvider key={convoId} convoId={convoId}>
+          <Inner />
+        </ConvoProvider>
+      </ScrollEdgeEffectProvider>
     </Layout.Screen>
   )
 }
@@ -98,10 +104,12 @@ function Inner() {
   const t = useTheme()
   const convoState = useConvo()
   const {_} = useLingui()
+  const isFocused = useIsFocused()
+  const {top: topInset} = useSafeAreaInsets()
 
   const moderationOpts = useModerationOpts()
   const {data: recipientUnshadowed} = useProfileQuery({
-    did: convoState.recipients?.[0].did,
+    did: convoState.getPrimaryMember?.()?.did,
   })
   const recipient = useMaybeProfileShadow(recipientUnshadowed)
 
@@ -122,18 +130,21 @@ function Inner() {
 
   // Any time that we re-render the `Initializing` state, we have to reset `hasScrolled` to false. After entering this
   // state, we know that we're resetting the list of messages and need to re-scroll to the bottom when they get added.
-  useEffect(() => {
+  const [prevState, setPrevState] = useState(convoState.status)
+  if (prevState !== convoState.status) {
+    setPrevState(convoState.status)
     if (convoState.status === ConvoStatus.Initializing) {
       setHasScrolled(false)
     }
-  }, [convoState.status])
+  }
 
   if (convoState.status === ConvoStatus.Error) {
     return (
       <>
-        <Layout.Center style={[a.flex_1]}>
+        <Layout.Center
+          style={[a.w_full, IS_LIQUID_GLASS && {paddingTop: topInset}]}>
           {moderation ? (
-            <MessagesListHeader moderation={moderation} profile={recipient} />
+            <MessagesListHeader profile={recipient} moderation={moderation} />
           ) : (
             <MessagesListHeader />
           )}
@@ -150,23 +161,24 @@ function Inner() {
 
   return (
     <Layout.Center style={[a.flex_1]}>
-      {!readyToShow &&
-        (moderation ? (
-          <MessagesListHeader moderation={moderation} profile={recipient} />
-        ) : (
-          <MessagesListHeader />
-        ))}
+      {/* MessagesList does not use the body scroll */}
+      {isFocused && IS_WEB && <RemoveScrollBar />}
+      {!readyToShow && (
+        <View style={IS_LIQUID_GLASS && {paddingTop: topInset}}>
+          {moderation ? (
+            <MessagesListHeader profile={recipient} moderation={moderation} />
+          ) : (
+            <MessagesListHeader />
+          )}
+        </View>
+      )}
       <View style={[a.flex_1]}>
-        {moderation && recipient ? (
-          <InnerReady
-            moderation={moderation}
-            recipient={recipient}
-            hasScrolled={hasScrolled}
-            setHasScrolled={setHasScrolled}
-          />
-        ) : (
-          <View style={[a.align_center, a.gap_sm, a.flex_1]} />
-        )}
+        <InnerReady
+          moderation={moderation}
+          recipient={recipient}
+          hasScrolled={hasScrolled}
+          setHasScrolled={setHasScrolled}
+        />
         {!readyToShow && (
           <View
             style={[
@@ -194,13 +206,18 @@ function InnerReady({
   hasScrolled,
   setHasScrolled,
 }: {
-  moderation: ModerationDecision
-  recipient: Shadow<AppBskyActorDefs.ProfileViewDetailed>
+  moderation: ModerationDecision | null
+  recipient: Shadow<AppBskyActorDefs.ProfileViewDetailed> | undefined
   hasScrolled: boolean
   setHasScrolled: React.Dispatch<React.SetStateAction<boolean>>
 }) {
   const convoState = useConvo()
   const navigation = useNavigation<NavigationProp>()
+  const {top: topInset} = useSafeAreaInsets()
+  const [headerHeight, setHeaderHeight] = useState(0)
+  const onHeaderLayout = (e: LayoutChangeEvent) => {
+    setHeaderHeight(e.nativeEvent.layout.height)
+  }
   const {params} =
     useRoute<RouteProp<CommonNavigatorParams, 'MessagesConversation'>>()
   const {needsEmailVerification} = useEmail()
@@ -244,22 +261,38 @@ function InnerReady({
     maybeBlockForEmailVerification()
   }, [maybeBlockForEmailVerification])
 
+  const header = (
+    <MessagesListHeader profile={recipient} moderation={moderation} />
+  )
+
   return (
     <>
-      <MessagesListHeader profile={recipient} moderation={moderation} />
+      {IS_LIQUID_GLASS ? (
+        <ScrollEdgeEffect
+          edge="top"
+          style={[a.absolute, a.w_full, a.z_10, {paddingTop: topInset}]}
+          onLayout={onHeaderLayout}>
+          {header}
+        </ScrollEdgeEffect>
+      ) : (
+        header
+      )}
       {isConvoActive(convoState) && (
         <MessagesList
           hasScrolled={hasScrolled}
           setHasScrolled={setHasScrolled}
           blocked={moderation?.blocked}
           hasAcceptOverride={!!params.accept}
+          transparentHeaderHeight={IS_LIQUID_GLASS ? headerHeight : 0}
           footer={
-            <MessagesListBlockedFooter
-              recipient={recipient}
-              convoId={convoState.convo.id}
-              hasMessages={convoState.items.length > 0}
-              moderation={moderation}
-            />
+            moderation && recipient ? (
+              <MessagesListBlockedFooter
+                recipient={recipient}
+                convoId={convoState.convo.id}
+                hasMessages={convoState.items.length > 0}
+                moderation={moderation}
+              />
+            ) : null
           }
         />
       )}

@@ -2,6 +2,7 @@ import {useMemo} from 'react'
 import {type StyleProp, type TextStyle} from 'react-native'
 import {AppBskyRichtextFacet, RichText as RichTextAPI} from '@atproto/api'
 
+import {detectFacetsWithoutResolution} from '#/lib/strings/detect-facets'
 import {toShortUrl} from '#/lib/strings/url-helpers'
 import {atoms as a, flatten, type TextStyleProp} from '#/alf'
 import {isOnlyEmoji} from '#/alf/typography'
@@ -61,7 +62,7 @@ export function RichText({
       return value
     } else {
       const rt = new RichTextAPI({text: value})
-      rt.detectFacetsWithoutResolution()
+      detectFacetsWithoutResolution(rt)
       return rt
     }
   }, [value])

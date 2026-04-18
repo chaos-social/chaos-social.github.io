@@ -4,9 +4,9 @@ import {
   type TextProps as RNTextProps,
   type TextStyle,
 } from 'react-native'
-import {UITextView} from 'react-native-uitextview'
 import createEmojiRegex from 'emoji-regex'
 
+import {UITextView} from '#/platform/ui-text-view'
 import {type Alf, applyFonts, atoms, flatten} from '#/alf'
 import {IS_IOS, IS_NATIVE} from '#/env'
 

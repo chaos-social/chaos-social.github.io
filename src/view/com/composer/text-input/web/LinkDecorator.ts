@@ -14,13 +14,10 @@
  * the facet-set.
  */
 
-import {URL_REGEX} from '@atproto/api'
 import {Mark} from '@tiptap/core'
 import {type Node as ProsemirrorNode} from '@tiptap/pm/model'
 import {Plugin, PluginKey} from '@tiptap/pm/state'
 import {Decoration, DecorationSet} from '@tiptap/pm/view'
-
-import {isValidDomain} from '#/lib/strings/url-helpers'
 
 export const LinkDecorator = Mark.create({
   name: 'link-decorator',
@@ -53,15 +50,6 @@ function getDecorations(doc: ProsemirrorNode) {
           }),
         )
       }
-
-      // regular links
-      iterateUris(textContent, (from, to) => {
-        decorations.push(
-          Decoration.inline(pos + from, pos + to, {
-            class: 'autolink',
-          }),
-        )
-      })
     }
   })
 
@@ -89,31 +77,4 @@ function linkDecorator() {
     },
   })
   return linkDecoratorPlugin
-}
-
-function iterateUris(str: string, cb: (from: number, to: number) => void) {
-  let match
-  const re = URL_REGEX
-  while ((match = re.exec(str))) {
-    let uri = match[2]
-    if (!uri.startsWith('http')) {
-      const domain = match.groups?.domain
-      if (!domain || !isValidDomain(domain)) {
-        continue
-      }
-      uri = `https://${uri}`
-    }
-    let from = str.indexOf(match[2], match.index)
-    let to = from + match[2].length
-    // strip ending puncuation
-    if (/[.,;!?]$/.test(uri)) {
-      uri = uri.slice(0, -1)
-      to--
-    }
-    if (/[)]$/.test(uri) && !uri.includes('(')) {
-      uri = uri.slice(0, -1)
-      to--
-    }
-    cb(from, to)
-  }
 }

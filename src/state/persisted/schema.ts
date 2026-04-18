@@ -61,6 +61,7 @@ const schema = z.object({
     'reddwarf',
     'catppuccin',
     'evergarden',
+    'material3',
   ]),
   hue: z.number(),
   session: z.object({
@@ -112,6 +113,7 @@ const schema = z.object({
     .object({
       giphy: z.enum(externalEmbedOptions).optional(),
       tenor: z.enum(externalEmbedOptions).optional(),
+      klipy: z.enum(externalEmbedOptions).optional(),
       youtube: z.enum(externalEmbedOptions).optional(),
       youtubeShorts: z.enum(externalEmbedOptions).optional(),
       twitch: z.enum(externalEmbedOptions).optional(),
@@ -150,6 +152,7 @@ const schema = z.object({
   repostCarouselEnabled: z.boolean().optional(),
   constellationInstance: z.string().optional(),
   showLinkInHandle: z.boolean().optional(),
+  showLinkInHandleOnlyOnWorkingLinks: z.boolean().optional(),
   hideFeedsPromoTab: z.boolean().optional(),
   disableViaRepostNotification: z.boolean().optional(),
   disableComposerPrompt: z.boolean().optional(),
@@ -176,6 +179,7 @@ const schema = z.object({
     .optional(),
   highQualityImages: z.boolean().optional(),
   imageCdnHost: z.string().optional(),
+  plcDirectory: z.string().optional(),
   hideUnreplyablePosts: z.boolean().optional(),
   pdsLabel: z
     .object({
@@ -183,6 +187,7 @@ const schema = z.object({
       hideBskyPds: z.boolean(),
     })
     .optional(),
+  faviconService: z.string().optional(),
 
   postReplacement: z.object({
     enabled: z.boolean().optional(),
@@ -271,6 +276,7 @@ export const defaults: Schema = {
   repostCarouselEnabled: false,
   constellationInstance: 'https://constellation.microcosm.blue/',
   showLinkInHandle: true,
+  showLinkInHandleOnlyOnWorkingLinks: true,
   hideFeedsPromoTab: false,
   disableViaRepostNotification: false,
   disableComposerPrompt: true,
@@ -318,11 +324,13 @@ export const defaults: Schema = {
   },
   highQualityImages: false,
   imageCdnHost: 'https://cdn.bsky.app',
+  plcDirectory: 'https://plc.directory',
   hideUnreplyablePosts: false,
   pdsLabel: {
     enabled: true,
     hideBskyPds: true,
   },
+  faviconService: 'https://twenty-icons.com/(pds)',
   showExternalShareButtons: false,
   translationServicePreference: 'google',
   libreTranslateInstance: 'https://libretranslate.com/',

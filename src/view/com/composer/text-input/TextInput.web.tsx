@@ -24,6 +24,7 @@ import {splitGraphemes} from 'unicode-segmenter/grapheme'
 
 import {useColorSchemeStyle} from '#/lib/hooks/useColorSchemeStyle'
 import {blobToDataUri, isUriImage} from '#/lib/media/util'
+import {detectFacetsWithoutResolution} from '#/lib/strings/detect-facets'
 import {useActorAutocompleteFn} from '#/state/queries/actor-autocomplete'
 import {
   type LinkFacetMatch,
@@ -32,11 +33,11 @@ import {
 import {textInputWebEmitter} from '#/view/com/composer/text-input/textInputWebEmitter'
 import {atoms as a, useAlf} from '#/alf'
 import {normalizeTextStyles} from '#/alf/typography'
+import {type Emoji} from '#/components/EmojiPicker'
 import {Portal} from '#/components/Portal'
 import {Text} from '#/components/Typography'
 import {type TextInputProps} from './TextInput.types'
 import {type AutocompleteRef, createSuggestion} from './web/Autocomplete'
-import {type Emoji} from './web/EmojiPicker'
 import {LinkDecorator} from './web/LinkDecorator'
 import {TagDecorator} from './web/TagDecorator'
 
@@ -290,7 +291,7 @@ export function TextInput({
         const isPaste = window.event?.type === 'paste'
 
         const newRt = new RichText({text: newText})
-        newRt.detectFacetsWithoutResolution()
+        detectFacetsWithoutResolution(newRt)
 
         const markdownFacets: AppBskyRichtextFacet.Main[] = []
         const regex = /\[([^\]]+)\]\s*\(([^)]+)\)/g

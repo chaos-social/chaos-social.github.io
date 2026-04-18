@@ -8,9 +8,12 @@ import debounce from 'lodash.debounce'
 
 import {DEFAULT_SERVICE} from '#/lib/constants'
 import {logger} from '#/logger'
-import {resolvePdsServiceUrl} from '#/state/queries/resolve-identity'
 import {useServiceQuery} from '#/state/queries/service'
-import {type SessionAccount, useAgent, useSession} from '#/state/session'
+import {type SessionAccount, useSession} from '#/state/session'
+import {
+  getPdsServiceUrlFromIdentityInfo,
+  resolveIdentityUsingAppView,
+} from '#/state/session/identity-resolver'
 import {useLoggedOutView} from '#/state/shell/logged-out'
 import {LoggedOutLayout} from '#/view/com/util/layouts/LoggedOutLayout'
 import {ForgotPasswordForm} from '#/screens/Login/ForgotPasswordForm'
@@ -20,6 +23,7 @@ import {SetNewPasswordForm} from '#/screens/Login/SetNewPasswordForm'
 import {atoms as a, native} from '#/alf'
 import {ScreenTransition} from '#/components/ScreenTransition'
 import {useAnalytics} from '#/analytics'
+import {IS_WEB} from '#/env'
 import {ChooseAccountForm} from './ChooseAccountForm'
 import * as AuthLayout from './components/AuthLayout'
 import {AuthLayoutNavigationContext} from './components/AuthLayout/context'
@@ -45,7 +49,6 @@ export const Login = ({onPressBack}: {onPressBack: () => void}) => {
   const failedAttemptCountRef = useRef(0)
   const startTimeRef = useRef(Date.now())
 
-  const agent = useAgent()
   const {accounts} = useSession()
   const {requestedAccountSwitchTo} = useLoggedOutView()
   const requestedAccount = accounts.find(
@@ -108,49 +111,46 @@ export const Login = ({onPressBack}: {onPressBack: () => void}) => {
     } else {
       setError('')
     }
-  }, [serviceError, serviceUrl, _])
+  }, [serviceError, serviceUrl, _, ax])
 
-  const resolveIdentity = useCallback(
-    async (identifier: string) => {
-      setIsResolvingService(true)
+  const resolveIdentity = useCallback(async (identifier: string) => {
+    setIsResolvingService(true)
 
-      try {
-        const getDid = async () => {
-          if (identifier.startsWith('did:')) return identifier
-          else
-            return (
-              await agent.resolveHandle({
-                handle: identifier,
-              })
-            ).data.did
-        }
+    try {
+      const identity = await resolveIdentityUsingAppView(identifier)
+      const did = identity.did as Did
+      const pdsUrl = getPdsServiceUrlFromIdentityInfo(identity)
 
-        const did = (await getDid()) as Did
-        const pdsUrl = await resolvePdsServiceUrl(did)
-
-        if (!pdsUrl) {
-          throw new Error(`No PDS service found in DID document for ${did}`)
-        }
-
-        if (pdsUrl.endsWith('.bsky.network')) {
-          setServiceUrl('https://bsky.social')
-        } else {
-          setServiceUrl(pdsUrl)
-        }
-      } catch (err) {
-        logger.error(
-          `Service auto-resolution failed: ${err instanceof Error ? err.message : String(err)}`,
-        )
-      } finally {
-        setIsResolvingService(false)
+      if (!pdsUrl) {
+        throw new Error(`No PDS service found in DID document for ${did}`)
       }
-    },
-    [agent],
-  )
+
+      if (pdsUrl.endsWith('.bsky.network')) {
+        setServiceUrl('https://bsky.social')
+      } else {
+        setServiceUrl(pdsUrl)
+      }
+    } catch (err) {
+      logger.error(
+        `Service auto-resolution failed: ${err instanceof Error ? err.message : String(err)}`,
+      )
+    } finally {
+      setIsResolvingService(false)
+    }
+  }, [])
 
   const debouncedResolveService = useMemo(
     () => debounce(resolveIdentity, 400),
     [resolveIdentity],
+  )
+  const onPressRetryConnect = useCallback(() => {
+    void refetchService()
+  }, [refetchService])
+  const onDebouncedResolveService = useCallback(
+    (identifier: string) => {
+      void debouncedResolveService(identifier)
+    },
+    [debouncedResolveService],
   )
 
   const onPressForgotPassword = () => {
@@ -201,8 +201,8 @@ export const Login = ({onPressBack}: {onPressBack: () => void}) => {
           setServiceUrl={setServiceUrl}
           onPressBack={goBack}
           onPressForgotPassword={onPressForgotPassword}
-          onPressRetryConnect={refetchService}
-          debouncedResolveService={debouncedResolveService}
+          onPressRetryConnect={onPressRetryConnect}
+          debouncedResolveService={onDebouncedResolveService}
           isResolvingService={isResolvingService}
         />
       )

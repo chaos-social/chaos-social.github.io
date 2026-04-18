@@ -45,6 +45,7 @@ import {
   type ThreadDraft,
 } from '#/view/com/composer/state/composer'
 import {createGIFDescription} from '../gif-alt-text'
+import {detectFacets} from '../strings/detect-facets'
 import {uploadBlob} from './upload-blob'
 
 export {uploadBlob}
@@ -58,6 +59,7 @@ interface PostOpts {
 
 type FeatureFlags = {
   highResolutionImages?: boolean
+  increasedBlobSizeLimit?: boolean
 }
 
 export async function post(
@@ -215,7 +217,7 @@ async function resolveRT(agent: BskyAgent, richtext: RichText) {
     parseMarkdownLinks(trimmedText)
 
   let rt = new RichText({text: parsedText})
-  await rt.detectFacets(agent)
+  await detectFacets(agent, rt)
 
   if (markdownFacets.length > 0) {
     const nonOverlapping = (rt.facets || []).filter(f => {
@@ -358,6 +360,7 @@ async function resolveMedia(
         logger.debug(`Compressing image #${i}`)
         const {path, width, height, mime} = await compressImage(image, {
           highResolution: featureFlags?.highResolutionImages,
+          increasedBlobSizeLimit: featureFlags?.increasedBlobSizeLimit,
         })
         logger.debug(`Uploading image #${i}`)
         const res = await uploadBlob(agent, path, mime)
@@ -419,7 +422,7 @@ async function resolveMedia(
       captions: captions.length === 0 ? undefined : captions,
       aspectRatio,
       presentation:
-        videoDraft.video.mimeType === 'image/gif' ? 'gif' : 'default',
+        videoDraft.video?.mimeType === 'image/gif' ? 'gif' : 'default',
     }
   }
   if (embedDraft.media?.type === 'gif') {

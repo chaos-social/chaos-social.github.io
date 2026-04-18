@@ -16,50 +16,87 @@ const expoPublicEnv = Object.fromEntries(
 )
 
 // Packages in node_modules that ship untranspiled JSX/Flow/modern syntax
-// and need to be run through babel-loader.
-const TRANSPILE_MODULES = [
-  'react-native',
-  'react-native-web',
-  '@react-native',
-  '@react-native-community',
-  'expo',
-  '@expo',
-  '@unimodules',
-  'unimodules',
-  '@discord',
-  'react-navigation',
-  '@react-navigation',
-  'native-base',
-  'normalize-url',
-  'react-native-svg',
-  '@sentry/react-native',
-  'sentry-expo',
-  'bcp-47-match',
-  'nanoid',
-  'react-native-web-webview',
-]
-
-/**
- * Test function for babel-loader include.
- * Transpiles all source files + specific node_modules packages.
- */
-function shouldTranspile(filePath: string) {
-  // Always transpile source files
-  if (!filePath.includes('node_modules')) {
-    return true
-  }
-  // Transpile matching node_modules packages
-  return TRANSPILE_MODULES.some(mod => {
-    const sep = path.sep === '\\' ? '\\\\' : '/'
-    const pattern = new RegExp(`node_modules${sep}${mod.replace('/', sep)}`)
-    return pattern.test(filePath)
-  })
+// and need to be run through SWC.
+const TRANSPILE_MODULES = {
+  prefixes: [
+    'react-native',
+    'react-native-web',
+    'expo',
+    'unimodules',
+    'react-navigation',
+  ],
+  scopes: [
+    '@react-native',
+    '@react-native-community',
+    '@expo',
+    '@unimodules',
+    '@bsky.app',
+    '@discord',
+    '@react-navigation',
+  ],
+  packages: [
+    'native-base',
+    'normalize-url',
+    '@sentry/react-native',
+    'sentry-expo',
+    'bcp-47-match',
+    'nanoid',
+  ],
 }
+
+function getTranspileModuleDirs({
+  prefixes,
+  scopes,
+  packages,
+}: typeof TRANSPILE_MODULES) {
+  const nodeModulesDir = path.resolve(__dirname, 'node_modules')
+  const dirs = new Set<string>()
+
+  const readDirNames = (dir: string) => {
+    if (!fs.existsSync(dir)) return []
+    return fs
+      .readdirSync(dir, {withFileTypes: true})
+      .filter(entry => entry.isDirectory())
+      .map(entry => entry.name)
+  }
+
+  for (const entry of readDirNames(nodeModulesDir)) {
+    if (
+      prefixes.some(
+        prefix => entry === prefix || entry.startsWith(`${prefix}-`),
+      )
+    ) {
+      dirs.add(path.join(nodeModulesDir, entry))
+    }
+  }
+
+  for (const scope of scopes) {
+    const scopeDir = path.join(nodeModulesDir, scope)
+    for (const entry of readDirNames(scopeDir)) {
+      dirs.add(path.join(scopeDir, entry))
+    }
+  }
+
+  for (const pkg of packages) {
+    const pkgDir = path.join(nodeModulesDir, ...pkg.split('/'))
+    if (fs.existsSync(pkgDir)) {
+      dirs.add(pkgDir)
+    }
+  }
+
+  return [...dirs]
+}
+
+const transpileModuleDirs = getTranspileModuleDirs(TRANSPILE_MODULES)
 
 /** @type {import('@rspack/core').Configuration} */
 module.exports = {
   mode: isProduction ? 'production' : 'development',
-  devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
+  // Avoid eval-based sourcemaps in development. Firefox resolves relative
+  // sourcemap URLs from injected devtools scripts like `installHook.js.map`
+  // against an `<anonymous code>` URL when the bundle is eval-backed, which
+  // produces noisy 404s in the console.
+  devtool: isProduction ? 'source-map' : 'cheap-module-source-map',
 
   entry: {
     main: path.resolve(__dirname, 'index.web.js'),
@@ -131,14 +168,85 @@ module.exports = {
           fullySpecified: false,
         },
       },
+      // Source files: use babel-loader for lingui macros, react-compiler, etc.
       {
         test: /\.[jt]sx?$/,
-        include: shouldTranspile,
+        exclude: /node_modules/,
         use: {
           loader: 'babel-loader',
           options: {
+            configFile: false, // Don't look for a babel.config.json to avoid conflicts with the one in the root of the monorepo.
+            babelrc: false,
             cacheDirectory: true,
+            cacheCompression: false, // let rspack handle it
             sourceType: 'unambiguous',
+            // based on babel.config.js but optimized for web and rspack
+            presets: [
+              [
+                'babel-preset-expo',
+                {
+                  lazyImports: true,
+                  native: {
+                    // Disable ESM -> CJS compilation because rspack handles it.
+                    disableImportExportTransform: true,
+                  },
+                },
+              ],
+            ],
+            plugins: [
+              '@lingui/babel-plugin-lingui-macro',
+              ['babel-plugin-react-compiler', {target: '19'}],
+              // omitted: react-native-dotenv (we use DefinePlugin instead)
+              // omitted: module-resolver (we use rspack's built-in aliasing instead)
+              'react-native-reanimated/plugin', // NOTE: this plugin MUST be last
+            ],
+            env: {
+              production: {
+                plugins: [], // omitted: transform-remove-console
+              },
+            },
+          },
+        },
+      },
+      // node_modules that ship untranspiled JSX/Flow: use rspack's builtin
+      // SWC loader which is much faster than babel for simple transforms.
+      {
+        test: /\.jsx?$/,
+        include: transpileModuleDirs,
+        use: {
+          loader: 'swc-loader', // rspack swc-loader doesn't support flow yet
+          options: {
+            jsc: {
+              parser: {
+                syntax: 'flow',
+                jsx: true,
+              },
+              transform: {
+                react: {
+                  runtime: 'automatic',
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        test: /\.tsx?$/,
+        include: transpileModuleDirs,
+        use: {
+          loader: 'swc-loader',
+          options: {
+            jsc: {
+              parser: {
+                syntax: 'typescript',
+                jsx: true,
+              },
+              transform: {
+                react: {
+                  runtime: 'automatic',
+                },
+              },
+            },
           },
         },
       },
@@ -223,6 +331,7 @@ module.exports = {
       'process.env.EXPO_PUBLIC_APPVIEW_DID_PROXY': 'undefined',
       'process.env.APP_MANIFEST': 'undefined',
       'process.env.__SENTRY_METRO_DEV_SERVER__': 'undefined',
+      'process.env.EXPO_OS': JSON.stringify('web'),
       // Inject all EXPO_PUBLIC_* env vars
       ...expoPublicEnv,
     }),
@@ -259,11 +368,19 @@ module.exports = {
     splitChunks: {
       chunks: 'all',
       cacheGroups: {
+        framework: {
+          test: /[\\/]node_modules[\\/](react|react-dom|react-native-web|@react-navigation|expo|@expo)[\\/]/,
+          name: 'framework',
+          chunks: 'initial',
+          priority: 20,
+          reuseExistingChunk: true,
+        },
         vendor: {
           test: /[\\/]node_modules[\\/]/,
           name: 'vendor',
-          chunks: 'all',
+          chunks: 'initial',
           priority: -10,
+          reuseExistingChunk: true,
         },
       },
     },
@@ -283,6 +400,9 @@ module.exports = {
 
   // Don't bundle node built-ins (shouldn't be needed on web)
   externalsPresets: {node: false},
+  node: {
+    __filename: false,
+  },
 
   stats: GENERATE_STATS ? 'verbose' : 'normal',
 

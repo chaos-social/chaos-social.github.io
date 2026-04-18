@@ -36,8 +36,13 @@ build-android-gradle: prebuild-android
 postbuild-web:
     # we need to copy the static iframe html to support youtube embeds
     cp -r bskyweb/static/iframe/ web-build/iframe
+    # copy well-known files to support app deeplinks too
+    cp -r bskyweb/static/.well-known/ web-build/.well-known
+    # copy files to support oauth
+    cp bskyweb/static/oauth-client-metadata.json web-build/oauth-client-metadata.json
+    cp bskyweb/static/oauth-client-metadata-native.json web-build/oauth-client-metadata-native.json
 
-    # copy our static pages over!
+    # copy static info pages over!
     cp -r witchsky-static-about web-build/about
 
 [group('dev')]

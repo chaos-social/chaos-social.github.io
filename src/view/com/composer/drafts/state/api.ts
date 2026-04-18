@@ -8,6 +8,7 @@ import {resolveLink} from '#/lib/api/resolve'
 import {getDeviceName} from '#/lib/deviceName'
 import {getImageDim} from '#/lib/media/manip'
 import {mimeToExt} from '#/lib/media/video/util'
+import {detectFacetsWithoutResolution} from '#/lib/strings/detect-facets'
 import {shortenLinks} from '#/lib/strings/rich-text-manip'
 import {type ComposerImage} from '#/state/gallery'
 import {type Gif} from '#/state/queries/tenor'
@@ -26,6 +27,7 @@ import {type DraftPostDisplay, type DraftSummary} from './schema'
 import * as storage from './storage'
 
 const TENOR_HOSTNAME = 'media.tenor.com'
+const KLIPY_HOSTNAME = 'static.klipy.com'
 
 /**
  * Video data from a draft that needs to be restored by re-processing.
@@ -379,7 +381,7 @@ function parseGifFromUrl(
 ): {url: string; width: number; height: number; alt: string} | undefined {
   try {
     const url = new URL(uri)
-    if (url.hostname !== TENOR_HOSTNAME) {
+    if (url.hostname !== TENOR_HOSTNAME && url.hostname !== KLIPY_HOSTNAME) {
       return undefined
     }
 
@@ -396,6 +398,8 @@ function parseGifFromUrl(
     url.searchParams.delete('ww')
     url.searchParams.delete('hh')
     url.searchParams.delete('alt')
+    url.searchParams.delete('mp4')
+    url.searchParams.delete('webm')
 
     return {url: url.toString(), width, height, alt}
   } catch {
@@ -420,7 +424,7 @@ export async function draftToComposerPosts(
   const posts = await Promise.all(
     draft.posts.map(async (post, index) => {
       const richtext = new RichText({text: post.text || ''})
-      richtext.detectFacetsWithoutResolution()
+      detectFacetsWithoutResolution(richtext)
 
       const embed: EmbedDraft = {
         quote: undefined,

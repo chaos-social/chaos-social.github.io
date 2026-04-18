@@ -41,7 +41,7 @@ module.exports = function (_config) {
 
   const IOS_ICON_FILE =
     PLATFORM === 'web' // web build doesn't like .icon files
-      ? './assets/app-icons/ios_icon_default_next.png'
+      ? './assets/app-icons/ios_icon_legacy_light.png'
       : IS_TESTFLIGHT
         ? './assets/app-icons/ios_icon_testflight.icon'
         : './assets/app-icons/ios_icon_default.icon'
@@ -57,7 +57,7 @@ module.exports = function (_config) {
       runtimeVersion: {
         policy: 'appVersion',
       },
-      icon: './assets/app-icons/ios_icon_default_next.png',
+      icon: './assets/app-icons/ios_icon_legacy_light.png',
       userInterfaceStyle: 'automatic',
       primaryColor: '#ED5345',
       newArchEnabled: false,
@@ -190,7 +190,7 @@ module.exports = function (_config) {
         barStyle: 'light-content',
       },
       android: {
-        icon: './assets/app-icons/android_icon_default_next.png',
+        icon: './assets/app-icons/android_icon_legacy_light.png',
         adaptiveIcon: {
           foregroundImage: './assets/icon-android-foreground.png',
           monochromeImage: './assets/icon-android-monochrome.png',

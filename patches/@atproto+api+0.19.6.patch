@@ -1,8 +1,18 @@
 diff --git a/node_modules/@atproto/api/dist/agent.js b/node_modules/@atproto/api/dist/agent.js
-index 634e463..57b5c74 100644
+index c486fb7..d77a845 100644
 --- a/node_modules/@atproto/api/dist/agent.js
 +++ b/node_modules/@atproto/api/dist/agent.js
-@@ -593,7 +593,7 @@ class Agent extends xrpc_1.XrpcClient {
+@@ -99,6 +99,9 @@ class Agent extends xrpc_1.XrpcClient {
+             if (this.proxy && !headers.has('atproto-proxy')) {
+                 headers.set('atproto-proxy', this.proxy);
+             }
++            if (headers.get('atproto-proxy') === '') {
++                headers.delete('atproto-proxy');
++            }
+             // Merge the labelers header of this particular request with the app &
+             // instance labelers.
+             headers.set('atproto-accept-labelers', [
+@@ -597,7 +600,7 @@ class Agent extends xrpc_1.XrpcClient {
                  hideAllFeeds: false,
              },
          };
@@ -11,7 +21,7 @@ index 634e463..57b5c74 100644
          const labelPrefs = [];
          for (const pref of res.data.preferences) {
              if (predicate.isValidAdultContentPref(pref)) {
-@@ -1275,14 +1275,14 @@ class Agent extends xrpc_1.XrpcClient {
+@@ -1279,14 +1282,14 @@ class Agent extends xrpc_1.XrpcClient {
      async updatePreferences(cb) {
          try {
              await __classPrivateFieldGet(this, _Agent_prefsLock, "f").acquireAsync();

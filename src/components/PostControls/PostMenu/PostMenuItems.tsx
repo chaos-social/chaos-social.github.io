@@ -27,8 +27,7 @@ import {useNavigation} from '@react-navigation/native'
 import {DISCOVER_DEBUG_DIDS} from '#/lib/constants'
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {useOpenLink} from '#/lib/hooks/useOpenLink'
-import {saveVideoToMediaLibrary} from '#/lib/media/manip'
-import {downloadVideoWeb} from '#/lib/media/manip.web'
+import {saveVideoToDevice} from '#/lib/media/saveVideoToDevice'
 import {getCurrentRoute} from '#/lib/routes/helpers'
 import {makeProfileLink} from '#/lib/routes/links'
 import {
@@ -109,7 +108,7 @@ import {
 import * as Prompt from '#/components/Prompt'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
-import {IS_INTERNAL, IS_WEB} from '#/env'
+import {IS_INTERNAL} from '#/env'
 
 let PostMenuItems = ({
   post,
@@ -617,8 +616,7 @@ let PostMenuItems = ({
     Toast.show(l({message: 'Downloading video...', context: 'toast'}))
 
     let success
-    if (IS_WEB) success = await downloadVideoWeb({uri: uri})
-    else success = await saveVideoToMediaLibrary({uri: uri})
+    success = await saveVideoToDevice({uri: uri})
 
     if (success)
       Toast.show(l({message: 'Video downloaded', context: 'toast'}), {
@@ -636,8 +634,7 @@ let PostMenuItems = ({
     Toast.show(l({message: 'Downloading GIF...', context: 'toast'}))
 
     let success
-    if (IS_WEB) success = await downloadVideoWeb({uri: gifEmbed.external.uri})
-    else success = await saveVideoToMediaLibrary({uri: gifEmbed.external.uri})
+    success = await saveVideoToDevice({uri: gifEmbed.external.uri})
 
     if (success)
       Toast.show(l({message: 'GIF downloaded', context: 'toast'}), {

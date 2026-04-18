@@ -37,6 +37,7 @@ export default defineConfig(
       '*.e2e.ts',
       '*.e2e.tsx',
       'eslint.config.mjs',
+      'svgo.config.mjs',
       '.jscodeshift/**',
       'rspack.config.ts',
       'scripts/post-web-build.js',
@@ -252,6 +253,14 @@ export default defineConfig(
       '@typescript-eslint/prefer-promise-reject-errors': 'warn',
       '@typescript-eslint/await-thenable': 'warn',
 
+      "no-restricted-imports": ["error", {
+        "paths": [{
+          "name": "react",
+          "importNames": ["React", "default"],
+          "message": "React is already in the global type namespace. Use named imports for runtime modules."
+        }]
+      }],
+
       /**
        * Turn off rules that we haven't enforced thus far
        */
@@ -282,6 +291,21 @@ export default defineConfig(
       globals: {
         ...globals.jest,
       }
+    },
+  },
+
+  /**
+   * Expo config plugins run in Node during prebuild, not in the app runtime.
+   */
+  {
+    files: ['plugins/**/*.{js,jsx,ts,tsx}'],
+    rules: {
+      'import-x/no-nodejs-modules': 'off',
+      'import-x/no-extraneous-dependencies': ['error', {
+        whitelist: [
+          '@expo/plist',
+        ],
+      }],
     },
   },
 )

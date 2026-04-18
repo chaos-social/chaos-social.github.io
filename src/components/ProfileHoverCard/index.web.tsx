@@ -38,7 +38,6 @@ import {
 } from '#/components/KnownFollowers'
 import {InlineLinkText, Link} from '#/components/Link'
 import {Loader} from '#/components/Loader'
-import {PdsBadge} from '#/components/PdsBadge'
 import * as Pills from '#/components/Pills'
 import {Portal} from '#/components/Portal'
 import {ProfileBadges} from '#/components/ProfileBadges'
@@ -529,8 +528,8 @@ function Inner({
           ))}
       </View>
 
-      <Link to={profileURL} label={_(msg`View profile`)} onPress={hide}>
-        <View style={[a.pb_sm, a.flex_1]}>
+      <View style={[a.pb_sm, a.flex_1]}>
+        <Link to={profileURL} label={_(msg`View profile`)} onPress={hide}>
           <View style={[a.flex_row, a.align_center, a.pt_md, a.pb_xs]}>
             <Text
               numberOfLines={1}
@@ -545,12 +544,10 @@ function Inner({
                 moderation.ui('displayName'),
               )}
             </Text>
-            <View style={[a.pl_xs, {marginTop: -2}]}>
-              <PdsBadge did={profile.did} size="md" interactive={false} />
-            </View>
             <ProfileBadges
               profile={profile}
               size="md"
+              pdsInteractive={false}
               style={[
                 a.pl_xs,
                 {
@@ -559,10 +556,14 @@ function Inner({
               ]}
             />
           </View>
+        </Link>
 
-          <ProfileHeaderHandle profile={profileShadow} disableTaps />
-        </View>
-      </Link>
+        <ProfileHeaderHandle
+          profile={profileShadow}
+          disableAuxiliaryTaps
+          onLinkPress={hide}
+        />
+      </View>
 
       {isBlockedUser && (
         <View style={[a.flex_row, a.flex_wrap, a.gap_xs]}>

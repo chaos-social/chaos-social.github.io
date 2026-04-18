@@ -16,7 +16,6 @@ import {useProfileShadow} from '#/state/cache/profile-shadow'
 import {unstableCacheProfileView} from '#/state/queries/profile'
 import {atoms as a, platform, useTheme, web} from '#/alf'
 import {WebOnlyInlineLinkText} from '#/components/Link'
-import {PdsBadge} from '#/components/PdsBadge'
 import {ProfileBadges} from '#/components/ProfileBadges'
 import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import {Text} from '#/components/Typography'
@@ -114,18 +113,15 @@ let PostMeta = (opts: PostMetaOpts): React.ReactNode => {
             <ProfileBadges
               profile={author}
               size="sm"
-              style={[a.pl_2xs, a.self_center]}
-            />
-            <View
+              pdsInteractive={false}
               style={[
                 a.pl_2xs,
                 a.self_center,
                 {
                   marginTop: platform({web: 1, ios: 0, android: -1}),
                 },
-              ]}>
-              <PdsBadge did={author.did} size="sm" interactive={false} />
-            </View>
+              ]}
+            />
             <MaybeLinkText
               emoji
               numberOfLines={1}

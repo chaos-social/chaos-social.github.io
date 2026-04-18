@@ -1,6 +1,5 @@
 import {useCallback, useEffect, useState} from 'react'
 import {type ListRenderItemInfo, View} from 'react-native'
-import * as Contacts from 'expo-contacts'
 import {
   type AppBskyContactDefs,
   type AppBskyContactGetSyncStatus,
@@ -21,6 +20,7 @@ import {
 } from '#/lib/routes/types'
 import {cleanError, isNetworkError} from '#/lib/strings/errors'
 import {logger} from '#/logger'
+import * as Contacts from '#/platform/contacts'
 import {
   updateProfileShadow,
   useProfileShadow,

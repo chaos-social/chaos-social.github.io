@@ -7,6 +7,7 @@ import {
   usePreferencesQuery,
 } from '#/state/queries/preferences'
 import {useAgent} from '#/state/session'
+import {pdsAgent} from '#/state/session/agent'
 
 export {Nux} from '#/state/queries/nuxs/definitions'
 
@@ -102,7 +103,7 @@ export function useSaveNux() {
   return useMutation({
     retry: 3,
     mutationFn: async (nux: AppNux) => {
-      await agent.bskyAppUpsertNux(serializeAppNux(nux))
+      await pdsAgent(agent).bskyAppUpsertNux(serializeAppNux(nux))
       // triggers a refetch
       await queryClient.invalidateQueries({
         queryKey: preferencesQueryKey,

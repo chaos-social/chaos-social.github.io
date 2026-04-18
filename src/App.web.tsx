@@ -9,6 +9,7 @@ import {useLingui} from '@lingui/react/macro'
 import * as Sentry from '@sentry/react-native'
 
 import {Provider as HotkeysProvider} from '#/lib/hotkeys'
+import {SafeAreaOverride} from '#/lib/pwa-safe-area'
 import {QueryProvider} from '#/lib/react-query'
 import {ThemeProvider} from '#/lib/ThemeContext'
 import {Provider as TranslateOnDeviceProvider} from '#/lib/translation'
@@ -200,22 +201,24 @@ function InnerApp() {
                                               <BackgroundNotificationPreferencesProvider>
                                                 <MutedThreadsProvider>
                                                   <SafeAreaProvider>
-                                                    <ProgressGuideProvider>
-                                                      <ServiceConfigProvider>
-                                                        <EmailVerificationProvider>
-                                                          <HideBottomBarBorderProvider>
-                                                            <IntentDialogProvider>
-                                                              <TranslateOnDeviceProvider>
-                                                                <HotkeysProvider>
-                                                                  <Shell />
-                                                                  <ToastOutlet />
-                                                                </HotkeysProvider>
-                                                              </TranslateOnDeviceProvider>
-                                                            </IntentDialogProvider>
-                                                          </HideBottomBarBorderProvider>
-                                                        </EmailVerificationProvider>
-                                                      </ServiceConfigProvider>
-                                                    </ProgressGuideProvider>
+                                                    <SafeAreaOverride>
+                                                      <ProgressGuideProvider>
+                                                        <ServiceConfigProvider>
+                                                          <EmailVerificationProvider>
+                                                            <HideBottomBarBorderProvider>
+                                                              <IntentDialogProvider>
+                                                                <TranslateOnDeviceProvider>
+                                                                  <HotkeysProvider>
+                                                                    <Shell />
+                                                                    <ToastOutlet />
+                                                                  </HotkeysProvider>
+                                                                </TranslateOnDeviceProvider>
+                                                              </IntentDialogProvider>
+                                                            </HideBottomBarBorderProvider>
+                                                          </EmailVerificationProvider>
+                                                        </ServiceConfigProvider>
+                                                      </ProgressGuideProvider>
+                                                    </SafeAreaOverride>
                                                   </SafeAreaProvider>
                                                 </MutedThreadsProvider>
                                               </BackgroundNotificationPreferencesProvider>

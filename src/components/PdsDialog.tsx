@@ -1,5 +1,6 @@
 import {useState} from 'react'
 import {Image, View} from 'react-native'
+import Svg, {G, Path, Rect} from 'react-native-svg'
 import {
   FontAwesomeIcon,
   type FontAwesomeIconStyle,
@@ -8,16 +9,18 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
-import {isBridgedPdsUrl, isBskyPdsUrl} from '#/state/queries/pds-label'
-
-const failedFaviconUrls = new Set<string>()
-import Svg, {G, Path, Rect} from 'react-native-svg'
-
+import {
+  getPdsFallbackFaviconUrl,
+  isBridgedPdsUrl,
+  isBskyPdsUrl,
+} from '#/state/queries/pds-label.util'
 import {atoms as a, useBreakpoints, useTheme} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
 import {InlineLinkText} from '#/components/Link'
 import {Text} from '#/components/Typography'
+
+const failedFaviconUrls = new Set<string>()
 
 function formatBskyPdsDisplayName(hostname: string): string {
   const match = hostname.match(/^([^.]+)\.([^.]+)\.host\.bsky\.network$/)
@@ -72,6 +75,7 @@ export function PdsDialog({
           <View style={[a.flex_row, a.align_center, a.gap_md]}>
             <PdsBadgeIcon
               faviconUrl={faviconUrl}
+              pdsUrl={pdsUrl}
               isBsky={isBsky}
               isBridged={isBridged}
               size={36}
@@ -84,11 +88,11 @@ export function PdsDialog({
                   {isBridged ? <Trans>Fediverse</Trans> : displayName}
                 </Text>
               }
-              {isBsky && 
+              {isBsky && (
                 <Text style={[a.text_sm, a.leading_tight]}>
                   <Trans>Bluesky Social</Trans>
                 </Text>
-              }
+              )}
             </View>
           </View>
 
@@ -244,17 +248,26 @@ function FaviconBadgeIcon({
   size,
   borderRadius,
   faviconUrl,
+  fallbackFaviconUrl,
 }: {
   size: number
   borderRadius: number
   faviconUrl: string
+  fallbackFaviconUrl?: string
 }) {
-  const t = useTheme()
-  const [imgError, setImgError] = useState(() =>
-    failedFaviconUrls.has(faviconUrl),
+  const getInitialUrl = () => {
+    if (!failedFaviconUrls.has(faviconUrl)) return faviconUrl
+    if (fallbackFaviconUrl && !failedFaviconUrls.has(fallbackFaviconUrl)) {
+      return fallbackFaviconUrl
+    }
+    return undefined
+  }
+  const [currentUrl, setCurrentUrl] = useState<string | undefined>(
+    getInitialUrl,
   )
+  const [imageLoaded, setImageLoaded] = useState(false)
 
-  if (imgError) {
+  if (!currentUrl) {
     return <DbBadgeIcon size={size} borderRadius={borderRadius} />
   }
 
@@ -262,22 +275,42 @@ function FaviconBadgeIcon({
     <View
       style={[
         a.overflow_hidden,
-        a.align_center,
-        a.justify_center,
         {
           width: size,
           height: size,
           borderRadius,
-          backgroundColor: t.atoms.bg_contrast_100.backgroundColor,
         },
       ]}>
+      <DbBadgeIcon size={size} borderRadius={borderRadius} />
       <Image
-        source={{uri: faviconUrl}}
-        style={{width: size, height: size}}
+        key={currentUrl}
+        source={{uri: currentUrl}}
+        style={{
+          width: size,
+          height: size,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          opacity: imageLoaded ? 1 : 0,
+        }}
         accessibilityIgnoresInvertColors
+        onLoad={() => {
+          setImageLoaded(true)
+        }}
         onError={() => {
-          failedFaviconUrls.add(faviconUrl)
-          setImgError(true)
+          failedFaviconUrls.add(currentUrl)
+          setImageLoaded(false)
+
+          if (
+            fallbackFaviconUrl &&
+            currentUrl !== fallbackFaviconUrl &&
+            !failedFaviconUrls.has(fallbackFaviconUrl)
+          ) {
+            setCurrentUrl(fallbackFaviconUrl)
+            return
+          }
+
+          setCurrentUrl(undefined)
         }}
       />
     </View>
@@ -286,12 +319,14 @@ function FaviconBadgeIcon({
 
 export function PdsBadgeIcon({
   faviconUrl,
+  pdsUrl,
   isBsky,
   isBridged,
   size,
   borderRadius,
 }: {
   faviconUrl?: string
+  pdsUrl?: string
   isBsky: boolean
   isBridged: boolean
   size: number
@@ -300,9 +335,27 @@ export function PdsBadgeIcon({
   const r = borderRadius ?? size / 5
   if (isBsky) return <BskyBadgeSVG size={size} />
   if (isBridged) return <FediverseBadgeSVG size={size} />
+  const fallbackFaviconUrl = pdsUrl
+    ? getPdsFallbackFaviconUrl(pdsUrl)
+    : undefined
   if (faviconUrl)
     return (
-      <FaviconBadgeIcon size={size} borderRadius={r} faviconUrl={faviconUrl} />
+      <FaviconBadgeIcon
+        key={`${faviconUrl}|${fallbackFaviconUrl ?? ''}`}
+        size={size}
+        borderRadius={r}
+        faviconUrl={faviconUrl}
+        fallbackFaviconUrl={fallbackFaviconUrl}
+      />
+    )
+  if (fallbackFaviconUrl)
+    return (
+      <FaviconBadgeIcon
+        key={fallbackFaviconUrl}
+        size={size}
+        borderRadius={r}
+        faviconUrl={fallbackFaviconUrl}
+      />
     )
   return <DbBadgeIcon size={size} borderRadius={r} />
 }

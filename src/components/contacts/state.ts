@@ -1,8 +1,8 @@
 import {createContext, useContext, useReducer} from 'react'
 import {type GestureResponderEvent} from 'react-native'
-import {type ExistingContact} from 'expo-contacts'
 
 import {type CountryCode} from '#/lib/international-telephone-codes'
+import {type ExistingContact} from '#/platform/contacts'
 import type * as bsky from '#/types/bsky'
 
 export type Contact = ExistingContact

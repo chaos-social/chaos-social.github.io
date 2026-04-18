@@ -6,6 +6,7 @@ import {Trans} from '@lingui/react/macro'
 
 import {logger} from '#/logger'
 import {type SessionAccount, useSession, useSessionApi} from '#/state/session'
+import {canAttemptSessionResume} from '#/state/session/util'
 import {useLoggedOutViewControls} from '#/state/shell/logged-out'
 import {atoms as a, web} from '#/alf'
 import {AccountList} from '#/components/AccountList'
@@ -36,7 +37,7 @@ export const ChooseAccountForm = ({
         // The session API isn't resilient to race conditions so let's just ignore this.
         return
       }
-      if (!account.isOauthSession && !account.accessJwt) {
+      if (!canAttemptSessionResume(account)) {
         // Move to login form.
         onSelectAccount(account)
         return
@@ -96,7 +97,9 @@ export const ChooseAccountForm = ({
           </TextField.LabelText>
         )}
         <AccountList
-          onSelectAccount={onSelect}
+          onSelectAccount={account => {
+            void onSelect(account)
+          }}
           onSelectOther={() => onSelectAccount()}
           pendingDid={pendingDid}
         />

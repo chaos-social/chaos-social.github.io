@@ -1,7 +1,6 @@
 import {useContext} from 'react'
 import {Alert, View} from 'react-native'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
-import * as Contacts from 'expo-contacts'
 import type AtpAgent from '@atproto/api'
 import {
   type AppBskyActorProfile,
@@ -16,6 +15,7 @@ import {useMutation, useQueryClient} from '@tanstack/react-query'
 import {uploadBlob} from '#/lib/api'
 import {cleanError, isNetworkError} from '#/lib/strings/errors'
 import {logger} from '#/logger'
+import * as Contacts from '#/platform/contacts'
 import {findContactsStatusQueryKey} from '#/state/queries/find-contacts'
 import {useAgent} from '#/state/session'
 import {

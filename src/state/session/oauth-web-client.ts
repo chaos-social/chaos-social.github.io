@@ -1,13 +1,19 @@
 import {BrowserOAuthClient} from '@atproto/oauth-client-browser'
 
+import {createIdentityResolver} from './identity-resolver'
+
 const OAUTH_BASE_URL: string =
   process.env.EXPO_PUBLIC_OAUTH_BASE_URL || 'https://witchsky.app'
 
 const OAUTH_CLIENT_NAME: string =
   process.env.EXPO_PUBLIC_OAUTH_CLIENT_NAME || 'Witchsky'
 
-const OAUTH_SCOPE =
-  'atproto transition:generic transition:email transition:chat.bsky identity:handle account:email?action=manage account:status?action=manage'
+const OAUTH_SCOPE = [
+  'atproto',
+  'transition:generic',
+  'transition:email',
+  'transition:chat.bsky',
+].join(' ')
 
 function isLoopback() {
   if (typeof window === 'undefined') return false
@@ -27,7 +33,7 @@ function createWebOAuthClient() {
     // Loopback client: encode scope and redirect_uri in the client_id URL.
     // The authorization server uses hardcoded metadata for http://localhost
     // client_ids. Without explicit scope, only "atproto" is granted, which
-    // lacks the transition:* scopes needed for appview/chat APIs.
+    // lacks the transition scopes this client needs for appview and chat APIs.
     const port = window.location.port ? `:${window.location.port}` : ''
     const redirectUri = `http://127.0.0.1${port}/`
     const clientId =
@@ -46,7 +52,7 @@ function createWebOAuthClient() {
         application_type: 'web',
         dpop_bound_access_tokens: true,
       },
-      handleResolver: 'https://bsky.social',
+      identityResolver: createIdentityResolver(),
     })
   }
 
@@ -63,7 +69,7 @@ function createWebOAuthClient() {
       application_type: 'web',
       dpop_bound_access_tokens: true,
     },
-    handleResolver: 'https://bsky.social',
+    identityResolver: createIdentityResolver(),
   })
 }
 

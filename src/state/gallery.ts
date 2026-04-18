@@ -12,6 +12,8 @@ import {
   SaveFormat,
 } from 'expo-image-manipulator'
 import {type BlobRef} from '@atproto/api'
+import {transformExif} from '@uwx/exif-be-gone-web'
+import {toByteArray} from 'base64-js'
 import {nanoid} from 'nanoid/non-secure'
 
 import {POST_IMG_MAX} from '#/lib/constants'
@@ -204,16 +206,120 @@ export function resetImageManipulation(
   return img
 }
 
+async function bypassCompression(
+  img: ComposerImage,
+): Promise<PickerImage | undefined> {
+  // TODO: use expo-file-system instead of working directly in memory
+
+  function dataUriToUint8Array(uri: string) {
+    const base64 = uri.split(',')[1]
+    return toByteArray(base64)
+  }
+
+  function toArrayBuffer(uint8: Uint8Array) {
+    if (uint8.buffer instanceof ArrayBuffer) {
+      if (
+        uint8.byteOffset === 0 &&
+        uint8.byteLength === uint8.buffer.byteLength
+      ) {
+        return uint8.buffer
+      }
+
+      return uint8.buffer.slice(
+        uint8.byteOffset,
+        uint8.byteOffset + uint8.byteLength,
+      )
+    }
+
+    // Fallback for environments where Uint8Array.buffer is not an ArrayBuffer
+    const buffer = new ArrayBuffer(uint8.length)
+    const view = new Uint8Array(buffer)
+    view.set(uint8)
+    return buffer
+  }
+
+  const source = img.transformed || img.source
+  if (
+    source.width > POST_IMG_MAX.width ||
+    source.height > POST_IMG_MAX.height
+  ) {
+    return undefined
+  }
+
+  if (
+    ![
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/avif',
+      'image/gif',
+    ].includes(source.mime)
+  ) {
+    return undefined
+  }
+
+  let data: Uint8Array
+
+  const path = source.path
+  // convert path to data URI if it is not already
+  if (!path.startsWith('data:')) {
+    try {
+      await fetch(path)
+      const response = await fetch(path)
+      data = new Uint8Array(await response.arrayBuffer())
+      if (data.byteLength > POST_IMG_MAX.size) {
+        return undefined
+      }
+    } catch (e) {
+      // Fetch failed, likely due to CORS. Return undefined to trigger normal compression flow and error handling.
+      return undefined
+    }
+  } else {
+    if (getDataUriSize(path) > POST_IMG_MAX.size) {
+      return undefined
+    }
+    data = new Uint8Array(dataUriToUint8Array(path).buffer)
+  }
+
+  try {
+    data = await transformExif(data)
+  } catch (err) {
+    console.error(
+      'Failed to transform EXIF data, proceeding with original image',
+      err,
+    )
+    return undefined
+  }
+
+  const dataUri = await blobToDataUri(
+    new Blob([toArrayBuffer(data)], {type: source.mime}),
+  )
+  return {
+    path: dataUri,
+    width: source.width,
+    height: source.height,
+    mime: source.mime,
+    size: getDataUriSize(dataUri),
+  }
+}
+
 export async function compressImage(
   img: ComposerImage,
   options?: {
     highResolution?: boolean
+    increasedBlobSizeLimit?: boolean
   },
 ): Promise<PickerImage> {
+  const res = await bypassCompression(img)
+  if (res) {
+    return res
+  }
+
   const source = img.transformed || img.source
   const highResolution = options?.highResolution ?? false
   let attempts = 0
   let maxDimension = highResolution ? 4000 : POST_IMG_MAX.width
+  let maxBytes = options?.increasedBlobSizeLimit ? 2000000 : POST_IMG_MAX.size
 
   let minQualityPercentage = 0
   let maxQualityPercentage = 101 // exclusive
@@ -247,20 +353,20 @@ export async function compressImage(
       [{resize: {width: w, height: h}}],
       {
         compress: qualityPercentage / 100,
-        format: SaveFormat.JPEG,
+        format: SaveFormat.WEBP,
         base64: true,
       },
     )
 
     const base64 = res.base64
     const size = base64 ? getDataUriSize(base64) : 0
-    if (base64 && size <= POST_IMG_MAX.size) {
+    if (base64 && size <= maxBytes) {
       minQualityPercentage = qualityPercentage
       newDataUri = {
         path: await moveIfNecessary(res.uri),
         width: res.width,
         height: res.height,
-        mime: 'image/jpeg',
+        mime: 'image/webp',
         size,
       }
     } else {
@@ -278,7 +384,7 @@ export async function compressImage(
 async function moveIfNecessary(from: string) {
   const cacheDir = IS_NATIVE && getImageCacheDirectory()
 
-  if (cacheDir && from.startsWith(cacheDir)) {
+  if (cacheDir && !from.startsWith(cacheDir)) {
     const to = joinPath(cacheDir, nanoid(36))
 
     await makeDirectoryAsync(cacheDir, {intermediates: true})

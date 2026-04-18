@@ -6,6 +6,7 @@ import {useAgent, useSession} from '#/state/session'
 import {usePatchAgeAssuranceOtherRequiredData} from '#/ageAssurance'
 import {IS_DEV} from '#/env'
 import {account} from '#/storage'
+import {pdsAgent} from './session/agent'
 
 // 6s in dev, 48h in prod
 const BIRTHDATE_DELAY_HOURS = IS_DEV ? 0.001 : 48
@@ -58,7 +59,7 @@ export function useBirthdateMutation() {
   return useMutation<void, unknown, {birthDate: Date}>({
     mutationFn: async ({birthDate}: {birthDate: Date}) => {
       const bday = birthDate.toISOString()
-      await agent.setPersonalDetails({birthDate: bday})
+      await pdsAgent(agent).setPersonalDetails({birthDate: bday})
       // triggers a refetch
       await queryClient.invalidateQueries({
         queryKey: preferencesQueryKey,

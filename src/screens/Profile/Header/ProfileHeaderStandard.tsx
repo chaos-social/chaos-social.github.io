@@ -50,7 +50,6 @@ import {
   shouldShowKnownFollowers,
 } from '#/components/KnownFollowers'
 import {Link} from '#/components/Link'
-import {PdsBadge} from '#/components/PdsBadge'
 import {ProfileBadges} from '#/components/ProfileBadges'
 import * as Prompt from '#/components/Prompt'
 import {RichText} from '#/components/RichText'
@@ -202,7 +201,6 @@ let ProfileHeaderStandard = ({
                     a.align_center,
                     {marginTop: platform({ios: 2})},
                   ]}>
-                  <PdsBadge did={profile.did} size="lg" />
                   <ProfileBadges profile={profile} size="lg" interactive />
                 </View>
               </Text>

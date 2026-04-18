@@ -20,6 +20,7 @@ import {useDisableQuotesMetrics} from '#/state/preferences/disable-quotes-metric
 import {useDisableReplyMetrics} from '#/state/preferences/disable-reply-metrics'
 import {useDisableRepostsMetrics} from '#/state/preferences/disable-reposts-metrics'
 import {
+  useGetPost,
   usePostLikeMutationQueue,
   usePostRepostMutationQueue,
 } from '#/state/queries/post'
@@ -28,6 +29,7 @@ import {
   ProgressGuideAction,
   useProgressGuideControls,
 } from '#/state/shell/progress-guide'
+import * as userActionHistory from '#/state/userActionHistory'
 import {atoms as a, useBreakpoints, useTheme} from '#/alf'
 import {Reply as Bubble} from '#/components/icons/Reply'
 import {useFormatPostStatCount} from '#/components/PostControls/util'
@@ -83,6 +85,7 @@ let PostControls = ({
   const {t: l} = useLingui()
   const {openComposer} = useOpenComposer()
   const {feedDescriptor} = useFeedFeedbackContext()
+  const getPost = useGetPost()
   const [queueLike, queueUnlike] = usePostLikeMutationQueue(
     post,
     viaRepost,
@@ -117,6 +120,21 @@ let PostControls = ({
   const disableQuotesMetrics = useDisableQuotesMetrics()
 
   const autoLikeOnRepost = useAutoLikeOnRepost()
+
+  const shouldAutoLikeOnRepost = async () => {
+    if (post.viewer?.like) return false
+
+    if (userActionHistory.getActionHistory().likes.includes(post.uri)) {
+      return false
+    }
+
+    try {
+      const latestPost = await getPost({uri: post.uri})
+      return !latestPost.viewer?.like
+    } catch {
+      return false
+    }
+  }
 
   const onPressToggleLike = async () => {
     if (isBlocked) {
@@ -167,7 +185,7 @@ let PostControls = ({
         })
         await queueRepost()
         setHasLikeIconBeenToggled(true)
-        if (!post.viewer?.like && autoLikeOnRepost) {
+        if (autoLikeOnRepost && (await shouldAutoLikeOnRepost())) {
           sendInteraction({
             item: post.uri,
             event: 'app.bsky.feed.defs#interactionLike',
@@ -333,7 +351,7 @@ let PostControls = ({
                 isToggled={Boolean(post.viewer?.like)}
                 hasBeenToggled={hasLikeIconBeenToggled}
                 renderCount={({count}) => (
-                  <PostControlButtonText>
+                  <PostControlButtonText testID="likeCount">
                     {formatPostStatCount(count)}
                   </PostControlButtonText>
                 )}

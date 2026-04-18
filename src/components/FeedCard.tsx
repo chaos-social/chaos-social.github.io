@@ -9,6 +9,7 @@ import {
 import {Plural, Trans, useLingui} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
+import {detectFacetsWithoutResolution} from '#/lib/strings/detect-facets'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {logger} from '#/logger'
 import {precacheFeedFromGeneratorView} from '#/state/queries/feed'
@@ -213,7 +214,7 @@ export function Description({
   const rt = useMemo(() => {
     if (!description) return
     const rt = new RichTextApi({text: description || ''})
-    rt.detectFacetsWithoutResolution()
+    detectFacetsWithoutResolution(rt)
     return rt
   }, [description])
   if (!rt) return null

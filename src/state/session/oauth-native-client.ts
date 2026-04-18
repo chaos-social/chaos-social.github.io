@@ -1,4 +1,5 @@
 import {ExpoOAuthClient} from '@atproto/oauth-client-expo'
+import {createIdentityResolver} from './identity-resolver'
 
 const OAUTH_BASE_URL: string =
   process.env.EXPO_PUBLIC_OAUTH_BASE_URL || 'https://witchsky.app'
@@ -13,7 +14,7 @@ const OAUTH_SCOPE =
 const NATIVE_REDIRECT_URI = 'app.witchsky:/auth/callback'
 
 const BSKY_OAUTH_CLIENT = new ExpoOAuthClient({
-  handleResolver: 'https://bsky.social',
+  identityResolver: createIdentityResolver(),
   clientMetadata: {
     client_id: `${OAUTH_BASE_URL}/oauth-client-metadata-native.json`,
     client_name: OAUTH_CLIENT_NAME,

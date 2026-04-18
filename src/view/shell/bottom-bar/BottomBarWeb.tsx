@@ -1,16 +1,27 @@
-import {useCallback} from 'react'
-import {View} from 'react-native'
+import {useCallback, useRef, useState} from 'react'
+import {Pressable, View} from 'react-native'
 import Animated from 'react-native-reanimated'
+import {useSafeAreaInsets} from 'react-native-safe-area-context'
+import {sanitizeUrl} from '@braintree/sanitize-url'
 import {msg, plural} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
-import {useNavigationState} from '@react-navigation/native'
+import {StackActions, useNavigationState} from '@react-navigation/native'
 
 import {useHideBottomBarBorder} from '#/lib/hooks/useHideBottomBarBorder'
 import {useMinimalShellFooterTransform} from '#/lib/hooks/useMinimalShellTransform'
-import {getCurrentRoute, isTab} from '#/lib/routes/helpers'
+import {useNavigationDeduped} from '#/lib/hooks/useNavigationDeduped'
+import {
+  getCurrentRoute,
+  getTabState,
+  isTab,
+  TabState,
+} from '#/lib/routes/helpers'
 import {makeProfileLink} from '#/lib/routes/links'
 import {type CommonNavigatorParams} from '#/lib/routes/types'
+import {convertBskyAppUrlIfNeeded} from '#/lib/strings/url-helpers'
+import {emitSoftReset} from '#/state/events'
+import {useModalControls} from '#/state/modals'
 import {useUnreadMessageCount} from '#/state/queries/messages/list-conversations'
 import {useUnreadNotifications} from '#/state/queries/notifications/unread'
 import {useProfileQuery} from '#/state/queries/profile'
@@ -44,12 +55,15 @@ import {
 } from '#/components/icons/Message'
 import {Text} from '#/components/Typography'
 import {useAgeAssurance} from '#/ageAssurance'
+import {IS_WEB_TOUCH_DEVICE} from '#/env'
+import {router} from '#/routes'
 import {styles} from './BottomBarStyles'
 
 export function BottomBarWeb() {
   const {_} = useLingui()
   const {hasSession, currentAccount} = useSession()
   const t = useTheme()
+  const {bottom: bottomInset} = useSafeAreaInsets()
   const footerMinimalShellTransform = useMinimalShellFooterTransform()
   const {requestSwitchToAccount} = useLoggedOutViewControls()
   const closeAllActiveElements = useCloseAllActiveElements()
@@ -88,6 +102,9 @@ export function BottomBarWeb() {
           styles.bottomBar,
           styles.bottomBarWeb,
           t.atoms.bg,
+          IS_WEB_TOUCH_DEVICE
+            ? {paddingBottom: Math.max(bottomInset, 15)}
+            : {paddingBottom: bottomInset},
           hideBorder
             ? {borderColor: t.atoms.bg.backgroundColor}
             : t.atoms.border_contrast_low,
@@ -263,6 +280,7 @@ const NavItem: React.FC<{
 }> = ({children, href, routeName, hasNew, notificationCount, onLongPress}) => {
   const t = useTheme()
   const {_} = useLingui()
+  const {bottom: bottomInset} = useSafeAreaInsets()
   const {currentAccount} = useSession()
   const currentRoute = useNavigationState(state => {
     if (!state) {
@@ -287,10 +305,25 @@ const NavItem: React.FC<{
             : (currentRoute.params as CommonNavigatorParams['Profile']).name)
       : isTab(currentRoute.name, routeName)
 
+  if (IS_WEB_TOUCH_DEVICE) {
+    return (
+      <TouchNavItem
+        href={href}
+        routeName={routeName}
+        isActive={isActive}
+        isOnDifferentProfile={isOnDifferentProfile}
+        hasNew={hasNew}
+        notificationCount={notificationCount}
+        onLongPress={onLongPress}>
+        {children}
+      </TouchNavItem>
+    )
+  }
+
   return (
     <Link
       href={href}
-      style={[styles.ctrl, a.pb_lg]}
+      style={[styles.ctrl, bottomInset === 0 && a.pb_lg]}
       navigationAction={isOnDifferentProfile ? 'push' : 'navigate'}
       aria-role="link"
       aria-label={routeName}
@@ -318,5 +351,120 @@ const NavItem: React.FC<{
         />
       ) : null}
     </Link>
+  )
+}
+
+function TouchNavItem({
+  children,
+  href,
+  routeName,
+  isActive,
+  isOnDifferentProfile,
+  hasNew,
+  notificationCount,
+  onLongPress,
+}: {
+  children: (props: {isActive: boolean}) => React.ReactNode
+  href: string
+  routeName: string
+  isActive: boolean
+  isOnDifferentProfile: boolean
+  hasNew?: boolean
+  notificationCount?: string
+  onLongPress?: () => void
+}) {
+  const t = useTheme()
+  const {_} = useLingui()
+  const {bottom: bottomInset} = useSafeAreaInsets()
+  const navigation = useNavigationDeduped()
+  const {closeModal} = useModalControls()
+
+  // CSS transition press animation — runs on compositor thread
+  // so navigation re-renders don't cause jank
+  const [pressed, setPressed] = useState(false)
+  const pressInTime = useRef(0)
+  const pressOutTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  )
+  const ANIM_MS = 100
+
+  const handlePressIn = () => {
+    if (pressOutTimer.current) {
+      clearTimeout(pressOutTimer.current)
+      pressOutTimer.current = undefined
+    }
+    pressInTime.current = Date.now()
+    setPressed(true)
+  }
+
+  const handlePressOut = () => {
+    const elapsed = Date.now() - pressInTime.current
+    const remaining = Math.max(0, ANIM_MS - elapsed)
+    // Wait for scale-down to finish before starting scale-up
+    pressOutTimer.current = setTimeout(() => {
+      setPressed(false)
+      pressOutTimer.current = undefined
+    }, remaining)
+  }
+
+  const onPress = () => {
+    closeModal()
+
+    const sanitizedHref = convertBskyAppUrlIfNeeded(sanitizeUrl(href))
+    const [resolvedRouteName, params] = router.matchPath(sanitizedHref)
+
+    if (isOnDifferentProfile) {
+      // @ts-ignore we're not able to type check on this one -prf
+      navigation.dispatch(StackActions.push(resolvedRouteName, params))
+    } else {
+      const state = navigation.getState()
+      const tabState = getTabState(state, resolvedRouteName)
+      if (tabState === TabState.InsideAtRoot) {
+        emitSoftReset()
+      } else {
+        // @ts-ignore we're not able to type check on this one -prf
+        navigation.navigate(resolvedRouteName, params, {pop: true})
+      }
+    }
+  }
+
+  return (
+    <Pressable
+      style={[
+        styles.ctrl,
+        bottomInset === 0 && a.pb_lg,
+        {
+          transition: `transform ${ANIM_MS}ms`,
+          transform: [{scale: pressed ? 0.8 : 1}],
+        } as any,
+      ]}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      unstable_pressDelay={0}
+      accessibilityRole="link"
+      accessibilityLabel={routeName}
+      accessibilityHint="">
+      {children({isActive})}
+      {notificationCount ? (
+        <View
+          style={[
+            styles.notificationCount,
+            styles.notificationCountWeb,
+            {backgroundColor: t.palette.primary_500},
+          ]}
+          aria-label={_(
+            msg`${plural(notificationCount, {
+              one: '# unread item',
+              other: '# unread items',
+            })}`,
+          )}>
+          <Text style={styles.notificationCountLabel}>{notificationCount}</Text>
+        </View>
+      ) : hasNew ? (
+        <View style={styles.hasNewBadge} />
+      ) : null}
+    </Pressable>
   )
 }

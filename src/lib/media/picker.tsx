@@ -25,7 +25,7 @@ export async function openCamera(customOpts: ImagePickerOptions) {
 
   return {
     path: asset.uri,
-    mime: asset.mimeType ?? 'image/jpeg',
+    mime: asset.mimeType ?? 'image/webp',
     size: asset.fileSize ?? 0,
     width: asset.width,
     height: asset.height,
@@ -37,7 +37,7 @@ export async function openCropper(opts: OpenCropperOptions) {
     doneButtonText: t`Done`,
     cancelButtonText: t`Cancel`,
     ...opts,
-    format: 'jpeg',
+    format: 'png',
   })
 
   return {

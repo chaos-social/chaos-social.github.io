@@ -7,6 +7,7 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
 import {HITSLOP_10} from '#/lib/constants'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {Nux, useNux, useSaveNux} from '#/state/queries/nuxs'
 import {atoms as a, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
@@ -18,6 +19,7 @@ import {Link} from '../Link'
 import {useIsFindContactsFeatureEnabledBasedOnGeolocation} from './country-allowlist'
 
 export function FindContactsBannerNUX() {
+  const enableSquareButtons = useEnableSquareButtons()
   const t = useTheme()
   const {_} = useLingui()
   const ax = useAnalytics()
@@ -36,7 +38,7 @@ export function FindContactsBannerNUX() {
           }}
           style={[
             a.w_full,
-            a.rounded_xl,
+            enableSquareButtons ? a.rounded_sm : a.rounded_xl,
             a.curve_continuous,
             a.overflow_hidden,
           ]}>

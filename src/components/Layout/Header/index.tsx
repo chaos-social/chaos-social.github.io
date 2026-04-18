@@ -60,13 +60,7 @@ export function Outer({
         gutters,
         platform({
           native: [a.pb_xs, {minHeight: 48}],
-          web: [
-            a.py_xs,
-            {
-              minHeight: 52,
-              paddingTop: 'env(safe-area-inset-top)',
-            },
-          ],
+          web: [a.py_xs, {minHeight: 52}],
         }),
         t.atoms.border_contrast_low,
         gtMobile && [a.mx_auto, {maxWidth: 600}],

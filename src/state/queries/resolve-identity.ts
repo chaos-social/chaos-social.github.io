@@ -1,6 +1,7 @@
 import {type Did, isDid} from '@atproto/api'
 import {useQuery} from '@tanstack/react-query'
 
+import {readPlcDirectory} from '#/state/preferences/plc-directory'
 import {STALE} from '.'
 import {LRU} from './direct-fetch-record'
 const RQKEY_ROOT = 'resolve-identity'
@@ -28,12 +29,16 @@ export type Service = {
   serviceEndpoint?: string
 }
 
-const serviceCache = new LRU<Did, DidDocument>()
+const serviceCache = new LRU<string, DidDocument>()
 
 export async function resolveDidDocument(did: Did) {
-  return await serviceCache.getOrTryInsertWith(did, async () => {
+  const cacheKey = did.startsWith('did:plc:')
+    ? `${readPlcDirectory()}|${did}`
+    : did
+
+  return await serviceCache.getOrTryInsertWith(cacheKey, async () => {
     const docUrl = did.startsWith('did:plc:')
-      ? `https://plc.directory/${did}`
+      ? `${readPlcDirectory()}/${did}`
       : `https://${did.substring(8)}/.well-known/did.json`
 
     // TODO: we should probably validate this...

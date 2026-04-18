@@ -232,6 +232,40 @@ input:focus {
   }
 }
 
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+/* suppress native touch gestures on PWA bottom bar and dialogs */
+@media (pointer: coarse) {
+  [role='navigation'],
+  [role='navigation'] * {
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+  }
+  [role='dialog'],
+  [role='dialog'] * {
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+  }
+}
+
 /* animating radix dropdowns requires knowing the data attributes */
 .dropdown-menu-transform-origin > * {
   transform-origin: var(--radix-dropdown-menu-content-transform-origin);

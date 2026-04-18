@@ -176,6 +176,11 @@ export const GIF_SEARCH = (params: string) =>
 export const GIF_FEATURED = (params: string) =>
   `${GIF_SERVICE}/tenor/v2/featured?${params}`
 
+export const GIF_KLIPY_SEARCH = (params: string) =>
+  `${GIF_SERVICE}/klipy/v2/search?${params}`
+export const GIF_KLIPY_FEATURED = (params: string) =>
+  `${GIF_SERVICE}/klipy/v2/featured?${params}`
+
 export const MAX_LABELERS = 20
 
 export const VIDEO_SERVICE = 'https://video.bsky.app'
@@ -251,3 +256,5 @@ export const webLinks = {
   community: `https://bsky.social/about/support/community-guidelines`,
   communityDeprecated: `https://bsky.social/about/support/community-guidelines-deprecated`,
 }
+
+export const DOH_ENDPOINT = 'https://cloudflare-dns.com/dns-query'

@@ -94,7 +94,8 @@ export function ChatEmptyPill() {
         onPressOut={onPressOut}>
         <Text
           style={[a.font_semi_bold, a.pointer_events_none]}
-          selectable={false}>
+          selectable={false}
+          emoji>
           {prompts[promptIndex]}
         </Text>
       </AnimatedPressable>

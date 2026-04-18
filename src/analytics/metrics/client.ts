@@ -1,7 +1,7 @@
 import {onAppStateChange} from '#/lib/appState'
-import {isNetworkError} from '#/lib/strings/errors'
+// import {isNetworkError} from '#/lib/strings/errors'
 import {Logger} from '#/logger'
-import * as env from '#/env'
+// import * as env from '#/env'
 
 type Event<M extends Record<string, any>> = {
   source: 'app'
@@ -11,7 +11,7 @@ type Event<M extends Record<string, any>> = {
   metadata: Record<string, any>
 }
 
-const TRACKING_ENDPOINT = env.METRICS_API_HOST + '/t'
+// const TRACKING_ENDPOINT = env.METRICS_API_HOST + '/t'
 const logger = Logger.create(Logger.Context.Metric, {})
 
 export class MetricsClient<M extends Record<string, any>> {
@@ -71,43 +71,44 @@ export class MetricsClient<M extends Record<string, any>> {
       isRetry,
     })
 
-    try {
-      const body = JSON.stringify({events})
-      if (env.IS_WEB && 'navigator' in globalThis && navigator.sendBeacon) {
-        const success = navigator.sendBeacon(
-          TRACKING_ENDPOINT,
-          new Blob([body], {type: 'application/json'}),
-        )
-        if (!success) {
-          // construct a "network error" for `isNetworkError` to work
-          throw new Error(`Failed to fetch: sendBeacon returned false`)
-        }
-      } else {
-        const res = await fetch(TRACKING_ENDPOINT, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({events}),
-          keepalive: true,
-        })
+    // Witchsky: we don't need this :3
+    // try {
+    //   const body = JSON.stringify({events})
+    //   if (env.IS_WEB && 'navigator' in globalThis && navigator.sendBeacon) {
+    //     const success = navigator.sendBeacon(
+    //       TRACKING_ENDPOINT,
+    //       new Blob([body], {type: 'application/json'}),
+    //     )
+    //     if (!success) {
+    //       // construct a "network error" for `isNetworkError` to work
+    //       throw new Error(`Failed to fetch: sendBeacon returned false`)
+    //     }
+    //   } else {
+    //     const res = await fetch(TRACKING_ENDPOINT, {
+    //       method: 'POST',
+    //       headers: {
+    //         'Content-Type': 'application/json',
+    //       },
+    //       body: JSON.stringify({events}),
+    //       keepalive: true,
+    //     })
 
-        if (!res.ok) {
-          const error = await res.text().catch(() => 'Unknown error')
-          // construct a "network error" for `isNetworkError` to work
-          throw new Error(`${res.status} Failed to fetch — ${error}`)
-        }
-      }
-    } catch (e: any) {
-      if (isNetworkError(e)) {
-        if (isRetry) return // retry once
-        this.failedQueue.push(...events)
-        return
-      }
-      logger.error(`Failed to send metrics`, {
-        safeMessage: e.toString(),
-      })
-    }
+    //     if (!res.ok) {
+    //       const error = await res.text().catch(() => 'Unknown error')
+    //       // construct a "network error" for `isNetworkError` to work
+    //       throw new Error(`${res.status} Failed to fetch — ${error}`)
+    //     }
+    //   }
+    // } catch (e: any) {
+    //   if (isNetworkError(e)) {
+    //     if (isRetry) return // retry once
+    //     this.failedQueue.push(...events)
+    //     return
+    //   }
+    //   logger.error(`Failed to send metrics`, {
+    //     safeMessage: e.toString(),
+    //   })
+    // }
   }
 
   private retryFailedLogs() {

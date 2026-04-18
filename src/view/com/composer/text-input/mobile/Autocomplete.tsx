@@ -9,7 +9,6 @@ import {sanitizeHandle} from '#/lib/strings/handles'
 import {useActorAutocompleteQuery} from '#/state/queries/actor-autocomplete'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, platform, useTheme} from '#/alf'
-import {PdsBadge} from '#/components/PdsBadge'
 import {ProfileBadges} from '#/components/ProfileBadges'
 import {Text} from '#/components/Typography'
 
@@ -114,9 +113,6 @@ function AutocompleteProfileCard({
               numberOfLines={1}>
               {displayName}
             </Text>
-            <View style={[{marginTop: platform({android: -2})}]}>
-              <PdsBadge did={profile.did} size="sm" />
-            </View>
             <ProfileBadges
               profile={profile}
               size="sm"

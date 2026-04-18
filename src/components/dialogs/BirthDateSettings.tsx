@@ -38,7 +38,9 @@ export function BirthDateSettingsDialog({
   const {isLoading, error, data: preferences} = usePreferencesQuery()
   const isBirthdateUpdateAllowed = useIsBirthdateUpdateAllowed()
   const {currentAccount} = useSession()
-  const isUsingAppPassword = isAppPassword(currentAccount?.accessJwt || '')
+  const isUsingAppPassword = currentAccount?.accessJwt
+    ? isAppPassword(currentAccount?.accessJwt)
+    : false
 
   return (
     <Dialog.Outer control={control} nativeOptions={{preventExpansion: true}}>

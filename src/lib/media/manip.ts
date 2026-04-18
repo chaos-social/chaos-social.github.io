@@ -270,7 +270,7 @@ async function doResize(
       localUri,
       [{resize: newDimensions}],
       {
-        format: SaveFormat.JPEG,
+        format: SaveFormat.WEBP,
         compress: qualityPercentage / 100,
       },
     )
@@ -288,7 +288,7 @@ async function doResize(
       minQualityPercentage = qualityPercentage
       newDataUri = {
         path: normalizePath(resizeRes.uri),
-        mime: 'image/jpeg',
+        mime: 'image/webp',
         size: fileInfo.size,
         width: resizeRes.width,
         height: resizeRes.height,

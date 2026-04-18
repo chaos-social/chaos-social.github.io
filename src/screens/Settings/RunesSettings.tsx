@@ -93,6 +93,10 @@ import {
   useShowExternalShareButtons,
 } from '#/state/preferences/external-share-buttons'
 import {
+  useFaviconService,
+  useSetFaviconService,
+} from '#/state/preferences/favicon-service'
+import {
   useHideFeedsPromoTab,
   useSetHideFeedsPromoTab,
 } from '#/state/preferences/hide-feeds-promo-tab'
@@ -137,6 +141,10 @@ import {
   useSetPdsLabelHideBskyPds,
 } from '#/state/preferences/pds-label'
 import {
+  usePlcDirectory,
+  useSetPlcDirectory,
+} from '#/state/preferences/plc-directory'
+import {
   usePostReplacement,
   useSetPostReplacement,
 } from '#/state/preferences/post-name-replacement'
@@ -152,6 +160,10 @@ import {
   useSetShowLinkInHandle,
   useShowLinkInHandle,
 } from '#/state/preferences/show-link-in-handle.tsx'
+import {
+  useSetShowLinkInHandleOnlyOnWorkingLinks,
+  useShowLinkInHandleOnlyOnWorkingLinks,
+} from '#/state/preferences/show-link-in-handle-only-on-working-links'
 import {
   useLibreTranslateInstance,
   useSetLibreTranslateInstance,
@@ -175,7 +187,7 @@ import {Atom_Stroke2_Corner0_Rounded as AtomIcon} from '#/components/icons/Atom'
 import {ChainLink_Stroke2_Corner0_Rounded as ChainLinkIcon} from '#/components/icons/ChainLink'
 import {Eye_Stroke2_Corner0_Rounded as VisibilityIcon} from '#/components/icons/Eye'
 import {Earth_Stroke2_Corner2_Rounded as EarthIcon} from '#/components/icons/Globe'
-import {Lab_Stroke2_Corner0_Rounded as _BeakerIcon} from '#/components/icons/Lab'
+import {Lab_Stroke2_Corner0_Rounded as BeakerIcon} from '#/components/icons/Lab'
 import {PaintRoller_Stroke2_Corner2_Rounded as PaintRollerIcon} from '#/components/icons/PaintRoller'
 import {Pencil_Stroke2_Corner0_Rounded as PencilIcon} from '#/components/icons/Pencil'
 import {RaisingHand4Finger_Stroke2_Corner0_Rounded as RaisingHandIcon} from '#/components/icons/RaisingHand'
@@ -252,7 +264,7 @@ function ConstellationInstanceDialog({
             <Button
               label={_(msg`Save`)}
               size="large"
-              onPress={submit}
+              onPress={() => void submit()}
               variant="solid"
               color="primary"
               disabled={shouldDisable()}>
@@ -384,7 +396,7 @@ function CustomAppViewDidDialog({
             <Button
               label={_(msg`Save`)}
               size="large"
-              onPress={submit}
+              onPress={() => void submit()}
               variant="solid"
               color={did.length > 0 ? 'primary' : 'secondary'}
               disabled={
@@ -392,6 +404,103 @@ function CustomAppViewDidDialog({
               }>
               <ButtonText>
                 {did.length > 0 ? <Trans>Save</Trans> : <Trans>Reset</Trans>}
+              </ButtonText>
+            </Button>
+          </View>
+        </View>
+
+        <Dialog.Close />
+      </Dialog.ScrollableInner>
+    </Dialog.Outer>
+  )
+}
+
+function FaviconServiceDialog({control}: {control: Dialog.DialogControlProps}) {
+  const pal = usePalette('default')
+  const {_} = useLingui()
+
+  const faviconService = useFaviconService()
+  const [url, setUrl] = useState(faviconService ?? '')
+  const [inputVersion, setInputVersion] = useState(0)
+  const setFaviconService = useSetFaviconService()
+
+  const updateInputValue = (nextUrl: string) => {
+    setUrl(nextUrl)
+    setInputVersion(v => v + 1)
+  }
+
+  const submit = () => {
+    setFaviconService(url.trim())
+    control.close()
+  }
+
+  const shouldDisable = () => {
+    return url.length > 0 && !url.includes('(pds)')
+  }
+
+  const presets = [
+    'https://twenty-icons.com/(pds)',
+    'https://favicon.im/(pds)?larger=true&throw-error-on-404=true',
+  ]
+
+  return (
+    <Dialog.Outer
+      control={control}
+      nativeOptions={{preventExpansion: true}}
+      onClose={() => updateInputValue(faviconService ?? '')}>
+      <Dialog.Handle />
+      <Dialog.ScrollableInner label={_(msg`Favicon Service URL`)}>
+        <View style={[a.gap_sm, a.pb_lg]}>
+          <Text style={[a.text_2xl, a.font_bold]}>
+            <Trans>Favicon Service URL</Trans>
+          </Text>
+          <Text style={[a.text_sm, {color: pal.colors.textLight}]}>
+            <Trans>
+              (pds) is replaced with the domain of an account's host.
+            </Trans>
+          </Text>
+        </View>
+
+        <View style={a.gap_lg}>
+          <Dialog.Input
+            key={`favicon-service-input-${inputVersion}`}
+            label="Text input field"
+            autoFocus
+            style={[styles.textInput, pal.border, pal.text]}
+            onChangeText={value => setUrl(value)}
+            placeholder={persisted.defaults.faviconService}
+            placeholderTextColor={pal.colors.textLight}
+            onSubmitEditing={submit}
+            accessibilityHint={_(
+              msg`Enter the favicon service URL with (pds) as placeholder`,
+            )}
+            defaultValue={url}
+          />
+
+          <View style={[a.flex_row, a.flex_wrap, a.mb_xs]}>
+            {presets.map(preset => (
+              <Button
+                key={preset}
+                variant="ghost"
+                color="primary"
+                label={preset}
+                style={[a.px_sm, a.py_xs, a.rounded_sm, a.gap_sm]}
+                onPress={() => updateInputValue(preset)}>
+                <ButtonText>{preset}</ButtonText>
+              </Button>
+            ))}
+          </View>
+
+          <View style={IS_WEB && [a.flex_row, a.justify_end]}>
+            <Button
+              label={_(msg`Save`)}
+              size="large"
+              onPress={() => void submit()}
+              variant="solid"
+              color="primary"
+              disabled={shouldDisable()}>
+              <ButtonText>
+                <Trans>Save</Trans>
               </ButtonText>
             </Button>
           </View>
@@ -462,7 +571,7 @@ function LibreTranslateInstanceDialog({
             <Button
               label={_(msg`Save`)}
               size="large"
-              onPress={submit}
+              onPress={() => void submit()}
               variant="solid"
               color="primary"
               disabled={shouldDisable()}>
@@ -488,15 +597,28 @@ function ImageCdnHostDialog({control}: {control: Dialog.DialogControlProps}) {
   const setImageCdnHost = useSetImageCdnHost()
 
   const submit = () => {
-    try {
-      setImageCdnHost(new URL(url).origin)
-    } catch {
-      setImageCdnHost(url)
+    const trimmedUrl = url.trim()
+    if (!trimmedUrl) {
+      control.close(() => {
+        setImageCdnHost(undefined)
+      })
+      return
     }
-    control.close()
+
+    control.close(() => {
+      try {
+        setImageCdnHost(new URL(trimmedUrl).origin)
+      } catch {
+        setImageCdnHost(trimmedUrl)
+      }
+    })
   }
 
+  const isReset = url.trim().length === 0
+
   const shouldDisable = () => {
+    if (isReset) return false
+
     try {
       return !new URL(url).hostname.includes('.')
     } catch (e) {
@@ -534,14 +656,14 @@ function ImageCdnHostDialog({control}: {control: Dialog.DialogControlProps}) {
 
           <View style={IS_WEB && [a.flex_row, a.justify_end]}>
             <Button
-              label={_(msg`Save`)}
+              label={isReset ? _(msg`Reset`) : _(msg`Save`)}
               size="large"
-              onPress={submit}
+              onPress={() => void submit()}
               variant="solid"
-              color="primary"
+              color={isReset ? 'secondary' : 'primary'}
               disabled={shouldDisable()}>
               <ButtonText>
-                <Trans>Save</Trans>
+                {isReset ? <Trans>Reset</Trans> : <Trans>Save</Trans>}
               </ButtonText>
             </Button>
           </View>
@@ -553,6 +675,95 @@ function ImageCdnHostDialog({control}: {control: Dialog.DialogControlProps}) {
   )
 }
 
+function PlcDirectoryDialog({control}: {control: Dialog.DialogControlProps}) {
+  const pal = usePalette('default')
+  const {_} = useLingui()
+
+  const plcDirectory = usePlcDirectory()
+  const [url, setUrl] = useState(plcDirectory ?? '')
+  const setPlcDirectory = useSetPlcDirectory()
+
+  const submit = () => {
+    const trimmedUrl = url.trim()
+    if (!trimmedUrl) {
+      control.close(() => {
+        setPlcDirectory(undefined)
+      })
+      return
+    }
+
+    control.close(() => {
+      try {
+        setPlcDirectory(new URL(trimmedUrl).origin)
+      } catch {
+        setPlcDirectory(trimmedUrl)
+      }
+    })
+  }
+
+  const isReset = url.trim().length === 0
+
+  const shouldDisable = () => {
+    if (isReset) return false
+
+    try {
+      const nextUrl = new URL(url)
+      return nextUrl.protocol !== 'https:' && nextUrl.protocol !== 'http:'
+    } catch {
+      return true
+    }
+  }
+
+  return (
+    <Dialog.Outer
+      control={control}
+      nativeOptions={{preventExpansion: true}}
+      onClose={() => setUrl(plcDirectory ?? '')}>
+      <Dialog.Handle />
+      <Dialog.ScrollableInner label={_(msg`PLC Directory URL`)}>
+        <View style={[a.gap_sm, a.pb_lg]}>
+          <Text style={[a.text_2xl, a.font_bold]}>
+            <Trans>PLC Directory URL</Trans>
+          </Text>
+        </View>
+
+        <View style={a.gap_lg}>
+          <Dialog.Input
+            label="Text input field"
+            autoFocus
+            style={[styles.textInput, pal.border, pal.text]}
+            onChangeText={value => {
+              setUrl(value)
+            }}
+            placeholder={persisted.defaults.plcDirectory}
+            placeholderTextColor={pal.colors.textLight}
+            onSubmitEditing={submit}
+            accessibilityHint={_(
+              msg`Input the URL of the PLC directory to use`,
+            )}
+            defaultValue={plcDirectory}
+          />
+
+          <View style={IS_WEB && [a.flex_row, a.justify_end]}>
+            <Button
+              label={isReset ? _(msg`Reset`) : _(msg`Save`)}
+              size="large"
+              onPress={() => void submit()}
+              variant="solid"
+              color={isReset ? 'secondary' : 'primary'}
+              disabled={shouldDisable()}>
+              <ButtonText>
+                {isReset ? <Trans>Reset</Trans> : <Trans>Save</Trans>}
+              </ButtonText>
+            </Button>
+          </View>
+        </View>
+
+        <Dialog.Close />
+      </Dialog.ScrollableInner>
+    </Dialog.Outer>
+  )
+}
 function PostReplacementDialog({
   control,
 }: {
@@ -672,7 +883,7 @@ function PostReplacementDialog({
             <Button
               label={_(msg`Save`)}
               size="large"
-              onPress={submit}
+              onPress={() => void submit()}
               variant="solid"
               color="primary"
               disabled={shouldDisable()}>
@@ -790,7 +1001,7 @@ function OpenRouterApiKeyDialog({
             <Button
               label={_(msg`Save`)}
               size="large"
-              onPress={submit}
+              onPress={() => void submit()}
               variant="solid"
               color="primary">
               <ButtonText>
@@ -855,7 +1066,7 @@ function OpenRouterModelDialog({
             <Button
               label={_(msg`Save`)}
               size="large"
-              onPress={submit}
+              onPress={() => void submit()}
               variant="solid"
               color="primary">
               <ButtonText>
@@ -925,7 +1136,7 @@ function OpenRouterPromptDialog({
             <Button
               label={_(msg`Save`)}
               size="large"
-              onPress={submit}
+              onPress={() => void submit()}
               variant="solid"
               color="primary">
               <ButtonText>
@@ -962,6 +1173,7 @@ export function RunesSettingsScreen({}: Props) {
   const highQualityImages = useHighQualityImages()
   const setHighQualityImages = useSetHighQualityImages()
   const imageCdnHost = useImageCdnHost()
+  const plcDirectory = usePlcDirectory()
 
   const hideFeedsPromoTab = useHideFeedsPromoTab()
   const setHideFeedsPromoTab = useSetHideFeedsPromoTab()
@@ -1032,6 +1244,10 @@ export function RunesSettingsScreen({}: Props) {
 
   const showLinkInHandle = useShowLinkInHandle()
   const setShowLinkInHandle = useSetShowLinkInHandle()
+  const showLinkInHandleOnlyOnWorkingLinks =
+    useShowLinkInHandleOnlyOnWorkingLinks()
+  const setShowLinkInHandleOnlyOnWorkingLinks =
+    useSetShowLinkInHandleOnlyOnWorkingLinks()
 
   const handleInLinks = useHandleInLinks()
   const setHandleInLinks = useSetHandleInLinks()
@@ -1042,6 +1258,8 @@ export function RunesSettingsScreen({}: Props) {
   const setLibreTranslateInstanceControl = Dialog.useDialogControl()
 
   const setImageCdnHostControl = Dialog.useDialogControl()
+
+  const setPlcDirectoryControl = Dialog.useDialogControl()
 
   const setPostReplacementDialogControl = Dialog.useDialogControl()
 
@@ -1056,6 +1274,8 @@ export function RunesSettingsScreen({}: Props) {
 
   const [customAppViewDid] = useCustomAppViewDid()
   const setCustomAppViewDidControl = Dialog.useDialogControl()
+
+  const setFaviconServiceControl = Dialog.useDialogControl()
 
   return (
     <Layout.Screen>
@@ -1292,6 +1512,19 @@ export function RunesSettingsScreen({}: Props) {
               </Toggle.LabelText>
               <Toggle.Platform />
             </Toggle.Item>
+            {showLinkInHandle && (
+              <Toggle.Item
+                name="show_link_in_handle_only_on_working_links"
+                label={_(msg`Only show URL on handles with working links`)}
+                value={showLinkInHandleOnlyOnWorkingLinks}
+                onChange={value => setShowLinkInHandleOnlyOnWorkingLinks(value)}
+                style={[a.w_full]}>
+                <Toggle.LabelText style={[a.flex_1]}>
+                  <Trans>Only show URL on handles with working links</Trans>
+                </Toggle.LabelText>
+                <Toggle.Platform />
+              </Toggle.Item>
+            )}
 
             <Toggle.Item
               name="no_discover_fallback"
@@ -1318,7 +1551,7 @@ export function RunesSettingsScreen({}: Props) {
             </Toggle.Item>
             <Admonition type="info" style={[a.flex_1]}>
               <Trans>
-                Images will be served as PNG instead of JPEG. Images will take
+                Images will be served as PNG instead of WEBP. Images will take
                 longer to load and use more bandwidth.
               </Trans>
             </Admonition>
@@ -1439,6 +1672,19 @@ export function RunesSettingsScreen({}: Props) {
             </Toggle.Item>
           </SettingsList.Group>
 
+          {pdsLabelEnabled && (
+            <SettingsList.Item>
+              <SettingsList.ItemIcon icon={StarIcon} />
+              <SettingsList.ItemText>
+                <Trans>Favicon service</Trans>
+              </SettingsList.ItemText>
+              <SettingsList.BadgeButton
+                label={_(msg`Change`)}
+                onPress={() => setFaviconServiceControl.open()}
+              />
+            </SettingsList.Item>
+          )}
+
           <SettingsList.Divider />
 
           <SettingsList.Group contentContainerStyle={[a.gap_sm]}>
@@ -1512,7 +1758,7 @@ export function RunesSettingsScreen({}: Props) {
           <SettingsList.Divider />
 
           <SettingsList.Item>
-            <SettingsList.ItemIcon icon={_BeakerIcon} />
+            <SettingsList.ItemIcon icon={BeakerIcon} />
             <SettingsList.ItemText>
               <Trans>OpenRouter API Key</Trans>
             </SettingsList.ItemText>
@@ -1538,7 +1784,7 @@ export function RunesSettingsScreen({}: Props) {
 
           {openRouterConfigured && (
             <SettingsList.Item>
-              <SettingsList.ItemIcon icon={_BeakerIcon} />
+              <SettingsList.ItemIcon icon={BeakerIcon} />
               <SettingsList.ItemText>
                 <Trans>{`OpenRouter Model`}</Trans>
               </SettingsList.ItemText>
@@ -1566,7 +1812,7 @@ export function RunesSettingsScreen({}: Props) {
 
           {openRouterConfigured && (
             <SettingsList.Item>
-              <SettingsList.ItemIcon icon={_BeakerIcon} />
+              <SettingsList.ItemIcon icon={BeakerIcon} />
               <SettingsList.ItemText>
                 <Trans>Alt Text Prompt</Trans>
               </SettingsList.ItemText>
@@ -1740,6 +1986,27 @@ export function RunesSettingsScreen({}: Props) {
             </Admonition>
           </SettingsList.Item>
 
+          <SettingsList.Item>
+            <SettingsList.ItemIcon icon={EarthIcon} />
+            <SettingsList.ItemText>
+              <Trans>{`PLC Directory`}</Trans>
+            </SettingsList.ItemText>
+            <SettingsList.BadgeButton
+              label={_(msg`Change`)}
+              onPress={() => setPlcDirectoryControl.open()}
+            />
+          </SettingsList.Item>
+          <SettingsList.Item>
+            <Admonition type="info" style={[a.flex_1]}>
+              <Trans>
+                Override the PLC directory used to resolve DIDs. Current: 
+                <InlineLinkText to={plcDirectory} label={plcDirectory}>
+                  {plcDirectory}
+                </InlineLinkText>
+              </Trans>
+            </Admonition>
+          </SettingsList.Item>
+
           <SettingsList.Divider />
 
           <SettingsList.Item>
@@ -1800,11 +2067,13 @@ export function RunesSettingsScreen({}: Props) {
       </Layout.Content>
       <ConstellationInstanceDialog control={setConstellationInstanceControl} />
       <CustomAppViewDidDialog control={setCustomAppViewDidControl} />
+      <FaviconServiceDialog control={setFaviconServiceControl} />
       <TrustedVerifiersDialog control={setTrustedVerifiersDialogControl} />
       <LibreTranslateInstanceDialog
         control={setLibreTranslateInstanceControl}
       />
       <ImageCdnHostDialog control={setImageCdnHostControl} />
+      <PlcDirectoryDialog control={setPlcDirectoryControl} />
       <PostReplacementDialog control={setPostReplacementDialogControl} />
       <OpenRouterApiKeyDialog control={setOpenRouterApiKeyControl} />
       <OpenRouterModelDialog control={setOpenRouterModelControl} />

@@ -24,6 +24,10 @@ import {
   GREEN_HUE as DEER_GREEN_HUE,
   RED_HUE as DEER_RED_HUE,
 } from '#/alf/util/deerColorGeneration'
+import {
+  getMaterialYouColor,
+  onMaterialYouPaletteChange,
+} from './util/materialYou'
 
 export type Palette = {
   white: string
@@ -1386,6 +1390,181 @@ export const evergardenscheme = {
   dark: EVERGARDEN_THEMES.dark,
   dim: EVERGARDEN_THEMES.dim,
 }
+
+function getMaterial3ColorScheme() {
+  const MATERIAL_3_PALETTE: Palette = {
+    white: STATIC_VALUES.white,
+    black: STATIC_VALUES.black,
+    pink: STATIC_VALUES.pink,
+    yellow: STATIC_VALUES.yellow,
+    like: STATIC_VALUES.pink,
+
+    contrast_0: getMaterialYouColor('system_neutral1', 0),
+    contrast_25: getMaterialYouColor('system_neutral1', 10),
+    contrast_50: getMaterialYouColor('system_neutral1', 50),
+    contrast_100: getMaterialYouColor('system_neutral1', 100),
+    contrast_200: getMaterialYouColor('system_neutral1', 200),
+    contrast_300: getMaterialYouColor('system_neutral1', 300),
+    contrast_400: getMaterialYouColor('system_neutral1', 400),
+    contrast_500: getMaterialYouColor('system_neutral1', 500),
+    contrast_600: getMaterialYouColor('system_neutral1', 600),
+    contrast_700: getMaterialYouColor('system_neutral1', 700),
+    contrast_800: getMaterialYouColor('system_neutral1', 800),
+    contrast_900: getMaterialYouColor('system_neutral1', 900),
+    contrast_950: getMaterialYouColor('system_neutral1', 900),
+    contrast_975: getMaterialYouColor('system_neutral1', 900),
+    contrast_1000: getMaterialYouColor('system_neutral1', 1000),
+
+    primary_25: getMaterialYouColor('system_accent1', 10),
+    primary_50: getMaterialYouColor('system_accent1', 50),
+    primary_100: getMaterialYouColor('system_accent1', 100),
+    primary_200: getMaterialYouColor('system_accent1', 200),
+    primary_300: getMaterialYouColor('system_accent1', 300),
+    primary_400: getMaterialYouColor('system_accent1', 400),
+    primary_500: getMaterialYouColor('system_accent1', 500),
+    primary_600: getMaterialYouColor('system_accent1', 600),
+    primary_700: getMaterialYouColor('system_accent1', 700),
+    primary_800: getMaterialYouColor('system_accent1', 800),
+    primary_900: getMaterialYouColor('system_accent1', 900),
+    primary_950: getMaterialYouColor('system_accent1', 900),
+    primary_975: getMaterialYouColor('system_accent1', 900),
+
+    positive_25: getMaterialYouColor('system_accent3', 10),
+    positive_50: getMaterialYouColor('system_accent3', 50),
+    positive_100: getMaterialYouColor('system_accent3', 100),
+    positive_200: getMaterialYouColor('system_accent3', 200),
+    positive_300: getMaterialYouColor('system_accent3', 300),
+    positive_400: getMaterialYouColor('system_accent3', 400),
+    positive_500: getMaterialYouColor('system_accent3', 500),
+    positive_600: getMaterialYouColor('system_accent3', 600),
+    positive_700: getMaterialYouColor('system_accent3', 700),
+    positive_800: getMaterialYouColor('system_accent3', 800),
+    positive_900: getMaterialYouColor('system_accent3', 900),
+    positive_950: getMaterialYouColor('system_accent3', 900),
+    positive_975: getMaterialYouColor('system_accent3', 900),
+
+    negative_25: '#FFF5F7',
+    negative_50: '#FEE7EC',
+    negative_100: '#FDD3DD',
+    negative_200: '#FBBBCA',
+    negative_300: '#F891A9',
+    negative_400: '#F65A7F',
+    negative_500: '#E91646',
+    negative_600: '#CA123D',
+    negative_700: '#A71134',
+    negative_800: '#7F0B26',
+    negative_900: '#5F071C',
+    negative_950: '#430413',
+    negative_975: '#30030D',
+  }
+
+  const MATERIAL_3_SUBDUED_PALETTE: Palette = {
+    white: STATIC_VALUES.white,
+    black: STATIC_VALUES.black,
+    pink: STATIC_VALUES.pink,
+    yellow: STATIC_VALUES.yellow,
+    like: STATIC_VALUES.pink,
+
+    contrast_0: getMaterialYouColor('system_neutral2', 0),
+    contrast_25: getMaterialYouColor('system_neutral2', 10),
+    contrast_50: getMaterialYouColor('system_neutral2', 50),
+    contrast_100: getMaterialYouColor('system_neutral2', 100),
+    contrast_200: getMaterialYouColor('system_neutral2', 200),
+    contrast_300: getMaterialYouColor('system_neutral2', 300),
+    contrast_400: getMaterialYouColor('system_neutral2', 400),
+    contrast_500: getMaterialYouColor('system_neutral2', 500),
+    contrast_600: getMaterialYouColor('system_neutral2', 600),
+    contrast_700: getMaterialYouColor('system_neutral2', 700),
+    contrast_800: getMaterialYouColor('system_neutral2', 800),
+    contrast_900: getMaterialYouColor('system_neutral2', 800),
+    contrast_950: getMaterialYouColor('system_neutral2', 800),
+    contrast_975: getMaterialYouColor('system_neutral2', 800),
+    contrast_1000: getMaterialYouColor('system_neutral2', 900),
+
+    primary_25: getMaterialYouColor('system_accent2', 10),
+    primary_50: getMaterialYouColor('system_accent2', 10),
+    primary_100: getMaterialYouColor('system_accent2', 50),
+    primary_200: getMaterialYouColor('system_accent2', 100),
+    primary_300: getMaterialYouColor('system_accent2', 200),
+    primary_400: getMaterialYouColor('system_accent2', 300),
+    primary_500: getMaterialYouColor('system_accent2', 400),
+    primary_600: getMaterialYouColor('system_accent2', 500),
+    primary_700: getMaterialYouColor('system_accent2', 600),
+    primary_800: getMaterialYouColor('system_accent2', 700),
+    primary_900: getMaterialYouColor('system_accent2', 800),
+    primary_950: getMaterialYouColor('system_accent2', 900),
+    primary_975: getMaterialYouColor('system_accent2', 900),
+
+    positive_25: getMaterialYouColor('system_accent3', 10),
+    positive_50: getMaterialYouColor('system_accent3', 50),
+    positive_100: getMaterialYouColor('system_accent3', 100),
+    positive_200: getMaterialYouColor('system_accent3', 200),
+    positive_300: getMaterialYouColor('system_accent3', 300),
+    positive_400: getMaterialYouColor('system_accent3', 400),
+    positive_500: getMaterialYouColor('system_accent3', 500),
+    positive_600: getMaterialYouColor('system_accent3', 600),
+    positive_700: getMaterialYouColor('system_accent3', 700),
+    positive_800: getMaterialYouColor('system_accent3', 800),
+    positive_900: getMaterialYouColor('system_accent3', 900),
+    positive_950: getMaterialYouColor('system_accent3', 900),
+    positive_975: getMaterialYouColor('system_accent3', 900),
+
+    negative_25: '#FFF5F7',
+    negative_50: '#FEEBEF',
+    negative_100: '#FDD8E1',
+    negative_200: '#FCC0CE',
+    negative_300: '#F99AB0',
+    negative_400: '#F76486',
+    negative_500: '#EB2452',
+    negative_600: '#D81341',
+    negative_700: '#BA1239',
+    negative_800: '#910D2C',
+    negative_900: '#6F0B22',
+    negative_950: '#500B1C',
+    negative_975: '#3E0915',
+  }
+
+  const MATERIAL_3_THEMES = createThemes({
+    defaultPalette: MATERIAL_3_PALETTE,
+    subduedPalette: MATERIAL_3_SUBDUED_PALETTE,
+  })
+
+  // special case for disabled (primary) button text. we have a hack for primary_subtle in Button.tsx
+  MATERIAL_3_THEMES.dark.atoms.text_inverted.color =
+    MATERIAL_3_THEMES.dark.palette.primary_400
+  MATERIAL_3_THEMES.dim.atoms.text_inverted.color =
+    MATERIAL_3_THEMES.dim.palette.primary_400
+
+  const material3scheme = {
+    lightPalette: MATERIAL_3_THEMES.light.palette,
+    darkPalette: MATERIAL_3_THEMES.dark.palette,
+    dimPalette: MATERIAL_3_THEMES.dim.palette,
+    light: MATERIAL_3_THEMES.light,
+    dark: MATERIAL_3_THEMES.dark,
+    dim: MATERIAL_3_THEMES.dim,
+  }
+
+  return {
+    regular: MATERIAL_3_PALETTE,
+    subdued: MATERIAL_3_SUBDUED_PALETTE,
+    scheme: material3scheme,
+  }
+}
+
+let material3colorSchemeData = getMaterial3ColorScheme()
+
+export let MATERIAL_3_PALETTE: Palette = material3colorSchemeData.regular
+export let MATERIAL_3_SUBDUED_PALETTE: Palette =
+  material3colorSchemeData.subdued
+export let material3scheme = material3colorSchemeData.scheme
+
+onMaterialYouPaletteChange(() => {
+  material3colorSchemeData = getMaterial3ColorScheme()
+
+  MATERIAL_3_PALETTE = material3colorSchemeData.regular
+  MATERIAL_3_SUBDUED_PALETTE = material3colorSchemeData.subdued
+  material3scheme = material3colorSchemeData.scheme
+})
 
 /**
  * @deprecated use ALF and access palette from `useTheme()`

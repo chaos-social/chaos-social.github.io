@@ -19,6 +19,7 @@ import {
   snoozeBirthdateUpdateAllowedForDid,
 } from '#/state/birthdate'
 import {useAgent, useSession} from '#/state/session'
+import {pdsAgent} from '#/state/session/agent'
 import * as debug from '#/ageAssurance/debug'
 import {logger} from '#/ageAssurance/logger'
 import {
@@ -214,7 +215,9 @@ export async function prefetchServerState({agent}: {agent: AtpAgent}) {
   try {
     logger.debug(`prefetchServerState: resolving...`)
     const res = await networkRetry(3, () => getServerState())
-    qc.setQueryData<AppBskyAgeassuranceGetState.OutputSchema>(qk, res)
+    if (res) {
+      qc.setQueryData<AppBskyAgeassuranceGetState.OutputSchema>(qk, res)
+    }
   } catch (err) {
     const e = err as Error
     logger.warn(`prefetchServerState: failed`, {
@@ -227,10 +230,12 @@ export async function refetchServerState({agent}: {agent: AtpAgent}) {
   if (!did) return
   logger.debug(`refetchServerState: fetching...`)
   const res = await networkRetry(3, () => getServerState())
-  qc.setQueryData<AppBskyAgeassuranceGetState.OutputSchema>(
-    createServerStateQueryKey({did}),
-    res,
-  )
+  if (res) {
+    qc.setQueryData<AppBskyAgeassuranceGetState.OutputSchema>(
+      createServerStateQueryKey({did}),
+      res,
+    )
+  }
   return res
 }
 export function usePatchServerState() {
@@ -324,7 +329,7 @@ export async function getOtherRequiredData({
   agent: AtpAgent
 }): Promise<OtherRequiredData> {
   if (debug.enabled) return debug.resolve(debug.otherRequiredData)
-  const [prefs] = await Promise.all([agent.getPreferences()])
+  const [prefs] = await Promise.all([pdsAgent(agent).getPreferences()])
   const data: OtherRequiredData = {
     birthdate: prefs.birthDate ? prefs.birthDate.toISOString() : undefined,
   }

@@ -1,10 +1,10 @@
 import {useMemo} from 'react'
 import {StyleSheet, type TextProps} from 'react-native'
-import {UITextView} from 'react-native-uitextview'
 
 import {lh, s} from '#/lib/styles'
 import {type TypographyVariant, useTheme} from '#/lib/ThemeContext'
 import {logger} from '#/logger'
+import {UITextView} from '#/platform/ui-text-view'
 import {applyFonts, useAlf} from '#/alf'
 import {
   childHasEmoji,

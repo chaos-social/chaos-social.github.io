@@ -18,7 +18,6 @@ import {
   RQKEY_GIF_ROOT,
   RQKEY_LINK_ROOT,
 } from '#/state/queries/resolve-link'
-import {type EmojiPickerPosition} from '#/view/com/composer/text-input/web/EmojiPicker'
 import * as Toast from '#/components/Toast'
 
 export interface ComposerOptsPostRef {
@@ -55,7 +54,6 @@ export interface ComposerOpts {
   onPostSuccess?: (data: OnPostSuccessData) => void
   quote?: AppBskyFeedDefs.PostView
   mention?: string // handle of user to mention
-  openEmojiPicker?: (pos: EmojiPickerPosition | undefined) => void
   text?: string
   imageUris?: {
     uri: string

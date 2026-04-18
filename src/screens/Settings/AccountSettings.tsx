@@ -24,9 +24,11 @@ import {Envelope_Stroke2_Corner2_Rounded as EnvelopeIcon} from '#/components/ico
 import {Freeze_Stroke2_Corner2_Rounded as FreezeIcon} from '#/components/icons/Freeze'
 import {Lock_Stroke2_Corner2_Rounded as LockIcon} from '#/components/icons/Lock'
 import {PencilLine_Stroke2_Corner2_Rounded as PencilIcon} from '#/components/icons/Pencil'
+import {Pet_Stroke as PetIcon} from '#/components/icons/Pet'
 import {ShieldCheck_Stroke2_Corner0_Rounded as ShieldIcon} from '#/components/icons/Shield'
 import {Trash_Stroke2_Corner2_Rounded} from '#/components/icons/Trash'
 import * as Layout from '#/components/Layout'
+import {isPetAccount} from '#/components/PetBadge'
 import {ChangeHandleDialog} from './components/ChangeHandleDialog'
 import {ChangePasswordDialog} from './components/ChangePasswordDialog'
 import {DeactivateAccountDialog} from './components/DeactivateAccountDialog'
@@ -162,6 +164,19 @@ export function AccountSettingsScreen({}: Props) {
             {profile && (
               <SettingsList.BadgeText>
                 {isBotAccount(profile) ? _(msg`On`) : _(msg`Off`)}
+              </SettingsList.BadgeText>
+            )}
+          </SettingsList.LinkItem>
+          <SettingsList.LinkItem
+            to="/settings/pet-label"
+            label={_(msg`Pet label`)}>
+            <SettingsList.ItemIcon icon={PetIcon} />
+            <SettingsList.ItemText>
+              <Trans>Pet label</Trans>
+            </SettingsList.ItemText>
+            {profile && (
+              <SettingsList.BadgeText>
+                {isPetAccount(profile) ? _(msg`On`) : _(msg`Off`)}
               </SettingsList.BadgeText>
             )}
           </SettingsList.LinkItem>

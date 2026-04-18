@@ -22,6 +22,7 @@ import {
 } from 'react-native'
 
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
+import {useThemePrefs} from '#/state/shell'
 import {atoms as a, flatten, select, useTheme} from '#/alf'
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import {Text} from '#/components/Typography'
@@ -591,6 +592,8 @@ Button.displayName = 'Button'
 export function useSharedButtonTextStyles() {
   const t = useTheme()
   const {color, variant, disabled, size} = useButtonContext()
+  const {colorScheme} = useThemePrefs()
+
   return useMemo(() => {
     const baseStyles: TextStyle[] = []
 
@@ -640,9 +643,16 @@ export function useSharedButtonTextStyles() {
             color: t.palette.primary_600,
           })
         } else {
-          baseStyles.push({
-            color: t.palette.primary_200,
-          })
+          if (colorScheme === 'material3') {
+            // ugly hack! really alf should export these colors as atoms
+            baseStyles.push({
+              color: t.palette.primary_400,
+            })
+          } else {
+            baseStyles.push({
+              color: t.palette.primary_200,
+            })
+          }
         }
       } else if (color === 'negative_subtle') {
         if (!disabled) {
@@ -762,7 +772,7 @@ export function useSharedButtonTextStyles() {
     }
 
     return flatten(baseStyles)
-  }, [t, variant, color, size, disabled])
+  }, [t, variant, color, size, disabled, colorScheme])
 }
 
 export function ButtonText({children, style, ...rest}: ButtonTextProps) {

@@ -8,7 +8,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react'
-import {type AtpAgent, type AtpSessionEvent} from '@atproto/api'
+import {type Agent, type AtpAgent, type AtpSessionEvent} from '@atproto/api'
 
 import * as persisted from '#/state/persisted'
 import {useCloseAllActiveElements} from '#/state/util'
@@ -482,7 +482,7 @@ export function useAgent(): AtpAgent {
   return agent
 }
 
-export function useBlankPrefAuthedAgent(): BskyAgent {
+export function useBlankPrefAuthedAgent(): Agent {
   const agent = useContext(AgentContext)
   if (!agent) {
     throw Error('useAgent() must be below <SessionProvider>.')

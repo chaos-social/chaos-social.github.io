@@ -107,11 +107,40 @@ export async function oauthAgentAndSessionToSessionAccount(
 }
 
 export class OauthBskyAppAgent extends Agent {
+  readonly sessionManager: OAuthSession
   session?: AtpSessionData
-  dispatchUrl?: string
+  private _serviceUrl: URL
+  private _pdsUrl?: URL
 
   constructor(session: OAuthSession) {
     super(session)
+    this.sessionManager = session
+    this._serviceUrl = new URL(session.serverMetadata.issuer)
+  }
+
+  clone(): this {
+    const cloned = this.copyInto(new OauthBskyAppAgent(this.sessionManager))
+    cloned.session = this.session
+    cloned._serviceUrl = this._serviceUrl
+    cloned._pdsUrl = this._pdsUrl
+    return cloned as this
+  }
+
+  get serviceUrl() {
+    return this._serviceUrl
+  }
+
+  get pdsUrl() {
+    return this._pdsUrl
+  }
+
+  get dispatchUrl() {
+    return this.pdsUrl || this.serviceUrl
+  }
+
+  /** @deprecated use {@link serviceUrl} instead */
+  get service() {
+    return this.serviceUrl
   }
 
   async prepare(
@@ -120,7 +149,8 @@ export class OauthBskyAppAgent extends Agent {
     moderation: Promise<void>,
   ) {
     this.session = sessionAccountToSession(account)
-    this.dispatchUrl = account.pdsUrl
+    this._serviceUrl = new URL(account.service)
+    this._pdsUrl = account.pdsUrl ? new URL(account.pdsUrl) : undefined
     this.configureProxy(BLUESKY_PROXY_HEADER.get())
 
     await Promise.all([gates, moderation])
@@ -131,8 +161,7 @@ export class OauthBskyAppAgent extends Agent {
   dispose() {}
 
   cloneWithoutProxy(): OauthBskyAppAgent {
-    const cloned = new OauthBskyAppAgent(this.sessionManager as OAuthSession)
-    cloned.session = this.session
+    const cloned = this.clone()
     cloned.configureProxy(null)
     return cloned
   }

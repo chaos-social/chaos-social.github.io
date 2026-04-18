@@ -10,6 +10,7 @@ import {
 } from '#/state/queries/preferences'
 import {createQueryKey} from '#/state/queries/util'
 import {useAgent} from '#/state/session'
+import {pdsAgent} from '../session/agent'
 
 const labelerInfoQueryKeyRoot = 'labeler-info'
 export const labelerInfoQueryKey = (did: string) => [
@@ -144,9 +145,9 @@ export function useLabelerSubscriptionMutation() {
         if (labelerCount >= MAX_LABELERS) {
           throw new Error('MAX_LABELERS')
         }
-        await agent.addLabeler(did)
+        await pdsAgent(agent).addLabeler(did)
       } else {
-        await agent.removeLabeler(did)
+        await pdsAgent(agent).removeLabeler(did)
       }
     },
     async onSuccess() {

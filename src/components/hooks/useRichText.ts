@@ -1,6 +1,7 @@
 import {useEffect, useState} from 'react'
 import {RichText as RichTextAPI} from '@atproto/api'
 
+import {detectFacets} from '#/lib/strings/detect-facets'
 import {useAgent} from '#/state/session'
 
 export function useRichText(text: string): [RichTextAPI, boolean] {
@@ -19,7 +20,7 @@ export function useRichText(text: string): [RichTextAPI, boolean] {
     async function resolveRTFacets() {
       // new each time
       const resolvedRT = new RichTextAPI({text})
-      await resolvedRT.detectFacets(agent)
+      await detectFacets(agent, resolvedRT)
       if (!ignore) {
         setResolvedRT(resolvedRT)
       }

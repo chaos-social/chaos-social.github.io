@@ -1,5 +1,4 @@
 import {View} from 'react-native'
-import * as Contacts from 'expo-contacts'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
@@ -7,6 +6,7 @@ import {useQuery} from '@tanstack/react-query'
 
 import {urls} from '#/lib/constants'
 import {useCallOnce} from '#/lib/once'
+import * as Contacts from '#/platform/contacts'
 import {atoms as a} from '#/alf'
 import {Admonition} from '#/components/Admonition'
 import {Button, ButtonText} from '#/components/Button'

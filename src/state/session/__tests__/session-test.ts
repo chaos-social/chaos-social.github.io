@@ -1,14 +1,15 @@
 import {BskyAgent} from '@atproto/api'
 import {describe, expect, it, jest} from '@jest/globals'
+import {jwtDecode} from 'jwt-decode'
 
 import {agentToSessionAccountOrThrow} from '../agent'
 import {type Action, getInitialState, reducer, type State} from '../reducer'
 
 jest.mock('jwt-decode', () => ({
-  jwtDecode(_token: string) {
-    return {}
-  },
+  jwtDecode: jest.fn(() => ({})),
 }))
+
+const mockedJwtDecode = jest.mocked(jwtDecode)
 
 jest.mock('../../birthdate')
 jest.mock('../../../ageAssurance/data')
@@ -19,6 +20,24 @@ jest.mock('#/lib/notifications/notifications', () => ({
 }))
 
 describe('session', () => {
+  it('does not throw when accessJwt is malformed', () => {
+    mockedJwtDecode.mockImplementationOnce(() => {
+      throw new Error('Invalid token specified: missing part #2')
+    })
+
+    const agent = new BskyAgent({service: 'https://alice.com'})
+    agent.sessionManager.session = {
+      active: true,
+      did: 'alice-did',
+      handle: 'alice.test',
+      accessJwt: 'invalid-token',
+      refreshJwt: 'alice-refresh-jwt-1',
+    }
+
+    expect(() => agentToSessionAccountOrThrow(agent)).not.toThrow()
+    expect(agentToSessionAccountOrThrow(agent).signupQueued).toBe(false)
+  })
+
   it('can log in and out', () => {
     let state = getInitialState([])
     expect(printState(state)).toMatchInlineSnapshot(`

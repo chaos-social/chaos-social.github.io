@@ -56,7 +56,6 @@ import {
   UserCircle_Stroke2_Corner0_Rounded as UserCircle,
 } from '#/components/icons/UserCircle'
 import {InlineLinkText} from '#/components/Link'
-import {PdsBadge} from '#/components/PdsBadge'
 import {ProfileBadges} from '#/components/ProfileBadges'
 import {Text} from '#/components/Typography'
 import {IS_WEB} from '#/env'
@@ -103,7 +102,6 @@ let DrawerProfileCard = ({
             numberOfLines={1}>
             {profile?.displayName || account.handle}
           </Text>
-          <PdsBadge did={account.did} size="md" />
           {profile && <ProfileBadges profile={profile} size="lg" />}
         </View>
         <Text

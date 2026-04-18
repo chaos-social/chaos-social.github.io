@@ -68,7 +68,6 @@ import {StarterPack} from '#/components/icons/StarterPack'
 import {VerifiedCheck} from '#/components/icons/VerifiedCheck'
 import {InlineLinkText, Link} from '#/components/Link'
 import * as MediaPreview from '#/components/MediaPreview'
-import {PdsBadge} from '#/components/PdsBadge'
 import {ProfileBadges} from '#/components/ProfileBadges'
 import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import {Notification as StarterPackCard} from '#/components/StarterPack/StarterPackCard'
@@ -505,7 +504,7 @@ let NotificationFeedItem = ({
     ) : (
       <Trans>{firstAuthorLink} liked your repost</Trans>
     )
-    icon = <RepostHeartIcon size="xl" style={[s.likeColor]} />
+    icon = <RepostHeartIcon size="xl" style={{color: t.palette.like}} />
   } else if (item.type === 'repost-via-repost') {
     a11yLabel = hasMultipleAuthors
       ? _(
@@ -1059,9 +1058,6 @@ function ExpandedAuthorCard({author}: {author: Author}) {
               author.profile.displayName || author.profile.handle,
             )}
           </Text>
-          <View style={[a.pl_xs, a.self_center]}>
-            <PdsBadge did={author.profile.did} size="sm" />
-          </View>
           <ProfileBadges
             profile={author.profile}
             size="md"

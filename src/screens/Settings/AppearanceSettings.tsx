@@ -34,6 +34,7 @@ import {
   DEFAULT_PALETTE,
   EVERGARDEN_PALETTE,
   KITTY_PALETTE,
+  MATERIAL_3_PALETTE,
   REDDWARF_PALETTE,
   ZEPPELIN_PALETTE,
 } from '#/alf/themes'
@@ -54,7 +55,7 @@ import {TextSize_Stroke2_Corner0_Rounded as TextSize} from '#/components/icons/T
 import {TitleCase_Stroke2_Corner0_Rounded as Aa} from '#/components/icons/TitleCase'
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
-import {IS_INTERNAL, IS_NATIVE} from '#/env'
+import {IS_ANDROID, IS_INTERNAL, IS_NATIVE} from '#/env'
 import * as SettingsList from './components/SettingsList'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'AppearanceSettings'>
@@ -69,6 +70,7 @@ type ColorSchemeName =
   | 'reddwarf'
   | 'catppuccin'
   | 'evergarden'
+  | 'material3'
 
 type ColorSchemeOption = {
   name: ColorSchemeName
@@ -175,6 +177,15 @@ export function AppearanceSettingsScreen({}: Props) {
       label: _(msg`Evergarden`),
       primary: EVERGARDEN_PALETTE.primary_500,
     },
+    ...(IS_ANDROID
+      ? [
+          {
+            name: 'material3',
+            label: _(msg`Material You`),
+            primary: MATERIAL_3_PALETTE.primary_500,
+          } satisfies ColorSchemeOption,
+        ]
+      : []),
   ]
 
   return (

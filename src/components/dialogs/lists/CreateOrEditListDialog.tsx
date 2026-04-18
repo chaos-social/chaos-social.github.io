@@ -5,6 +5,10 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Plural, Trans} from '@lingui/react/macro'
 
+import {
+  detectFacets,
+  detectFacetsWithoutResolution,
+} from '#/lib/strings/detect-facets'
 import {cleanError} from '#/lib/strings/errors'
 import {isOverMaxGraphemeCount} from '#/lib/strings/helpers'
 import {richTextToString} from '#/lib/strings/rich-text-helpers'
@@ -169,7 +173,7 @@ function DialogInner({
     const serialized = richTextToString(new RichTextAPI({text, facets}), false)
 
     const richText = new RichTextAPI({text: serialized})
-    richText.detectFacetsWithoutResolution()
+    detectFacetsWithoutResolution(richText)
 
     return richText
   })
@@ -227,7 +231,7 @@ function DialogInner({
         {cleanNewlines: true},
       )
 
-      await richText.detectFacets(agent)
+      await detectFacets(agent, richText)
       richText = shortenLinks(richText)
       richText = stripInvalidMentions(richText)
 
@@ -355,7 +359,7 @@ function DialogInner({
   const onChangeDescription = useCallback(
     (newText: string) => {
       const richText = new RichTextAPI({text: newText})
-      richText.detectFacetsWithoutResolution()
+      detectFacetsWithoutResolution(richText)
 
       setDescriptionRt(richText)
     },

@@ -3,6 +3,7 @@ import {useMutation, useQueryClient} from '@tanstack/react-query'
 
 import {preferencesQueryKey} from '#/state/queries/preferences'
 import {useAgent} from '#/state/session'
+import {pdsAgent} from '../session/agent'
 
 export function usePostInteractionSettingsMutation({
   onError,
@@ -15,7 +16,7 @@ export function usePostInteractionSettingsMutation({
   const agent = useAgent()
   return useMutation({
     async mutationFn(props: AppBskyActorDefs.PostInteractionSettingsPref) {
-      await agent.setPostInteractionSettings(props)
+      await pdsAgent(agent).setPostInteractionSettings(props)
     },
     async onSuccess() {
       await qc.invalidateQueries({

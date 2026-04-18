@@ -9,6 +9,7 @@ import {
 import {nanoid} from 'nanoid/non-secure'
 
 import {type SelfLabel} from '#/lib/moderation'
+import {detectFacetsWithoutResolution} from '#/lib/strings/detect-facets'
 import {insertMentionAt} from '#/lib/strings/mention-manip'
 import {parseMarkdownLinks, shortenLinks} from '#/lib/strings/rich-text-manip'
 import {
@@ -125,6 +126,11 @@ export type ComposerAction =
       type: 'add_post'
     }
   | {
+      type: 'replace_post_with_thread'
+      postId: string
+      texts: string[]
+    }
+  | {
       type: 'remove_post'
       postId: string
     }
@@ -220,6 +226,49 @@ export function composerReducer(
       return {
         ...state,
         isDirty: true,
+        thread: {
+          ...state.thread,
+          posts: nextPosts,
+        },
+      }
+    }
+    case 'replace_post_with_thread': {
+      const {postId, texts} = action
+      if (texts.length === 0) {
+        return state
+      }
+
+      const postIndex = state.thread.posts.findIndex(p => p.id === postId)
+      if (postIndex === -1) {
+        return state
+      }
+
+      const postToReplace = state.thread.posts[postIndex]
+      const replacementPosts = texts.map((text, index) =>
+        createPostDraftFromText(text, {
+          labels: index === 0 ? postToReplace.labels : [],
+          embed:
+            index === 0
+              ? postToReplace.embed
+              : {
+                  quote: undefined,
+                  media: undefined,
+                  link: undefined,
+                },
+        }),
+      )
+
+      const nextPosts = [
+        ...state.thread.posts.slice(0, postIndex),
+        ...replacementPosts,
+        ...state.thread.posts.slice(postIndex + 1),
+      ]
+
+      return {
+        ...state,
+        isDirty: true,
+        activePostIndex: postIndex,
+        mutableNeedsFocusActive: true,
         thread: {
           ...state.thread,
           posts: nextPosts,
@@ -637,7 +686,7 @@ export function createComposerState({
    * we suggest at most 1 of each.
    */
   if (initText) {
-    initRichText.detectFacetsWithoutResolution()
+    detectFacetsWithoutResolution(initRichText)
     const detectedExtUris = new Map<string, LinkFacetMatch>()
     const detectedPostUris = new Map<string, LinkFacetMatch>()
     if (initRichText.facets) {
@@ -686,7 +735,7 @@ export function createComposerState({
     }
   } else if (initMention) {
     // highlight the mention
-    initRichText.detectFacetsWithoutResolution()
+    detectFacetsWithoutResolution(initRichText)
   }
 
   return {
@@ -724,6 +773,30 @@ export function createComposerState({
 function getShortenedLength(rt: RichText) {
   const {text} = parseMarkdownLinks(rt.text)
   const newRt = new RichText({text})
-  newRt.detectFacetsWithoutResolution()
+  detectFacetsWithoutResolution(newRt)
   return shortenLinks(newRt).graphemeLength
+}
+
+function createPostDraftFromText(
+  text: string,
+  overrides?: {
+    id?: string
+    labels?: SelfLabel[]
+    embed?: EmbedDraft
+  },
+): PostDraft {
+  const richtext = new RichText({text})
+  detectFacetsWithoutResolution(richtext)
+
+  return {
+    id: overrides?.id ?? nanoid(),
+    richtext,
+    shortenedGraphemeLength: getShortenedLength(richtext),
+    labels: overrides?.labels ?? [],
+    embed: overrides?.embed ?? {
+      quote: undefined,
+      media: undefined,
+      link: undefined,
+    },
+  }
 }

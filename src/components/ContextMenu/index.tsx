@@ -236,7 +236,13 @@ export function Root({children}: {children: React.ReactNode}) {
   return <Context.Provider value={context}>{children}</Context.Provider>
 }
 
-export function Trigger({children, label, contentLabel, style}: TriggerProps) {
+export function Trigger({
+  children,
+  label,
+  contentLabel,
+  style,
+  onTap,
+}: TriggerProps) {
   const context = useContextMenuContext()
   const playHaptic = useHaptics()
   const insets = useSafeAreaInsets()
@@ -295,6 +301,17 @@ export function Trigger({children, label, contentLabel, style}: TriggerProps) {
     }
   }, [context, insets])
 
+  const tapGesture = useMemo(() => {
+    const gesture = Gesture.Tap()
+      .numberOfTaps(1)
+      .cancelsTouchesInView(false)
+      .runOnJS(true)
+    if (onTap) {
+      gesture.onEnd(() => void onTap())
+    }
+    return gesture
+  }, [onTap])
+
   const doubleTapGesture = useMemo(() => {
     return Gesture.Tap()
       .numberOfTaps(2)
@@ -347,8 +364,10 @@ export function Trigger({children, label, contentLabel, style}: TriggerProps) {
       })
   }, [open, hoverablesSV, onTouchUpMenuItem, hoveredItemSV, translationSV])
 
+  // Order matters here: doubleTapGesture must come before tapGesture.
   const composedGestures = Gesture.Exclusive(
     doubleTapGesture,
+    tapGesture,
     pressAndHoldGesture,
   )
 
@@ -483,7 +502,11 @@ function TriggerClone({
   )
 }
 
-export function AuxiliaryView({children, align = 'left'}: AuxiliaryViewProps) {
+export function AuxiliaryView({
+  children,
+  align = 'left',
+  style,
+}: AuxiliaryViewProps) {
   const context = useContextMenuContext()
   const {width: screenWidth} = useWindowDimensions()
   const {top: topInset} = useSafeAreaInsets()
@@ -557,6 +580,7 @@ export function AuxiliaryView({children, align = 'left'}: AuxiliaryViewProps) {
                 : {right: screenWidth - measurement.x - measurement.width},
               animatedStyle,
               a.z_20,
+              style,
             ]}>
             {children}
           </Animated.View>
