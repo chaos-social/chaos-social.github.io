@@ -1,5 +1,11 @@
 import {useCallback, useRef, useState} from 'react'
-import {ActivityIndicator, Keyboard, type TextInput, View} from 'react-native'
+import {
+  ActivityIndicator,
+  Keyboard,
+  Pressable,
+  type TextInput,
+  View,
+} from 'react-native'
 import {
   ComAtprotoServerCreateSession,
   type ComAtprotoServerDescribeServer,
@@ -15,8 +21,9 @@ import {isValidDomain} from '#/lib/strings/url-helpers'
 import {logger} from '#/logger'
 import {useSetHasCheckedForStarterPack} from '#/state/preferences/used-starter-packs'
 import {useSessionApi} from '#/state/session'
+import {getNativeOAuthClient} from '#/state/session/oauth-native-client'
 import {useLoggedOutViewControls} from '#/state/shell/logged-out'
-import {atoms as a, ios, useTheme, web} from '#/alf'
+import {atoms as a, ios, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {FormError} from '#/components/forms/FormError'
 import {HostingProvider} from '#/components/forms/HostingProvider'
@@ -26,10 +33,12 @@ import {Lock_Stroke2_Corner0_Rounded as Lock} from '#/components/icons/Lock'
 import {Ticket_Stroke2_Corner0_Rounded as Ticket} from '#/components/icons/Ticket'
 import {Loader} from '#/components/Loader'
 import {Text} from '#/components/Typography'
-import {IS_IOS, IS_WEB} from '#/env'
+import {IS_IOS} from '#/env'
 import {FormContainer} from './FormContainer'
 
 type ServiceDescription = ComAtprotoServerDescribeServer.OutputSchema
+
+type LoginMode = 'oauth' | 'legacy'
 
 export const LoginForm = ({
   error,
@@ -39,7 +48,6 @@ export const LoginForm = ({
   setError,
   setServiceUrl,
   onPressRetryConnect,
-  onPressBack,
   onPressForgotPassword,
   onAttemptSuccess,
   onAttemptFailed,
@@ -61,7 +69,269 @@ export const LoginForm = ({
   isResolvingService: boolean
 }) => {
   const t = useTheme()
+  const [mode, setMode] = useState<LoginMode>('oauth')
   const [isProcessing, setIsProcessing] = useState(false)
+
+  const switchMode = (next: LoginMode) => {
+    if (next === mode) return
+    setError('')
+    setMode(next)
+  }
+
+  return (
+    <FormContainer testID="loginForm" titleText={<Trans>Sign in</Trans>}>
+      <View
+        style={[a.flex_row, a.mb_md, a.rounded_sm, a.overflow_hidden]}
+        accessibilityRole="tablist">
+        <Pressable
+          accessibilityRole="tab"
+          accessibilityState={{selected: mode === 'oauth'}}
+          onPress={() => switchMode('oauth')}
+          style={[
+            a.flex_1,
+            a.align_center,
+            a.py_sm,
+            a.border_b,
+            {borderBottomWidth: 2},
+            mode === 'oauth'
+              ? {borderBottomColor: t.palette.primary_500}
+              : {borderBottomColor: 'transparent'},
+          ]}>
+          <Text
+            style={[
+              a.text_sm,
+              a.font_bold,
+              mode === 'oauth'
+                ? {color: t.palette.primary_500}
+                : t.atoms.text_contrast_medium,
+            ]}>
+            <Trans>OAuth</Trans>
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="tab"
+          accessibilityState={{selected: mode === 'legacy'}}
+          onPress={() => switchMode('legacy')}
+          style={[
+            a.flex_1,
+            a.align_center,
+            a.py_sm,
+            a.border_b,
+            {borderBottomWidth: 2},
+            mode === 'legacy'
+              ? {borderBottomColor: t.palette.primary_500}
+              : {borderBottomColor: 'transparent'},
+          ]}>
+          <Text
+            style={[
+              a.text_sm,
+              a.font_bold,
+              mode === 'legacy'
+                ? {color: t.palette.primary_500}
+                : t.atoms.text_contrast_medium,
+            ]}>
+            <Trans>Legacy sign-in</Trans>
+          </Text>
+        </Pressable>
+      </View>
+
+      {mode === 'oauth' ? (
+        <OAuthLoginFields
+          error={error}
+          initialHandle={initialHandle}
+          setError={setError}
+          isProcessing={isProcessing}
+          setIsProcessing={setIsProcessing}
+          onAttemptSuccess={onAttemptSuccess}
+        />
+      ) : (
+        <LegacyLoginFields
+          error={error}
+          serviceUrl={serviceUrl}
+          serviceDescription={serviceDescription}
+          initialHandle={initialHandle}
+          setError={setError}
+          setServiceUrl={setServiceUrl}
+          onPressRetryConnect={onPressRetryConnect}
+          onPressForgotPassword={onPressForgotPassword}
+          onAttemptSuccess={onAttemptSuccess}
+          onAttemptFailed={onAttemptFailed}
+          debouncedResolveService={debouncedResolveService}
+          isResolvingService={isResolvingService}
+          isProcessing={isProcessing}
+          setIsProcessing={setIsProcessing}
+        />
+      )}
+    </FormContainer>
+  )
+}
+
+function OAuthLoginFields({
+  error,
+  initialHandle,
+  setError,
+  isProcessing,
+  setIsProcessing,
+  onAttemptSuccess,
+}: {
+  error: string
+  initialHandle: string
+  setError: (v: string) => void
+  isProcessing: boolean
+  setIsProcessing: (v: boolean) => void
+  onAttemptSuccess: () => void
+}) {
+  const {_} = useLingui()
+  const {login} = useSessionApi()
+  const requestNotificationsPermission = useRequestNotificationsPermission()
+  const {setShowLoggedOut} = useLoggedOutViewControls()
+  const setHasCheckedForStarterPack = useSetHasCheckedForStarterPack()
+  const identifierValueRef = useRef<string>(initialHandle || '')
+
+  const onPressNext = async () => {
+    if (isProcessing) return
+    Keyboard.dismiss()
+    setError('')
+
+    const identifier = identifierValueRef.current.trim()
+
+    if (!identifier) {
+      setError(_(msg`Please enter your username or handle`))
+      return
+    }
+
+    setIsProcessing(true)
+
+    try {
+      const client = getNativeOAuthClient()
+      const session = await client.signIn(identifier)
+      await login(
+        {
+          service: '',
+          identifier: '',
+          password: '',
+          oauthSession: session,
+        },
+        'LoginForm',
+      )
+      onAttemptSuccess()
+      setShowLoggedOut(false)
+      setHasCheckedForStarterPack(true)
+      requestNotificationsPermission('Login')
+    } catch (e: any) {
+      const errMsg = e.toString()
+      setIsProcessing(false)
+      if (errMsg.includes('cancelled') || errMsg.includes('dismiss')) {
+        // User cancelled the browser auth flow
+        return
+      }
+      if (isNetworkError(e)) {
+        logger.warn(
+          `Failed to start OAuth sign-in due to network error\n${e instanceof Error ? `${errMsg}\n${e.stack}\n${String(e.cause)}` : errMsg}`,
+        )
+        setError(
+          _(
+            msg`Unable to contact your service. Please check your Internet connection.`,
+          ),
+        )
+      } else {
+        logger.warn(
+          `Failed to start OAuth sign-in\n${e instanceof Error ? `${errMsg}\n${e.stack}\n${String(e.cause)}` : errMsg}`,
+        )
+        setError(cleanError(errMsg))
+      }
+    }
+  }
+
+  return (
+    <>
+      <View>
+        <TextField.LabelText>
+          <Trans>Account</Trans>
+        </TextField.LabelText>
+        <View style={[a.gap_sm]}>
+          <TextField.Root>
+            <TextField.Icon icon={At} />
+            <TextField.Input
+              testID="loginUsernameInput"
+              label={_(msg`Username or handle`)}
+              autoCapitalize="none"
+              autoFocus={!IS_IOS}
+              autoCorrect={false}
+              autoComplete="username"
+              returnKeyType="done"
+              textContentType="username"
+              defaultValue={initialHandle || ''}
+              onChangeText={v => {
+                identifierValueRef.current = v
+              }}
+              onSubmitEditing={onPressNext}
+              blurOnSubmit={false}
+              editable={!isProcessing}
+              accessibilityHint={_(
+                msg`Enter your handle (e.g. alice.bsky.social)`,
+              )}
+            />
+          </TextField.Root>
+        </View>
+      </View>
+      <FormError error={error} />
+      <View style={[a.pt_md]}>
+        <Button
+          testID="loginNextButton"
+          label={_(msg`Sign in`)}
+          accessibilityHint={_(msg`Opens your authorization server to sign in`)}
+          color="primary"
+          size="large"
+          onPress={onPressNext}>
+          <ButtonText>
+            <Trans>Sign in</Trans>
+          </ButtonText>
+          {isProcessing && <ButtonIcon icon={Loader} />}
+        </Button>
+      </View>
+    </>
+  )
+}
+
+function LegacyLoginFields({
+  error,
+  serviceUrl,
+  serviceDescription,
+  initialHandle,
+  setError,
+  setServiceUrl,
+  onPressRetryConnect,
+  onPressForgotPassword,
+  onAttemptSuccess,
+  onAttemptFailed,
+  debouncedResolveService,
+  isResolvingService,
+  isProcessing,
+  setIsProcessing,
+}: {
+  error: string
+  serviceUrl?: string | undefined
+  serviceDescription: ServiceDescription | undefined
+  initialHandle: string
+  setError: (v: string) => void
+  setServiceUrl: (v: string) => void
+  onPressRetryConnect: () => void
+  onPressForgotPassword: () => void
+  onAttemptSuccess: () => void
+  onAttemptFailed: () => void
+  debouncedResolveService: (identifier: string) => void
+  isResolvingService: boolean
+  isProcessing: boolean
+  setIsProcessing: (v: boolean) => void
+}) {
+  const t = useTheme()
+  const {_} = useLingui()
+  const {login} = useSessionApi()
+  const requestNotificationsPermission = useRequestNotificationsPermission()
+  const {setShowLoggedOut} = useLoggedOutViewControls()
+  const setHasCheckedForStarterPack = useSetHasCheckedForStarterPack()
+
   const [errorField, setErrorField] = useState<
     'none' | 'identifier' | 'password' | '2fa'
   >('none')
@@ -72,11 +342,6 @@ export const LoginForm = ({
   const identifierRef = useRef<TextInput>(null)
   const passwordRef = useRef<TextInput>(null)
   const hasFocusedOnce = useRef<boolean>(false)
-  const {_} = useLingui()
-  const {login} = useSessionApi()
-  const requestNotificationsPermission = useRequestNotificationsPermission()
-  const {setShowLoggedOut} = useLoggedOutViewControls()
-  const setHasCheckedForStarterPack = useSetHasCheckedForStarterPack()
 
   const onPressSelectService = useCallback(() => {
     Keyboard.dismiss()
@@ -127,7 +392,6 @@ export const LoginForm = ({
         }
       }
 
-      // TODO remove double login
       await login(
         {
           service: serviceUrl,
@@ -180,7 +444,7 @@ export const LoginForm = ({
   }
 
   return (
-    <FormContainer testID="loginForm" titleText={<Trans>Sign in</Trans>}>
+    <>
       <View>
         <TextField.LabelText>
           <Trans>Hosting provider</Trans>
@@ -209,8 +473,9 @@ export const LoginForm = ({
               testID="loginUsernameInput"
               inputRef={identifierRef}
               label={
-                serviceUrl === undefined ? _(msg`Username (full handle)`) :
-                _(msg`Username or email address`)
+                serviceUrl === undefined
+                  ? _(msg`Username (full handle)`)
+                  : _(msg`Username or email address`)
               }
               autoCapitalize="none"
               autoFocus={!IS_IOS}
@@ -235,7 +500,7 @@ export const LoginForm = ({
               onSubmitEditing={() => {
                 passwordRef.current?.focus()
               }}
-              blurOnSubmit={false} // prevents flickering due to onSubmitEditing going to next field
+              blurOnSubmit={false}
               editable={!isProcessing}
               accessibilityHint={_(
                 msg`Enter the username or email address you used when you created your account`,
@@ -261,17 +526,13 @@ export const LoginForm = ({
                 if (errorField) setErrorField('none')
               }}
               onSubmitEditing={onPressNext}
-              blurOnSubmit={false} // HACK: https://github.com/facebook/react-native/issues/21911#issuecomment-558343069 Keyboard blur behavior is now handled in onSubmitEditing
+              blurOnSubmit={false}
               editable={!isProcessing}
               accessibilityHint={_(msg`Enter your password`)}
+              // eslint-disable-next-line react-hooks/refs
               onLayout={ios(() => {
                 if (hasFocusedOnce.current) return
                 hasFocusedOnce.current = true
-                // kinda dumb, but if we use `autoFocus` to focus
-                // the username input, it happens before the password
-                // input gets rendered. this breaks the password autofill
-                // on iOS (it only does the username part). delaying
-                // it until both inputs are rendered fixes the autofill -sfn
                 identifierRef.current?.focus()
               })}
             />
@@ -284,7 +545,6 @@ export const LoginForm = ({
               color="secondary"
               style={[
                 a.rounded_sm,
-                // t.atoms.bg_contrast_100,
                 {marginLeft: 'auto', left: 6, padding: 6},
                 a.z_10,
               ]}>
@@ -310,8 +570,8 @@ export const LoginForm = ({
               autoCorrect={false}
               autoComplete="one-time-code"
               returnKeyType="done"
-              blurOnSubmit={false} // prevents flickering due to onSubmitEditing going to next field
-              value={authFactorToken} // controlled input due to uncontrolled input not receiving pasted values properly
+              blurOnSubmit={false}
+              value={authFactorToken}
               onChangeText={text => {
                 setAuthFactorToken(text)
                 if (errorField) setErrorField('none')
@@ -334,18 +594,7 @@ export const LoginForm = ({
         </View>
       )}
       <FormError error={error} />
-      <View style={[a.pt_md, web([a.justify_between, a.flex_row])]}>
-        {IS_WEB && (
-          <Button
-            label={_(msg`Back`)}
-            color="secondary"
-            size="large"
-            onPress={onPressBack}>
-            <ButtonText>
-              <Trans>Back</Trans>
-            </ButtonText>
-          </Button>
-        )}
+      <View style={[a.pt_md]}>
         {!serviceDescription && error ? (
           <Button
             testID="loginRetryButton"
@@ -383,6 +632,6 @@ export const LoginForm = ({
           </Button>
         )}
       </View>
-    </FormContainer>
+    </>
   )
 }

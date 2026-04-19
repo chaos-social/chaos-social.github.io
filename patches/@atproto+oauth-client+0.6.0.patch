@@ -1,0 +1,82 @@
+diff --git a/node_modules/@atproto/oauth-client/dist/index.js b/node_modules/@atproto/oauth-client/dist/index.js
+index 7b40a89..4b8d430 100644
+--- a/node_modules/@atproto/oauth-client/dist/index.js
++++ b/node_modules/@atproto/oauth-client/dist/index.js
+@@ -1,4 +1,21 @@
+ "use strict";
++// polyfill throwIfAborted which seems to be missing in react-native, but ky
++// uses it
++//
++// Fun fact, AbortSignal here is just a react-native polyfill, too:
++// https://github.com/facebook/react-native/blob/838d26d7b534133e75c7fa673dfc849b0e64c9d3/packages/react-native/Libraries/Core/setUpXHR.js#L38
++//
++// Unfortunately it doesn't have a `reason`
++//
++// ref: https://github.com/tjmehta/fast-abort-controller/blob/42588908035d1512f90e7299a2c70dfb708f9620/src/FastAbortSignal.ts#L39
++if (!AbortSignal.prototype.throwIfAborted) {
++  AbortSignal.prototype.throwIfAborted = function() {
++    if (this.aborted) {
++      throw new Error('Aborted')
++    }
++  }
++}
++
+ var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+     if (k2 === undefined) k2 = k;
+     var desc = Object.getOwnPropertyDescriptor(m, k);
+@@ -15,7 +32,9 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
+ };
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.FetchResponseError = exports.FetchRequestError = exports.FetchError = void 0;
+-require("core-js/modules/es.symbol.dispose");
++if (typeof Symbol.dispose === 'undefined') {
++  Symbol.dispose = Symbol('Symbol.dispose');
++}
+ __exportStar(require("@atproto-labs/did-resolver"), exports);
+ var fetch_1 = require("@atproto-labs/fetch");
+ Object.defineProperty(exports, "FetchError", { enumerable: true, get: function () { return fetch_1.FetchError; } });
+diff --git a/node_modules/@atproto/oauth-client/dist/oauth-server-agent.js b/node_modules/@atproto/oauth-client/dist/oauth-server-agent.js
+index 239cb0e..e98b656 100644
+--- a/node_modules/@atproto/oauth-client/dist/oauth-server-agent.js
++++ b/node_modules/@atproto/oauth-client/dist/oauth-server-agent.js
+@@ -169,10 +169,16 @@ class OAuthServerAgent {
+      * @returns The user's PDS URL (the resource server for the user)
+      */
+     async verifyIssuer(sub) {
++        const AbortSignal_timeout = (delay) => {
++            const controller = new AbortController();
++            const timeout = setTimeout(() => controller.abort(), delay);
++            return controller.signal;
++        };
++
+         const resolved = await this.oauthResolver.resolveFromIdentity(sub, {
+             noCache: true,
+             allowStale: false,
+-            signal: AbortSignal.timeout(10e3),
++            signal: AbortSignal_timeout(10e3),
+         });
+         if (this.issuer !== resolved.metadata.issuer) {
+             // Best case scenario; the user switched PDS. Worst case scenario; a bad
+diff --git a/node_modules/@atproto/oauth-client/dist/session-getter.js b/node_modules/@atproto/oauth-client/dist/session-getter.js
+index 5d41957..f279a0c 100644
+--- a/node_modules/@atproto/oauth-client/dist/session-getter.js
++++ b/node_modules/@atproto/oauth-client/dist/session-getter.js
+@@ -237,11 +237,17 @@ class SessionGetter extends simple_store_1.CachedGetter {
+      */
+     async get(sub, options) {
+         const session = await this.runtime.usingLock(`@atproto-oauth-client-${sub}`, async () => {
++            const AbortSignal_timeout = (delay) => {
++                const controller = new AbortController();
++                const timeout = setTimeout(() => controller.abort(), delay);
++                return controller.signal;
++            };
++
+             const env_1 = { stack: [], error: void 0, hasError: false };
+             try {
+                 // Make sure, even if there is no signal in the options, that the
+                 // request will be cancelled after at most 30 seconds.
+-                const signal = AbortSignal.timeout(30e3);
++                const signal = AbortSignal_timeout(30e3);
+                 const abortController = __addDisposableResource(env_1, (0, util_js_1.combineSignals)([options?.signal, signal]), false);
+                 return await super.get(sub, {
+                     ...options,

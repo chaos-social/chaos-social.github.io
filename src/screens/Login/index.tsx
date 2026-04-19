@@ -186,9 +186,7 @@ export const Login = ({onPressBack}: {onPressBack: () => void}) => {
   switch (currentForm) {
     case Forms.Login:
       title = _(msg`Sign in`)
-      description = IS_WEB
-        ? _(msg`Enter your handle to sign in`)
-        : _(msg`Enter your username and password`)
+      description = _(msg`Enter your handle to sign in`)
       goBack = () =>
         accounts.length ? gotoForm(Forms.ChooseAccount) : handlePressBack()
       content = (

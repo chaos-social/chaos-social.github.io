@@ -1,0 +1,64 @@
+diff --git a/node_modules/@atproto/oauth-client-expo/dist/expo-oauth-client.native.js b/node_modules/@atproto/oauth-client-expo/dist/expo-oauth-client.native.js
+index 979db40..300a11c 100644
+--- a/node_modules/@atproto/oauth-client-expo/dist/expo-oauth-client.native.js
++++ b/node_modules/@atproto/oauth-client-expo/dist/expo-oauth-client.native.js
+@@ -62,6 +62,30 @@ const runtimeImplementation = {
+     digest: async (bytes, { name }) => NativeModule.digest(bytes, name),
+     getRandomValues: async (length) => NativeModule.getRandomValues(length),
+ };
++class DisposableStack {
++    stack;
++    constructor() {
++        this.stack = [];
++    }
++    use(value) {
++        return __addDisposableResource({ stack: this.stack, error: void 0, hasError: false }, value, false);
++    }
++    async dispose() {
++        await __disposeResources({ stack: this.stack, error: void 0, hasError: false });
++    }
++    move() {
++        const newStack = new DisposableStack();
++        newStack.stack = this.stack;
++        this.stack = [];
++        return newStack;
++    }
++    [Symbol.dispose]() {
++        this.dispose();
++    }
++    [Symbol.asyncDispose]() {
++        return this.dispose();
++    }
++}
+ export class ExpoOAuthClient extends OAuthClient {
+     #disposables;
+     constructor(options) {
+diff --git a/node_modules/@atproto/oauth-client-expo/dist/polyfill.native.js b/node_modules/@atproto/oauth-client-expo/dist/polyfill.native.js
+index 32656aa..a2fe17e 100644
+--- a/node_modules/@atproto/oauth-client-expo/dist/polyfill.native.js
++++ b/node_modules/@atproto/oauth-client-expo/dist/polyfill.native.js
+@@ -1,3 +1,8 @@
+-import 'core-js/proposals/explicit-resource-management';
++if (typeof Symbol.dispose === 'undefined') {
++  Symbol.dispose = Symbol('Symbol.dispose');
++}
++if (typeof Symbol.asyncDispose === 'undefined') {
++  Symbol.asyncDispose = Symbol('Symbol.asyncDispose');
++}
+ import 'react-native-url-polyfill/auto';
+ //# sourceMappingURL=polyfill.native.js.map
+\ No newline at end of file
+diff --git a/node_modules/@atproto/oauth-client-expo/dist/polyfill.web.js b/node_modules/@atproto/oauth-client-expo/dist/polyfill.web.js
+index b7dc3e4..8f4a8ef 100644
+--- a/node_modules/@atproto/oauth-client-expo/dist/polyfill.web.js
++++ b/node_modules/@atproto/oauth-client-expo/dist/polyfill.web.js
+@@ -1,2 +1,7 @@
+-import 'core-js/proposals/explicit-resource-management';
++if (typeof Symbol.dispose === 'undefined') {
++  Symbol.dispose = Symbol('Symbol.dispose');
++}
++if (typeof Symbol.asyncDispose === 'undefined') {
++  Symbol.asyncDispose = Symbol('Symbol.asyncDispose');
++}
+ //# sourceMappingURL=polyfill.web.js.map
+\ No newline at end of file
