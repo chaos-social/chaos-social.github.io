@@ -13,7 +13,7 @@ import {
 } from 'expo-image-manipulator'
 import {type BlobRef} from '@atproto/api'
 import {transformExif} from '@uwx/exif-be-gone-web'
-import {toByteArray} from 'base64-js'
+import {toByteArray, fromByteArray} from 'base64-js'
 import {nanoid} from 'nanoid/non-secure'
 
 import {POST_IMG_MAX} from '#/lib/constants'
@@ -216,28 +216,6 @@ async function bypassCompression(
     return toByteArray(base64)
   }
 
-  function toArrayBuffer(uint8: Uint8Array) {
-    if (uint8.buffer instanceof ArrayBuffer) {
-      if (
-        uint8.byteOffset === 0 &&
-        uint8.byteLength === uint8.buffer.byteLength
-      ) {
-        return uint8.buffer
-      }
-
-      return uint8.buffer.slice(
-        uint8.byteOffset,
-        uint8.byteOffset + uint8.byteLength,
-      )
-    }
-
-    // Fallback for environments where Uint8Array.buffer is not an ArrayBuffer
-    const buffer = new ArrayBuffer(uint8.length)
-    const view = new Uint8Array(buffer)
-    view.set(uint8)
-    return buffer
-  }
-
   const source = img.transformed || img.source
   if (
     source.width > POST_IMG_MAX.width ||
@@ -291,9 +269,7 @@ async function bypassCompression(
     return undefined
   }
 
-  const dataUri = await blobToDataUri(
-    new Blob([toArrayBuffer(data)], {type: source.mime}),
-  )
+  const dataUri = arrayBufferToDataUri(data, source.mime)
   return {
     path: dataUri,
     width: source.width,
@@ -459,6 +435,11 @@ function blobToDataUri(blob: Blob): Promise<string> {
     reader.onerror = () => reject(reader.error)
     reader.readAsDataURL(blob)
   })
+}
+
+function arrayBufferToDataUri(buffer: Uint8Array | ArrayBufferLike, mime: string): string {
+  const base64 = fromByteArray(buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer))
+  return `data:${mime};base64,${base64}`
 }
 
 /** Purge files that were created to accomodate image manipulation */

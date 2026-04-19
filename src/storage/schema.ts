@@ -17,7 +17,7 @@ export type Device = {
   nativeSessionIdLastEventAt?: number
 
   fontScale: '-2' | '-1' | '0' | '1' | '2'
-  fontFamily: 'system' | 'theme'
+  fontFamily: 'system' | 'theme' | 'material'
   lastNuxDialog: string | undefined
 
   /**

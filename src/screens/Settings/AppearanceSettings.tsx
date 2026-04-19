@@ -118,7 +118,7 @@ export function AppearanceSettingsScreen({}: Props) {
   )
 
   const onChangeFontFamily = useCallback(
-    (value: 'system' | 'theme') => {
+    (value: 'system' | 'theme' | 'material') => {
       fonts.setFontFamily(value)
     },
     [fonts],
@@ -292,6 +292,14 @@ export function AppearanceSettingsScreen({}: Props) {
                     label: _(msg`Theme`),
                     name: 'theme',
                   },
+                  ...(IS_ANDROID
+                    ? [
+                        {
+                          label: _(msg`Google Sans`),
+                          name: 'material' as 'system' | 'theme' | 'material',
+                        },
+                      ]
+                    : []),
                 ]}
                 value={fonts.family}
                 onChange={onChangeFontFamily}

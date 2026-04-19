@@ -5,6 +5,47 @@ import {type Device, device} from '#/storage'
 
 const WEB_FONT_FAMILIES = `system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"`
 
+/*
+ * DEBUG: Uncomment to test if fonts are actually being applied on Android.
+ * This will use a distinctive cursive font. Revert when done testing.
+ */
+// const DEBUG_FONT_OVERRIDE = 'cursive'
+const DEBUG_FONT_OVERRIDE = undefined
+
+/*
+ * Google Sans Flex optical size mapping.
+ * Picks the correct optical size based on fontSize.
+ */
+function getGoogleSansFlex(weight: number, fontSize?: number): string {
+  const opticalSize = fontSize
+    ? fontSize < 14
+      ? '9pt'
+      : fontSize < 28
+        ? '24pt'
+        : fontSize < 48
+          ? '36pt'
+          : fontSize < 96
+            ? '72pt'
+            : '120pt'
+    : '24pt' // default to 24pt if no fontSize provided
+
+  const weightName =
+    {
+      100: 'Thin',
+      200: 'ExtraLight',
+      300: 'Light',
+      400: 'Regular',
+      500: 'Medium',
+      600: 'SemiBold',
+      700: 'Bold',
+      800: 'ExtraBold',
+      900: 'Black',
+    }[weight] || 'Regular'
+
+  const name = `GoogleSansFlex_${opticalSize}-${weightName}`
+  return name
+}
+
 const factor = 0.0625 // 1 - (15/16)
 const fontScaleMultipliers: Record<Device['fontScale'], number> = {
   '-2': 1 - factor * 1, // unused
@@ -37,8 +78,14 @@ export function setFontFamily(fontFamily: Device['fontFamily']) {
 /*
  * Unused fonts are commented out, but the files are there if we need them.
  */
-export function applyFonts(style: TextStyle, fontFamily: 'system' | 'theme') {
-  if (fontFamily === 'theme') {
+export function applyFonts(
+  style: TextStyle,
+  fontFamily: 'material' | 'system' | 'theme',
+) {
+  if (IS_ANDROID && fontFamily === 'material') {
+    const weight = Number(style.fontWeight || 400)
+    style.fontFamily = getGoogleSansFlex(weight, style.fontSize)
+  } else if (fontFamily === 'theme') {
     if (IS_ANDROID) {
       style.fontFamily =
         {
@@ -90,11 +137,15 @@ export function applyFonts(style: TextStyle, fontFamily: 'system' | 'theme') {
       style.fontVariant = (style.fontVariant || []).concat('no-contextual')
     }
   } else {
-    // fallback families only supported on web
-    if (IS_WEB) {
-      style.fontFamily = style.fontFamily || WEB_FONT_FAMILIES
+    // DEBUG: Use cursive font for testing by uncommenting DEBUG_FONT_OVERRIDE
+    if (DEBUG_FONT_OVERRIDE) {
+      style.fontFamily = DEBUG_FONT_OVERRIDE
+    } else {
+      // fallback families only supported on web
+      if (IS_WEB) {
+        style.fontFamily = style.fontFamily || WEB_FONT_FAMILIES
+      }
     }
-
     /**
      * Overridden to previous spacing for the `system` font option.
      * https://github.com/bluesky-social/social-app/commit/2419096e2409008b7d71fd6b8f8d0dd5b016e267
