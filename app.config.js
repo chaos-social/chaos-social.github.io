@@ -63,7 +63,8 @@ module.exports = function (_config) {
       newArchEnabled: false,
       ios: {
         supportsTablet: false,
-        bundleIdentifier: 'app.witchsky',
+        bundleIdentifier: process.env.WITCHSKY_BUNDLE_ID || 'app.witchsky',
+        appleTeamId: process.env.WITCHSKY_APPLE_TEAM_ID || 'B3LX46C5HS',
         config: {
           usesNonExemptEncryption: false,
         },
@@ -127,7 +128,10 @@ module.exports = function (_config) {
         entitlements: {
           'com.apple.developer.kernel.increased-memory-limit': true,
           'com.apple.developer.kernel.extended-virtual-addressing': true,
-          'com.apple.security.application-groups': 'group.app.witchsky',
+          'com.apple.security.application-groups': process.env
+            .WITCHSKY_BUNDLE_ID
+            ? `group.${process.env.WITCHSKY_BUNDLE_ID}`
+            : 'group.app.witchsky',
           // 'com.apple.developer.device-information.user-assigned-device-name': true,
         },
         privacyManifests: {
@@ -197,7 +201,7 @@ module.exports = function (_config) {
           backgroundColor: '#ED5345',
         },
         googleServicesFile: './google-services.json',
-        package: 'app.witchsky',
+        package: process.env.WITCHSKY_BUNDLE_ID || 'app.witchsky',
         intentFilters: [
           {
             action: 'VIEW',
@@ -335,6 +339,7 @@ module.exports = function (_config) {
             fonts: [
               './assets/fonts/inter/InterVariable.woff2',
               './assets/fonts/inter/InterVariable-Italic.woff2',
+              './assets/fonts/google-sans-flex/GoogleSansFlex-Regular.ttf',
               // Android only
               './assets/fonts/inter/Inter-Regular.otf',
               './assets/fonts/inter/Inter-Italic.otf',
@@ -344,6 +349,57 @@ module.exports = function (_config) {
               './assets/fonts/inter/Inter-SemiBoldItalic.otf',
               './assets/fonts/inter/Inter-Bold.otf',
               './assets/fonts/inter/Inter-BoldItalic.otf',
+              // Google Sans Flex - Android only
+              // 9pt optical size
+              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Thin.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-ExtraLight.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Light.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Regular.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Medium.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-SemiBold.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Bold.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-ExtraBold.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Black.ttf',
+              // 24pt optical size (default)
+              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Thin.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-ExtraLight.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Light.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Regular.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Medium.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-SemiBold.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Bold.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-ExtraBold.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Black.ttf',
+              // 36pt optical size
+              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Thin.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-ExtraLight.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Light.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Regular.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Medium.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-SemiBold.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Bold.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-ExtraBold.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Black.ttf',
+              // 72pt optical size
+              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Thin.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-ExtraLight.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Light.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Regular.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Medium.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-SemiBold.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Bold.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-ExtraBold.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Black.ttf',
+              // 120pt optical size
+              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Thin.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-ExtraLight.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Light.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Regular.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Medium.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-SemiBold.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Bold.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-ExtraBold.ttf',
+              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Black.ttf',
             ],
           },
         ],
@@ -459,25 +515,25 @@ module.exports = function (_config) {
                 // appExtensions: [
                 //   {
                 //     targetName: 'Share-with-Bluesky',
-                //     bundleIdentifier: 'app.witchsky.Share-with-Bluesky',
+                //     bundleIdentifier: env.WITCHSKY_BUNDLE_ID ? `${env.WITCHSKY_BUNDLE_ID}.Share-with-Bluesky` : 'app.witchsky.Share-with-Bluesky',
                 //     entitlements: {
                 //       'com.apple.security.application-groups': [
-                //         'group.app.witchsky',
+                //         process.env.WITCHSKY_BUNDLE_ID ? `group.${process.env.WITCHSKY_BUNDLE_ID}` : 'group.app.witchsky',
                 //       ],
                 //     },
                 //   },
                 //   {
                 //     targetName: 'BlueskyNSE',
-                //     bundleIdentifier: 'app.witchsky.BlueskyNSE',
+                //     bundleIdentifier: process.env.WITCHSKY_BUNDLE_ID ? `${process.env.WITCHSKY_BUNDLE_ID}.BlueskyNSE` : 'app.witchsky.BlueskyNSE',
                 //     entitlements: {
                 //       'com.apple.security.application-groups': [
-                //         'group.app.witchsky',
+                //         process.env.WITCHSKY_BUNDLE_ID ? `group.${process.env.WITCHSKY_BUNDLE_ID}` : 'group.app.witchsky',
                 //       ],
                 //     },
                 //   },
                 //   {
                 //     targetName: 'BlueskyClip',
-                //     bundleIdentifier: 'app.witchsky.AppClip',
+                //     bundleIdentifier: process.env.WITCHSKY_BUNDLE_ID ? `${process.env.WITCHSKY_BUNDLE_ID}.AppClip` : 'app.witchsky.AppClip',
                 //   },
                 // ],
               },
