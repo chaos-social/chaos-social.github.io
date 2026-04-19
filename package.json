@@ -15,6 +15,11 @@
           "expo-media-library",
           "expo-image-picker"
         ]
+      },
+      "ios": {
+        "exclude": [
+          "@assembless/react-native-material-you"
+        ]
       }
     },
     "install": {
