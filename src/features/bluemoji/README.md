@@ -5,7 +5,13 @@ for the composing account's collection and public discovery. Sticker attachments
 are not supported. Selected emoji retain their source owner in drafts, including
 when two collections use the same alias.
 
-The web composer renders verified aliases as inline image nodes. Arrow keys cross
+The web composer extends TipTap 2's Emoji node and renders verified aliases as
+inline images. Shortcode autocomplete searches the composing account's collection
+and verifies suggestions before displaying them; arrows, Enter, and Tab select a
+result, and Escape dismisses the list. Selected sources are saved just like picker
+selections. TipTap's default input and paste rules are disabled so the shared
+escape-aware conversion handles typing, pasting, and commands consistently.
+Arrow keys cross
 each image in one step, and deletion removes the whole emoji. Editing, copying,
 drafts, character counts, and posting retain the original alias text. Backslashes
 follow the same escape rules as other facet syntax: an odd number of backslashes

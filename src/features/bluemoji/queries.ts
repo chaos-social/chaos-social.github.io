@@ -105,29 +105,101 @@ export function useBluemojiSearchQuery({
     staleTime: STALE.MINUTES.ONE,
     initialPageParam: undefined as string | undefined,
     async queryFn({pageParam, signal}) {
-      if (q)
-        return bluemojiClient.call(
-          blue.moji.collection.searchItems,
-          {
-            repo: repo as AtIdentifierString | undefined,
-            q,
-            limit: 25,
-            cursor: pageParam,
-          },
-          {signal},
-        )
-      return bluemojiClient.call(
-        blue.moji.collection.listCollection,
-        {
-          repo: repo as AtIdentifierString | undefined,
-          limit: 25,
-          cursor: pageParam,
-        },
-        {signal},
-      )
+      return fetchBluemojiDiscoveryPage({repo, q, cursor: pageParam, signal})
     },
     enabled: Boolean(repo || q),
     getNextPageParam: page => page.cursor,
     retry: false,
   })
+}
+
+/** Autocomplete results still require verification against the owning PDS. */
+export async function fetchBluemojiSuggestions(
+  queryClient: QueryClient,
+  repo: string,
+  query: string,
+) {
+  const q = query.trim().slice(0, 100)
+  if (!repo || !q) return []
+  const result = await queryClient.fetchQuery({
+    queryKey: createQueryKey('useBluemojiSearchQuery', {
+      repo,
+      q,
+      autocomplete: true,
+    }),
+    staleTime: STALE.MINUTES.ONE,
+    retry: false,
+    queryFn: () => fetchBluemojiDiscoveryPage({repo, q, limit: 8}),
+  })
+  const verified = await Promise.allSettled(
+    result.items.map(item =>
+      fetchBluemojiItemQuery(queryClient, {
+        did: item.did ?? '',
+        name: item.name,
+        record:
+          item.uri && item.cid ? {uri: item.uri, cid: item.cid} : undefined,
+      }),
+    ),
+  )
+  return verified.flatMap(result =>
+    result.status === 'fulfilled' && result.value ? [result.value] : [],
+  )
+}
+
+/**
+ * Discovery views sometimes contain incorrectly JSON-encoded legacy bytes.
+ * Validate references independently; images and labels must come from the PDS.
+ */
+export async function fetchBluemojiDiscoveryPage({
+  repo,
+  q,
+  cursor,
+  signal,
+  limit = 25,
+}: {
+  repo?: string
+  q: string
+  cursor?: string
+  signal?: AbortSignal
+  limit?: number
+}) {
+  const params = {repo: repo as AtIdentifierString | undefined, limit, cursor}
+  const options = {signal, validateResponse: false}
+  const result: unknown = q
+    ? await bluemojiClient.call(
+        blue.moji.collection.searchItems,
+        {...params, q},
+        options,
+      )
+    : await bluemojiClient.call(
+        blue.moji.collection.listCollection,
+        params,
+        options,
+      )
+  if (
+    !result ||
+    typeof result !== 'object' ||
+    !('items' in result) ||
+    !Array.isArray(result.items)
+  )
+    throw new Error('Invalid Bluemoji discovery response')
+  const items = result.items.flatMap((candidate: unknown) => {
+    if (!candidate || typeof candidate !== 'object') return []
+    const view = blue.moji.collection.item.itemView.$ifMatches({
+      $type: 'blue.moji.collection.item#itemView',
+      name: 'name' in candidate ? candidate.name : undefined,
+      did: 'did' in candidate ? candidate.did : undefined,
+      uri: 'uri' in candidate ? candidate.uri : undefined,
+      cid: 'cid' in candidate ? candidate.cid : undefined,
+      formats: {$type: 'blue.moji.collection.item#formats_v1'},
+    })
+    return view ? [view] : []
+  })
+  return {
+    items,
+    cursor:
+      'cursor' in result && typeof result.cursor === 'string'
+        ? result.cursor
+        : undefined,
+  }
 }

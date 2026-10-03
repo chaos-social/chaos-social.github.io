@@ -49,6 +49,7 @@ export function TextInput({
   richtext,
   bluemoji: _bluemoji,
   bluemojiRepo: _bluemojiRepo,
+  onSelectBluemoji: _onSelectBluemoji,
   placeholder,
   hasRightPadding,
   setRichText,

@@ -1,7 +1,7 @@
 import {type TextInput} from 'react-native'
 import {type RichText} from '@bsky/sdk/richtext'
 
-import {type BluemojiRef} from '#/features/bluemoji/util'
+import {type BluemojiItem, type BluemojiRef} from '#/features/bluemoji/util'
 
 export type TextInputRef = {
   insertText: (text: string) => void
@@ -26,6 +26,7 @@ export type TextInputProps = {
   richtext: RichText
   bluemoji?: Record<string, BluemojiRef>
   bluemojiRepo?: string
+  onSelectBluemoji?: (item: BluemojiItem) => string
   webForceMinHeight: boolean
   hasRightPadding: boolean
   isActive: boolean

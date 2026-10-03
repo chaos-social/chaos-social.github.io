@@ -11,6 +11,7 @@ import {StyleSheet, View} from 'react-native'
 import Animated, {FadeIn, FadeOut} from 'react-native-reanimated'
 import {RichText} from '@bsky/sdk/richtext'
 import {Trans} from '@lingui/react/macro'
+import {useQueryClient} from '@tanstack/react-query'
 import {getSchema} from '@tiptap/core'
 import {Document} from '@tiptap/extension-document'
 import Hardbreak from '@tiptap/extension-hard-break'
@@ -49,6 +50,10 @@ import {Portal} from '#/components/Portal'
 import {Text} from '#/components/Typography'
 import {syncBluemojiEditor} from '#/features/bluemoji/editor'
 import {BluemojiEditorNode} from '#/features/bluemoji/editorNode'
+import {
+  type BluemojiSuggestionContext,
+  createBluemojiSuggestion,
+} from '#/features/bluemoji/editorSuggestion'
 import {useComposerBluemojiItems} from '#/features/bluemoji/useComposerItems'
 import {getBluemojiImage, getBluemojiModeration} from '#/features/bluemoji/util'
 import {app} from '#/lexicons'
@@ -64,6 +69,7 @@ export function TextInput({
   richtext,
   bluemoji,
   bluemojiRepo,
+  onSelectBluemoji,
   placeholder,
   webForceMinHeight,
   hasRightPadding,
@@ -90,12 +96,23 @@ export function TextInput({
     bluemojiRepo,
   )
   const moderationOpts = useModerationOpts()
+  const queryClient = useQueryClient()
+  const bluemojiSuggestionContext = useRef<BluemojiSuggestionContext>({
+    queryClient,
+  })
+  bluemojiSuggestionContext.current = {
+    queryClient,
+    repo: bluemojiRepo,
+    moderationOpts,
+    onSelect: onSelectBluemoji,
+  }
   const modeClass = useColorSchemeStyle('ProseMirror-light', 'ProseMirror-dark')
 
   const [isDropping, setIsDropping] = useState(false)
   const onBackspaceEmptyRef = useRef(onBackspaceEmpty)
   onBackspaceEmptyRef.current = onBackspaceEmpty
   const autocompleteRef = useRef<AutocompleteRef>(null)
+  const closeBluemojiPopup = useRef<(() => boolean) | null>(null)
   const threadShortcutState = useRef({
     canAddPost,
     canMovePostUp,
@@ -110,7 +127,12 @@ export function TextInput({
   const extensions = useMemo(
     () => [
       Document,
-      BluemojiEditorNode,
+      BluemojiEditorNode.configure({
+        suggestion: createBluemojiSuggestion(
+          bluemojiSuggestionContext,
+          closeBluemojiPopup,
+        ),
+      }),
       LinkDecorator,
       TagDecorator,
       Mention.configure({
@@ -479,7 +501,9 @@ export function TextInput({
       const pos = editor?.state.selection.$anchor.pos
       return pos ? editor?.view.coordsAtPos(pos) : undefined
     },
-    maybeClosePopup: () => autocompleteRef.current?.maybeClose() ?? false,
+    maybeClosePopup: () =>
+      closeBluemojiPopup.current?.() ||
+      (autocompleteRef.current?.maybeClose() ?? false),
   }))
 
   const inputStyle = useMemo(() => {

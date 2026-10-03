@@ -2,7 +2,11 @@ import {Schema} from '@tiptap/pm/model'
 import {EditorState, TextSelection} from '@tiptap/pm/state'
 
 import {item} from '#/features/bluemoji/__tests__/fixtures'
-import {bluemojiNodeText, syncBluemojiEditor} from '#/features/bluemoji/editor'
+import {
+  bluemojiNodeText,
+  isBluemojiSuggestionAllowed,
+  syncBluemojiEditor,
+} from '#/features/bluemoji/editor'
 
 jest.unmock('multiformats/cid')
 
@@ -106,4 +110,16 @@ it('keeps unverified aliases readable and preserves same-name foreign selections
   expect(rawText(result)).toBe(':blobcat: :missing: :blobcat-2:')
   expect(result.doc.firstChild!.lastChild!.attrs.uri).toBe(foreign.uri)
   expect(tr.getMeta('addToHistory')).toBe(false)
+})
+
+it.each([
+  ['', true],
+  ['hello ', true],
+  ['\\', false],
+  ['\\\\', true],
+  ['https://example.com/', false],
+  ['\\<', false],
+])('protects shortcode suggestions after %s', (prefix, allowed) => {
+  const state = makeState(`${prefix}:ca`)
+  expect(isBluemojiSuggestionAllowed(state, prefix.length + 1)).toBe(allowed)
 })
