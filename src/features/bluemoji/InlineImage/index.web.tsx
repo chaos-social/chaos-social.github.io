@@ -3,8 +3,9 @@ import {Image, type ImageProps} from 'expo-image'
 
 export function InlineImage({
   size,
+  baselineOffset: _baselineOffset,
   ...props
-}: {size: number} & Omit<ImageProps, 'style'>) {
+}: {size: number; baselineOffset?: number} & Omit<ImageProps, 'style'>) {
   return (
     <span
       style={{
