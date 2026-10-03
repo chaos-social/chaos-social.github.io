@@ -1,4 +1,5 @@
-import {type Editor, Node} from '@tiptap/core'
+import {type Editor} from '@tiptap/core'
+import {Emoji} from '@tiptap/extension-emoji'
 import {TextSelection} from '@tiptap/pm/state'
 import {
   type NodeViewProps,
@@ -54,13 +55,26 @@ function moveAcrossBluemoji(editor: Editor, direction: number) {
 }
 
 /** Keep the serialized and copied form as an alias, regardless of image state. */
-export const BluemojiEditorNode = Node.create({
+export const BluemojiEditorNode = Emoji.configure({emojis: []}).extend({
   name: 'bluemoji',
-  inline: true,
-  group: 'inline',
-  atom: true,
-  /* Arrow keys should cross the image instead of selecting it first. */
-  selectable: false,
+  /* These rules cannot account for escaped aliases or protected facets. */
+  addInputRules() {
+    return []
+  },
+  addPasteRules() {
+    return []
+  },
+  /* Insert plain aliases first so verification and escaping have one path. */
+  addCommands() {
+    return {
+      setEmoji:
+        shortcode =>
+        ({commands}) =>
+          commands.insertContent(
+            shortcode.startsWith(':') ? shortcode : `:${shortcode}:`,
+          ),
+    }
+  },
   addKeyboardShortcuts() {
     return {
       ArrowLeft: () => moveAcrossBluemoji(this.editor, -1),

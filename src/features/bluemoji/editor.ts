@@ -112,3 +112,21 @@ export function syncBluemojiEditor(
     tr.replaceWith(from, to, node)
   return tr
 }
+
+/** Reuse facet protection for suggestions, including odd backslash escapes. */
+export function isBluemojiSuggestionAllowed(state: EditorState, from: number) {
+  const $from = state.doc.resolve(from)
+  const prefix = state.doc.textBetween(
+    $from.start(),
+    from,
+    '',
+    bluemojiNodeText,
+  )
+  const escapedAngle = prefix.match(/(\\+)<[^>]*$/u)
+  if (escapedAngle && escapedAngle[1].length % 2 === 1) return false
+  const rt = new RichText({text: `${prefix}:candidate:`})
+  rt.detectFacetsWithoutResolution()
+  applyMarkdownLinkFacets(rt)
+  applyFacetSyntax(rt)
+  return getBluemojiMatches(rt).some(match => match.index === prefix.length)
+}

@@ -4,8 +4,10 @@ import {QueryClient} from '@tanstack/react-query'
 import {resolvePdsServiceUrl} from '#/state/queries/resolve-identity'
 import {item} from '#/features/bluemoji/__tests__/fixtures'
 import {
+  fetchBluemojiDiscoveryPage,
   fetchBluemojiItem,
   fetchBluemojiItemQuery,
+  fetchBluemojiSuggestions,
 } from '#/features/bluemoji/queries'
 
 jest.unmock('multiformats/cid')
@@ -82,4 +84,43 @@ it('rejects malformed source records', async () => {
     value: {$type: 'blue.moji.collection.item', name: ':cat:'},
   })
   expect(await fetchBluemojiItem(item.uri)).toBeNull()
+})
+
+it('keeps usable discovery references when legacy asset metadata is malformed', async () => {
+  call.mockResolvedValueOnce({
+    items: [
+      {
+        ...item.record,
+        did: item.did,
+        uri: item.uri,
+        cid: item.cid,
+        formats: {
+          $type: 'blue.moji.collection.item#formats_v0',
+          lottie: {'0': 1},
+        },
+      },
+      {name: 42},
+      {name: ':forged:', uri: 'not-an-at-uri'},
+    ],
+  })
+  const result = await fetchBluemojiDiscoveryPage({repo: item.did, q: 'blob'})
+  expect(result.items).toHaveLength(1)
+  expect(result.items[0].formats).toEqual({
+    $type: 'blue.moji.collection.item#formats_v1',
+  })
+  expect(result.items[0].uri).toBe(item.uri)
+})
+
+it('verifies autocomplete results and skips a stale or forged source reference', async () => {
+  const cache = new QueryClient({defaultOptions: {queries: {retry: false}}})
+  call.mockResolvedValueOnce({
+    items: [
+      {...item.record, did: item.did, uri: item.uri, cid: item.cid},
+      {...item.record, did: item.did, uri: `${item.uri}-forged`, cid: item.cid},
+    ],
+  })
+  const results = await fetchBluemojiSuggestions(cache, item.did, 'blob')
+  expect(results).toEqual([item])
+  expect(call).toHaveBeenCalledTimes(3)
+  cache.clear()
 })

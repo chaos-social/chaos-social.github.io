@@ -2195,6 +2195,11 @@ let ComposerPost = memo(function ComposerPost({
           richtext={richtext}
           bluemoji={post.bluemoji}
           bluemojiRepo={activeAccountDid}
+          onSelectBluemoji={item => {
+            const name = getBluemojiInsertionName(item, post.bluemoji)
+            dispatchPost({type: 'register_bluemoji', item})
+            return name
+          }}
           placeholder={selectTextInputPlaceholder}
           autoFocus={isActive}
           webForceMinHeight={forceMinHeight}
