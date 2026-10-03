@@ -8,10 +8,8 @@ import {
 } from 'react'
 import {
   PixelRatio,
-  Text as RNText,
   TextInput as RNTextInput,
   type TextInputSelectionChangeEvent,
-  type TextLayoutEvent,
   View,
 } from 'react-native'
 import {type PasteEventPayload, TextInputWrapper} from 'expo-paste-input'
@@ -37,8 +35,9 @@ import {atoms as a, useAlf, utils} from '#/alf'
 import {normalizeTextStyles} from '#/alf/typography'
 import {IS_ANDROID} from '#/env'
 import {InlineBluemoji} from '#/features/bluemoji/InlineBluemoji'
+import {NativeComposerLayout} from '#/features/bluemoji/NativeComposerLayout'
 import {
-  applyNativeEmojiEdit,
+  applyNativeEmojiEditWithSelection,
   nativeToRaw,
   projectNativeEmoji,
   rawToNative,
@@ -90,13 +89,6 @@ export function TextInput({
     ),
   )
   const projection = projectNativeEmoji(richtext, verifiedItems)
-  const [emojiLines, setEmojiLines] = useState<{
-    text: string
-    lines: TextLayoutEvent['nativeEvent']['lines']
-  }>()
-  const [emojiPrefixWidths, setEmojiPrefixWidths] = useState<
-    Record<string, number>
-  >({})
   const projectionRef = useRef(projection)
   const pendingSelection = useRef<Selection | null>(null)
   useLayoutEffect(() => {
@@ -309,126 +301,79 @@ export function TextInput({
     return style
   }, [t, fonts])
 
-  /*
-   * Opacity hides color emoji too. Measure the same plain text as TextInput,
-   * without inline attachments that would change its line heights.
-   */
   const emojiSize =
     (inputTextStyle.fontSize ?? a.text_lg.fontSize) * PixelRatio.getFontScale()
-  const positionedEmoji = projection.tokens.map(token => {
-    let start = 0
-    const line =
-      emojiLines?.text === projection.text
-        ? emojiLines.lines.find(candidate => {
-            const end = start + candidate.text.length
-            if (token.index < end) return true
-            start = end
-            return false
-          })
-        : undefined
-    const prefix = line ? projection.text.slice(start, token.index) : ''
-    const width = prefix ? emojiPrefixWidths[prefix] : 0
-    return {token, line, prefix, width}
+  const occurrences = new Map<string, number>()
+  const emojiTokens = projection.tokens.map(token => {
+    const occurrence = occurrences.get(token.item.uri) ?? 0
+    occurrences.set(token.item.uri, occurrence + 1)
+    return {token, id: `composer-emoji-${token.item.uri}-${occurrence}`}
+  })
+  const emojiLayout = JSON.stringify({
+    text: projection.text,
+    emojis: emojiTokens.map(({token, id}) => ({id, index: token.index})),
   })
 
   return (
     <View style={[a.flex_1, a.pl_md, hasRightPadding && a.pr_4xl]}>
-      <TextInputWrapper onPaste={onPaste}>
-        <View style={props.style}>
-          <View
-            testID="composerEmojiMeasurement"
-            pointerEvents="none"
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-            style={{
-              position: 'absolute',
-              top: 1,
-              left: 1,
-              right: 1,
-              opacity: 0,
-            }}>
-            <RNText
-              testID="composerEmojiImageLayer"
-              accessible={false}
-              textBreakStrategy="simple"
-              onTextLayout={event => {
-                setEmojiLines({
-                  text: projection.text,
-                  lines: event.nativeEvent.lines,
-                })
-              }}
-              style={[inputTextStyle, {padding: 0, includeFontPadding: false}]}>
-              {projection.text}
-            </RNText>
-            {positionedEmoji.map(({token, prefix}) =>
-              prefix ? (
-                <RNText
-                  key={token.index}
-                  testID={`composerEmojiPrefix-${token.index}`}
-                  accessible={false}
-                  numberOfLines={1}
-                  onTextLayout={event => {
-                    const width = event.nativeEvent.lines[0]?.width
-                    if (width === undefined) return
-                    setEmojiPrefixWidths(previous =>
-                      previous[prefix] === width
-                        ? previous
-                        : {...previous, [prefix]: width},
-                    )
-                  }}
-                  style={[
-                    inputTextStyle,
-                    {
-                      position: 'absolute',
-                      width: 10000,
-                      includeFontPadding: false,
-                    },
-                  ]}>
-                  {prefix}
-                </RNText>
-              ) : null,
-            )}
-          </View>
-          {positionedEmoji.map(({token, line, width}) => {
-            if (!line || width === undefined) return null
-            return (
-              <View
-                key={token.index}
-                testID={`composerEmojiPosition-${token.index}`}
-                pointerEvents="none"
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-                style={{
-                  position: 'absolute',
-                  left: line.x + width + 1,
-                  top: line.y + line.height + 1 - emojiSize,
-                }}>
-                <InlineBluemoji
-                  interactive={false}
-                  claim={{
-                    did: token.item.did,
-                    name: token.item.record.name,
-                    record: {uri: token.item.uri, cid: token.item.cid},
-                  }}
-                  fallbackText=""
-                  size={emojiSize}
-                  baselineOffset={0}
-                />
-              </View>
-            )
-          })}
+      <TextInputWrapper
+        onPaste={onPaste}
+        style={!autocompletePrefix && a.flex_1}>
+        <View
+          testID="composerTextInputContainer"
+          collapsable={false}
+          style={[!autocompletePrefix && a.flex_1, props.style]}>
+          {emojiTokens.map(({token, id}) => (
+            <View
+              key={id}
+              nativeID={id}
+              collapsable={false}
+              testID={`composerEmojiPosition-${token.index}`}
+              pointerEvents="none"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                width: emojiSize,
+                height: emojiSize,
+              }}>
+              <InlineBluemoji
+                interactive={false}
+                claim={{
+                  did: token.item.did,
+                  name: token.item.record.name,
+                  record: {uri: token.item.uri, cid: token.item.cid},
+                }}
+                fallbackText=""
+                size={emojiSize}
+                baselineOffset={0}
+              />
+            </View>
+          ))}
           <RNTextInput
             testID="composerTextInput"
             ref={textInput}
             value={projection.text}
             accessibilityValue={{text: richtext.text}}
             onChangeText={(newText: string) => {
-              const raw = applyNativeEmojiEdit(
+              const edit = applyNativeEmojiEditWithSelection(
                 projectionRef.current,
                 newText,
                 textInputSelection.current,
               )
-              void onChangeText(raw)
+              const next = projectNativeEmoji(
+                new RichText({text: edit.raw}),
+                verifiedItems,
+              )
+              if (next.text !== newText) {
+                pendingSelection.current = {
+                  start: edit.cursor,
+                  end: edit.cursor,
+                }
+              }
+              void onChangeText(edit.raw)
             }}
             onSelectionChange={onSelectionChange}
             onKeyPress={({nativeEvent}) => {
@@ -454,6 +399,7 @@ export function TextInput({
             style={[
               inputTextStyle,
               a.w_full,
+              !autocompletePrefix && a.h_full,
               {
                 padding: 0,
                 textAlignVertical: 'top',
@@ -465,6 +411,15 @@ export function TextInput({
                 borderColor: 'transparent',
               },
             ]}
+          />
+          <NativeComposerLayout
+            testID="composerEmojiLayoutObserver"
+            pointerEvents="none"
+            accessible={false}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={{position: 'absolute', width: 0, height: 0, left: 0, top: 0}}
+            emojiLayout={emojiLayout}
           />
         </View>
       </TextInputWrapper>

@@ -27,7 +27,7 @@ export function projectNativeEmoji(
   let end = 0
   for (const match of getBluemojiMatches(rt)) {
     const item = items.get(match[0])
-    if (!item) continue
+    if (!item || match.index < end) continue
     text += rt.text.slice(end, match.index)
     end = match.index + match[0].length
     tokens.push({
@@ -71,7 +71,17 @@ export function applyNativeEmojiEdit(
   text: string,
   selection: {start: number; end: number},
 ) {
-  if (text === previous.text) return previous.raw
+  return applyNativeEmojiEditWithSelection(previous, text, selection).raw
+}
+
+/** Return the source caret at the end of the native replacement. */
+export function applyNativeEmojiEditWithSelection(
+  previous: NativeEmojiProjection,
+  text: string,
+  selection: {start: number; end: number},
+) {
+  if (text === previous.text)
+    return {raw: previous.raw, cursor: nativeToRaw(previous, selection.start)}
   let start = 0
   while (
     start < previous.text.length &&
@@ -96,9 +106,9 @@ export function applyNativeEmojiEdit(
     oldEnd--
     newEnd--
   }
-  return (
+  const raw =
     previous.raw.slice(0, nativeToRaw(previous, start)) +
     text.slice(start, newEnd) +
     previous.raw.slice(nativeToRaw(previous, oldEnd))
-  )
+  return {raw, cursor: nativeToRaw(previous, start) + newEnd - start}
 }

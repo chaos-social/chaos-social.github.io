@@ -15,5 +15,6 @@ android {
 }
 
 dependencies {
+  implementation("com.facebook.react:react-android")
   implementation("com.android.installreferrer:installreferrer:2.2")
 }

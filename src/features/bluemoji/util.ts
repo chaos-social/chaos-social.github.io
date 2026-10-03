@@ -161,24 +161,29 @@ export function createBluemojiFacet(
 
 /** Alias ranges that are neither escaped nor covered by another facet. */
 export function getBluemojiMatches(rt: RichText) {
-  return Array.from(rt.text.matchAll(/:[^\s:]{1,128}:/gu)).filter(match => {
-    if (
-      isEscapedFacetSyntax(rt.text, match.index) ||
-      isInsideEscapedFacetSyntax(
-        rt.text,
-        match.index,
+  return Array.from(rt.text.matchAll(/(?=(:[^\s:]{1,128}:))/gu))
+    .map(match => {
+      match[0] = match[1]
+      return match
+    })
+    .filter(match => {
+      if (
+        isEscapedFacetSyntax(rt.text, match.index) ||
+        isInsideEscapedFacetSyntax(
+          rt.text,
+          match.index,
+          match.index + match[0].length,
+        )
+      )
+        return false
+      const byteStart = rt.unicodeText.utf16IndexToUtf8Index(match.index)
+      const byteEnd = rt.unicodeText.utf16IndexToUtf8Index(
         match.index + match[0].length,
       )
-    )
-      return false
-    const byteStart = rt.unicodeText.utf16IndexToUtf8Index(match.index)
-    const byteEnd = rt.unicodeText.utf16IndexToUtf8Index(
-      match.index + match[0].length,
-    )
-    return !rt.facets?.some(
-      f => f.index.byteStart < byteEnd && f.index.byteEnd > byteStart,
-    )
-  })
+      return !rt.facets?.some(
+        f => f.index.byteStart < byteEnd && f.index.byteEnd > byteStart,
+      )
+    })
 }
 
 /** Add verified emoji while retaining the editor's original text and offsets. */
@@ -191,6 +196,17 @@ export function addBluemojiFacets(
   for (const match of matches) {
     const item = items.get(match[0])
     if (!item || !getBluemojiImage(item)) continue
+    if (
+      facets.some(
+        f =>
+          f.index.byteStart <
+            rt.unicodeText.utf16IndexToUtf8Index(
+              match.index + match[0].length,
+            ) &&
+          f.index.byteEnd > rt.unicodeText.utf16IndexToUtf8Index(match.index),
+      )
+    )
+      continue
     const byteStart = rt.unicodeText.utf16IndexToUtf8Index(match.index)
     const byteEnd = rt.unicodeText.utf16IndexToUtf8Index(
       match.index + match[0].length,

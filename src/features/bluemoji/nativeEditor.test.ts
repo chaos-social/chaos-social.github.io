@@ -7,6 +7,7 @@ import {
 import {item} from '#/features/bluemoji/__tests__/fixtures'
 import {
   applyNativeEmojiEdit,
+  applyNativeEmojiEditWithSelection,
   NATIVE_EMOJI_SLOT as slot,
   nativeToRaw,
   projectNativeEmoji,
@@ -95,4 +96,19 @@ describe('native emoji editing', () => {
     const p = project('A:blobcat:B')
     expect(applyNativeEmojiEdit(p, p.text, {start: 2, end: 2})).toBe(p.raw)
   })
+})
+
+it('recognizes a verified alias after an unresolved alias sharing its colon', () => {
+  expect(project(':blah:blobcat: :blobcat:').text).toBe(`:blah${slot} ${slot}`)
+})
+
+it('keeps the caret before the expanded alias after inserting an escape', () => {
+  const p = project('A:blobcat:B')
+  const edit = applyNativeEmojiEditWithSelection(p, `A\\${slot}B`, {
+    start: 1,
+    end: 1,
+  })
+  expect(edit.raw).toBe('A\\:blobcat:B')
+  expect(edit.cursor).toBe(2)
+  expect(rawToNative(project(edit.raw), edit.cursor)).toBe(2)
 })
