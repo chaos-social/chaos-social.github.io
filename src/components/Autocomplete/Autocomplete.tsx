@@ -18,6 +18,7 @@ function renderItem(
   switch (item.item.type) {
     case 'profile':
       return <AutocompleteItemProfile {...item} />
+    case 'bluemoji':
     case 'emoji':
       return <AutocompleteItemEmoji {...item} />
     case 'open-link':

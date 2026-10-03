@@ -11,7 +11,6 @@ import {StyleSheet, View} from 'react-native'
 import Animated, {FadeIn, FadeOut} from 'react-native-reanimated'
 import {RichText} from '@bsky/sdk/richtext'
 import {Trans} from '@lingui/react/macro'
-import {useQueryClient} from '@tanstack/react-query'
 import {getSchema} from '@tiptap/core'
 import {Document} from '@tiptap/extension-document'
 import Hardbreak from '@tiptap/extension-hard-break'
@@ -52,7 +51,9 @@ import {syncBluemojiEditor} from '#/features/bluemoji/editor'
 import {BluemojiEditorNode} from '#/features/bluemoji/editorNode'
 import {
   type BluemojiSuggestionContext,
+  ComposerEmojiAutocomplete,
   createBluemojiSuggestion,
+  type EmojiSuggestion,
 } from '#/features/bluemoji/editorSuggestion'
 import {useComposerBluemojiItems} from '#/features/bluemoji/useComposerItems'
 import {getBluemojiImage, getBluemojiModeration} from '#/features/bluemoji/util'
@@ -96,16 +97,12 @@ export function TextInput({
     bluemojiRepo,
   )
   const moderationOpts = useModerationOpts()
-  const queryClient = useQueryClient()
+  const [emojiSuggestion, setEmojiSuggestion] =
+    useState<EmojiSuggestion | null>(null)
   const bluemojiSuggestionContext = useRef<BluemojiSuggestionContext>({
-    queryClient,
+    update: setEmojiSuggestion,
+    isOpen: false,
   })
-  bluemojiSuggestionContext.current = {
-    queryClient,
-    repo: bluemojiRepo,
-    moderationOpts,
-    onSelect: onSelectBluemoji,
-  }
   const modeClass = useColorSchemeStyle('ProseMirror-light', 'ProseMirror-dark')
 
   const [isDropping, setIsDropping] = useState(false)
@@ -128,10 +125,7 @@ export function TextInput({
     () => [
       Document,
       BluemojiEditorNode.configure({
-        suggestion: createBluemojiSuggestion(
-          bluemojiSuggestionContext,
-          closeBluemojiPopup,
-        ),
+        suggestion: createBluemojiSuggestion(bluemojiSuggestionContext),
       }),
       LinkDecorator,
       TagDecorator,
@@ -320,6 +314,7 @@ export function TextInput({
         },
         handleKeyDown: (view, event) => {
           if ((event.metaKey || event.ctrlKey) && event.code === 'Enter') {
+            event.stopImmediatePropagation()
             textInputWebEmitter.emit('publish')
             return true
           }
@@ -538,6 +533,17 @@ export function TextInput({
         {/* @ts-expect-error inputStyle is fine */}
         <EditorContent editor={editor} style={inputStyle} />
       </View>
+
+      {editor && emojiSuggestion && (
+        <ComposerEmojiAutocomplete
+          editor={editor}
+          suggestion={emojiSuggestion}
+          repo={bluemojiRepo}
+          onSelectBluemoji={onSelectBluemoji}
+          context={bluemojiSuggestionContext}
+          closePopup={closeBluemojiPopup}
+        />
+      )}
 
       {isDropping && (
         <Portal>

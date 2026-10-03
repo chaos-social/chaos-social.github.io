@@ -1,6 +1,7 @@
 import {type Sift} from '@bsky.app/sift'
 import {type Emoji} from '@emoji-mart/data'
 
+import {type BluemojiItem} from '#/features/bluemoji/util'
 import type * as bsky from '#/types/bsky'
 
 export type AutocompleteProfile = {
@@ -24,6 +25,13 @@ export type AutocompleteEmoji = {
   emoji: Emoji
 }
 
+export type AutocompleteBluemoji = {
+  key: string
+  type: 'bluemoji'
+  value: string
+  bluemoji: BluemojiItem
+}
+
 export type AutocompleteSearch = {
   key: string
   type: 'search'
@@ -40,6 +48,7 @@ export type AutocompleteItem =
   | AutocompleteProfile
   | AutocompleteTag
   | AutocompleteEmoji
+  | AutocompleteBluemoji
   | AutocompleteSearch
   | AutocompleteOpenLink
 

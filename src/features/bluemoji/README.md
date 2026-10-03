@@ -6,9 +6,10 @@ are not supported. Selected emoji retain their source owner in drafts, including
 when two collections use the same alias.
 
 The web composer extends TipTap 2's Emoji node and renders verified aliases as
-inline images. Shortcode autocomplete searches the composing account's collection
-and verifies suggestions before displaying them; arrows, Enter, and Tab select a
-result, and Escape dismisses the list. Selected sources are saved just like picker
+inline images. Shortcode autocomplete uses the upstream shared Autocomplete/Sift
+menu and emoji search, combining local Unicode matches with verified results
+from the composing account's collection. Unicode matches appear while custom
+emoji load; arrows, Enter, and Tab select a result, and Escape dismisses the list. Selected sources are saved just like picker
 selections. TipTap's default input and paste rules are disabled so the shared
 escape-aware conversion handles typing, pasting, and commands consistently.
 Arrow keys cross
