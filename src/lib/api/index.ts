@@ -45,6 +45,8 @@ import {
 } from '#/view/com/composer/state/composer'
 import {IS_IOS, IS_WEB} from '#/env'
 import {makeEventUrl} from '#/features/events/url'
+import {fetchBluemojiItemQuery} from '#/features/bluemoji/queries'
+import {detectBluemojiFacets} from '#/features/bluemoji/util'
 import {app, chat, com} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {createGIFDescription} from '../gif-alt-text'
@@ -250,7 +252,12 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
     const draft = thread.posts[i]
 
     // Not awaited to avoid waterfalls.
-    const rtPromise = resolveRT(opts.appviewClient, draft.richtext)
+    const rtPromise = resolveRT(opts.appviewClient, draft.richtext, name =>
+      fetchBluemojiItemQuery(
+        queryClient,
+        draft.bluemoji?.[name] ?? {did, name},
+      ).catch(() => null),
+    )
     const embedPromise = resolveEmbed(
       opts.appviewClient,
       opts.chatClient,
@@ -415,7 +422,11 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
   }
 }
 
-async function resolveRT(appviewClient: Client, richtext: RichText) {
+async function resolveRT(
+  appviewClient: Client,
+  richtext: RichText,
+  lookupEmoji: Parameters<typeof detectBluemojiFacets>[1],
+) {
   const trimmedText = richtext.text
     // Trim leading whitespace-only lines (but don't break ASCII art).
     .replace(/^(\s*\n)+/, '')
@@ -445,6 +456,7 @@ async function resolveRT(appviewClient: Client, richtext: RichText) {
     ) as typeof rt.facets
   }
 
+  await detectBluemojiFacets(rt, lookupEmoji)
   rt = applyFacetSyntax(rt, {removeSyntax: true})
   await resolveSyntaxMentions(rt, appviewClient)
 

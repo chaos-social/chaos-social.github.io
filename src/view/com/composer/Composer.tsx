@@ -192,6 +192,8 @@ import {
   IS_WEB,
   IS_WEB_SAFARI,
 } from '#/env'
+import {BluemojiPickerButton} from '#/features/bluemoji/Picker'
+import {getBluemojiInsertionName} from '#/features/bluemoji/util'
 import {type Gif} from '#/features/gifPicker/types'
 import {app, chat} from '#/lexicons'
 import * as bsky from '#/types/bsky'
@@ -2191,6 +2193,8 @@ let ComposerPost = memo(function ComposerPost({
           ref={textInputRef}
           style={[a.pt_xs]}
           richtext={richtext}
+          bluemoji={post.bluemoji}
+          bluemojiRepo={activeAccountDid}
           placeholder={selectTextInputPlaceholder}
           autoFocus={isActive}
           webForceMinHeight={forceMinHeight}
@@ -2994,6 +2998,13 @@ function ComposerFooter({
                   <EmojiPicker.Picker />
                 </EmojiPicker.Root>
               ) : null}
+              <BluemojiPickerButton
+                onInsert={item => {
+                  const name = getBluemojiInsertionName(item, post.bluemoji)
+                  dispatch({type: 'register_bluemoji', item})
+                  textInputRef.current?.insertText(`${name} `)
+                }}
+              />
             </ToolbarWrapper>
           )}
         </LayoutAnimationConfig>

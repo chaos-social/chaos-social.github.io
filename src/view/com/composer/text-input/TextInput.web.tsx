@@ -35,6 +35,7 @@ import {
   applyFacetSyntax,
   applyMarkdownLinkFacets,
 } from '#/lib/strings/rich-text-manip'
+import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {useActorAutocompleteFn} from '#/state/queries/actor-autocomplete'
 import {
   type LinkFacetMatch,
@@ -46,6 +47,10 @@ import {normalizeTextStyles} from '#/alf/typography'
 import {type Emoji} from '#/components/EmojiPicker'
 import {Portal} from '#/components/Portal'
 import {Text} from '#/components/Typography'
+import {syncBluemojiEditor} from '#/features/bluemoji/editor'
+import {BluemojiEditorNode} from '#/features/bluemoji/editorNode'
+import {useComposerBluemojiItems} from '#/features/bluemoji/useComposerItems'
+import {getBluemojiImage, getBluemojiModeration} from '#/features/bluemoji/util'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {type TextInputProps} from './TextInput.types'
@@ -57,6 +62,8 @@ import {TagDecorator} from './web/TagDecorator'
 export function TextInput({
   ref,
   richtext,
+  bluemoji,
+  bluemojiRepo,
   placeholder,
   webForceMinHeight,
   hasRightPadding,
@@ -77,6 +84,12 @@ export function TextInput({
 }: TextInputProps) {
   const {theme: t, fonts} = useAlf()
   const autocomplete = useActorAutocompleteFn()
+  const bluemojiItems = useComposerBluemojiItems(
+    richtext,
+    bluemoji,
+    bluemojiRepo,
+  )
+  const moderationOpts = useModerationOpts()
   const modeClass = useColorSchemeStyle('ProseMirror-light', 'ProseMirror-dark')
 
   const [isDropping, setIsDropping] = useState(false)
@@ -97,6 +110,7 @@ export function TextInput({
   const extensions = useMemo(
     () => [
       Document,
+      BluemojiEditorNode,
       LinkDecorator,
       TagDecorator,
       Mention.configure({
@@ -327,6 +341,15 @@ export function TextInput({
             const isNotSelection = view.state.selection.empty
             if (isNotSelection) {
               const cursorPosition = view.state.selection.$anchor.pos
+              if (
+                view.state.selection.$anchor.nodeBefore?.type.name ===
+                'bluemoji'
+              ) {
+                view.dispatch(
+                  view.state.tr.delete(cursorPosition - 1, cursorPosition),
+                )
+                return true
+              }
               const textBefore = view.state.doc.textBetween(
                 0,
                 cursorPosition,
@@ -413,6 +436,19 @@ export function TextInput({
     [modeClass],
   )
 
+  useEffect(() => {
+    if (!editor || editor.isDestroyed || editor.view.composing) return
+    const allowed = new Map(
+      [...bluemojiItems].filter(
+        ([, item]) =>
+          getBluemojiImage(item) &&
+          getBluemojiModeration(item, moderationOpts) === 'ignore',
+      ),
+    )
+    const tr = syncBluemojiEditor(editor.state, allowed)
+    if (tr) editor.view.dispatch(tr)
+  }, [editor, bluemojiItems, moderationOpts])
+
   const onEmojiInserted = useCallback(
     (emoji: Emoji) => {
       editor?.chain().focus().insertContent(emoji.native).run()
@@ -430,6 +466,9 @@ export function TextInput({
   }, [onEmojiInserted, isActive])
 
   useImperativeHandle(ref, () => ({
+    insertText: text => {
+      editor?.chain().focus().insertContent({type: 'text', text}).run()
+    },
     focus: () => {
       editor?.chain().focus().run()
     },
@@ -465,6 +504,7 @@ export function TextInput({
     return {
       ...style,
       '--placeholder-color': t.atoms.text_contrast_low.color,
+      caretColor: t.palette.primary_500,
     }
   }, [t, fonts, webForceMinHeight])
 
@@ -585,6 +625,8 @@ function editorJsonToText(
     text += '\n'
   } else if (json.type === 'text') {
     text += json.text || ''
+  } else if (json.type === 'bluemoji') {
+    text += String(json.attrs?.alias || '')
   } else if (json.type === 'mention') {
     text += `@${json.attrs?.id || ''}`
   }
