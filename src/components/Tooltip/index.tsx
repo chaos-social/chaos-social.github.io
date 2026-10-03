@@ -155,7 +155,13 @@ export function Outer({
   )
 }
 
-export function Target({children}: {children: React.ReactNode}) {
+export function Target({
+  children,
+  style,
+}: {
+  children: React.ReactNode
+  style?: React.ComponentProps<typeof View>['style']
+}) {
   const {shouldMeasure, setTargetMeasurements} = useContext(TargetContext)
   const [hasLaidOut, setHasLaidOut] = useState(false)
   const targetRef = useRef<React.ComponentRef<typeof View>>(null)
@@ -199,6 +205,7 @@ export function Target({children}: {children: React.ReactNode}) {
     <View
       collapsable={false}
       ref={targetRef}
+      style={style}
       onLayout={() => setHasLaidOut(true)}>
       {children}
     </View>

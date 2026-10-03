@@ -54,10 +54,18 @@ export function Outer({
   )
 }
 
-export function Target({children}: {children: React.ReactNode}) {
+export function Target({
+  children,
+  style,
+}: {
+  children: React.ReactNode
+  style?: React.ComponentProps<typeof View>['style']
+}) {
   return (
     <Popover.Trigger asChild>
-      <View collapsable={false}>{children}</View>
+      <View collapsable={false} style={style}>
+        {children}
+      </View>
     </Popover.Trigger>
   )
 }
@@ -101,7 +109,12 @@ export function Content({
           height={ARROW_SIZE / 2}
           fill={style.surface}
         />
-        <View style={[a.px_md, a.py_sm, {maxWidth: BUBBLE_MAX_WIDTH}]}>
+        <View
+          style={[
+            a.px_md,
+            a.py_sm,
+            {maxWidth: BUBBLE_MAX_WIDTH, display: 'flex'},
+          ]}>
           {children}
         </View>
       </Popover.Content>

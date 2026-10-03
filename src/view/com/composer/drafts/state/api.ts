@@ -26,6 +26,7 @@ import {
 import {type VideoState} from '#/view/com/composer/state/video'
 import {type AnalyticsContextType} from '#/analytics'
 import {getDeviceId} from '#/analytics/identifiers'
+import {type BluemojiRef} from '#/features/bluemoji/util'
 import {type Gif} from '#/features/gifPicker/types'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
@@ -58,7 +59,10 @@ const KLIPY_HOSTNAME = 'static.klipy.com'
  * Draft lexicon does not include outline tags; Witchsky stores them as an
  * extra field on draft posts (valid AT Protocol open object).
  */
-type DraftPostWithTags = AppBskyDraftDefs.DraftPost & {tags?: string[]}
+type DraftPostWithTags = AppBskyDraftDefs.DraftPost & {
+  tags?: string[]
+  bluemoji?: Record<string, BluemojiRef>
+}
 
 function getDraftPostTags(post: AppBskyDraftDefs.DraftPost): string[] {
   const tags = (post as DraftPostWithTags).tags
@@ -161,6 +165,7 @@ async function postDraftToServerPost(
   if (post.tags.length > 0) {
     ;(draftPost as DraftPostWithTags).tags = post.tags
   }
+  if (post.bluemoji) (draftPost as DraftPostWithTags).bluemoji = post.bluemoji
 
   // Add embeds
   if (post.embed.media) {
@@ -720,6 +725,7 @@ export async function draftToComposerPosts(
 
       return {
         id: `draft-post-${index}`,
+        bluemoji: (post as DraftPostWithTags).bluemoji,
         richtext,
         shortenedGraphemeLength: shortenLinks(
           applyFacetSyntax(richtext.clone(), {removeSyntax: true}),

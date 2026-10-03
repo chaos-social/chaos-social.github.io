@@ -1,7 +1,10 @@
 import {type TextInput} from 'react-native'
 import {type RichText} from '@bsky/sdk/richtext'
 
+import {type BluemojiRef} from '#/features/bluemoji/util'
+
 export type TextInputRef = {
+  insertText: (text: string) => void
   focus: () => void
   blur: () => void
   /**
@@ -21,6 +24,8 @@ export type TextInputRef = {
 export type TextInputProps = {
   ref: React.Ref<TextInputRef>
   richtext: RichText
+  bluemoji?: Record<string, BluemojiRef>
+  bluemojiRepo?: string
   webForceMinHeight: boolean
   hasRightPadding: boolean
   isActive: boolean

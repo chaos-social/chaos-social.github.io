@@ -47,6 +47,8 @@ interface Selection {
 export function TextInput({
   ref,
   richtext,
+  bluemoji: _bluemoji,
+  bluemojiRepo: _bluemojiRepo,
   placeholder,
   hasRightPadding,
   setRichText,
@@ -72,6 +74,19 @@ export function TextInput({
   const prevText = useRef(richtext.text)
 
   useImperativeHandle(ref, () => ({
+    insertText: text => {
+      const {start, end} = textInputSelection.current
+      const nextText =
+        richtext.text.slice(0, start) + text + richtext.text.slice(end)
+      const cursor = start + text.length
+      void onChangeText(nextText)
+      textInputSelection.current = {start: cursor, end: cursor}
+      textInput.current?.setNativeProps({
+        text: nextText,
+        selection: {start: cursor, end: cursor},
+      })
+      textInput.current?.focus()
+    },
     focus: () => textInput.current?.focus(),
     blur: () => {
       textInput.current?.blur()

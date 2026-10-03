@@ -5,13 +5,22 @@ import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
 import {type HtmlSegment, segmentsToText} from '#/lib/strings/bridged-html'
 import {isRTLText} from '#/lib/strings/text-direction'
 import {toShortUrl} from '#/lib/strings/url-helpers'
-import {android, atoms as a, flatten, type TextStyleProp, useTheme} from '#/alf'
-import {isOnlyEmoji} from '#/alf/typography'
+import {
+  android,
+  atoms as a,
+  flatten,
+  type TextStyleProp,
+  useAlf,
+  useTheme,
+} from '#/alf'
 import {InlineLinkText, type LinkProps} from '#/components/Link'
 import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import {RichTextTag} from '#/components/RichTextTag'
 import {Text, type TextProps} from '#/components/Typography'
 import {IS_ANDROID, IS_NATIVE} from '#/env'
+import {InlineBluemoji} from '#/features/bluemoji/InlineBluemoji'
+import {isOnlyEmojiRichText} from '#/features/bluemoji/richText'
+import {getBluemojiFacet} from '#/features/bluemoji/util'
 import {stripPollLines} from '#/features/pollblue/parse'
 import {type PollPostParts} from '#/features/pollblue/types'
 import {app} from '#/lexicons'
@@ -116,10 +125,16 @@ export function RichText({
   }, [value, pollParts])
 
   const t = useTheme()
+  const {fonts} = useAlf()
   const {facets} = richText
   const text = htmlSegments ? segmentsToText(htmlSegments) : richText.text
+  const emojiOnly = !htmlSegments && isOnlyEmojiRichText(richText)
+  const fontSize =
+    (flatten(style).fontSize ?? a.text_sm.fontSize) *
+    (emojiOnly ? emojiMultiplier : 1)
   const plainStyles: StyleProp<TextStyle> = [
     style,
+    emojiOnly ? {fontSize} : null,
     IS_NATIVE && isRTLText(text) ? {textAlign: 'right'} : null,
   ]
   const suffixStyles =
@@ -129,32 +144,13 @@ export function RichText({
   const interactiveStyles = [plainStyles, interactiveStyle]
 
   if (!facets?.length && !htmlSegments) {
-    if (isOnlyEmoji(text)) {
-      const flattenedStyle = flatten(style)
-      const fontSize =
-        (flattenedStyle.fontSize ?? a.text_sm.fontSize) * emojiMultiplier
-      return (
-        <Text
-          emoji
-          selectable={selectable}
-          testID={testID}
-          style={[plainStyles, {fontSize}, suffixStyles]}
-          onLayout={onLayout}
-          onTextLayout={onTextLayout}
-          dataSet={WORD_WRAP}>
-          {text}
-          {suffix ? ' ' : null}
-          {suffix}
-        </Text>
-      )
-    }
     return (
       <Text
         emoji
         selectable={selectable}
         testID={testID}
         style={[plainStyles, suffixStyles]}
-        numberOfLines={numberOfLines}
+        numberOfLines={emojiOnly ? undefined : numberOfLines}
         onLayout={onLayout}
         onTextLayout={onTextLayout}
         dataSet={WORD_WRAP}>
@@ -259,6 +255,9 @@ export function RichText({
       const link = segment.link
       const mention = segment.mention
       const tag = segment.tag
+      const bluemoji = segment.facet?.features
+        .map(getBluemojiFacet)
+        .find(Boolean)
 
       if (
         mention &&
@@ -316,6 +315,15 @@ export function RichText({
             authorHandle={authorHandle}
           />,
         )
+      } else if (bluemoji) {
+        els.push(
+          <InlineBluemoji
+            key={key}
+            claim={bluemoji}
+            fallbackText={segment.text}
+            size={fontSize * fonts.scaleMultiplier}
+          />,
+        )
       } else {
         els.push(segment.text)
       }
@@ -329,7 +337,7 @@ export function RichText({
       selectable={selectable}
       testID={testID}
       style={[plainStyles, suffixStyles]}
-      numberOfLines={numberOfLines}
+      numberOfLines={emojiOnly ? undefined : numberOfLines}
       onLayout={onLayout}
       onTextLayout={onTextLayout}
       dataSet={WORD_WRAP}>

@@ -337,10 +337,12 @@ function collectFacetSyntax(rt: RichText): number[] {
         `^${ESCAPED_MARKDOWN_LINK_PATTERN.source}`,
       ).exec(rest)
       const angle = /^<[^<>\n]+>/.exec(rest)
+      const emoji = /^:[^\s:]{1,128}:/u.exec(rest)
       const detected = firstDetectedFacet(rest)
       const length =
         markdown?.[0].length ??
         angle?.[0].length ??
+        emoji?.[0].length ??
         (detected
           ? new UnicodeString(rest).slice(0, detected.index.byteEnd).length
           : undefined)
