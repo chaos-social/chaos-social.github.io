@@ -22,7 +22,7 @@ export function useEmojiSearch(): (
       if (!emojiFuseInstance) {
         const data = await getEmojis()
         emojiFuseInstance = new Fuse(Object.values(data.emojis), {
-          keys: ['search'],
+          keys: ['id', 'name', 'keywords', 'emoticons'],
           threshold: 0.3,
         })
       }
