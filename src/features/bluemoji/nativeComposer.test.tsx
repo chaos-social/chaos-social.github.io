@@ -1,5 +1,5 @@
 import {createRef, useState} from 'react'
-import {StyleSheet, type TextStyle} from 'react-native'
+import {StyleSheet, type TextStyle, type ViewProps} from 'react-native'
 import {RichText} from '@bsky/sdk/richtext'
 import {setupI18n} from '@lingui/core'
 import {I18nProvider} from '@lingui/react'
@@ -59,6 +59,23 @@ jest.mock('#/features/bluemoji/useComposerItems', () => ({
         >('#/features/bluemoji/__tests__/fixtures').item,
       ],
     ]),
+}))
+jest.mock('#/features/bluemoji/NativeComposerLayout', () => ({
+  NativeComposerLayout: ({
+    emojiLayout,
+    children,
+    ...props
+  }: {
+    emojiLayout: string
+    children?: React.ReactNode
+  } & ViewProps) =>
+    jest
+      .requireActual<typeof import('react')>('react')
+      .createElement(
+        jest.requireActual<typeof import('react-native')>('react-native').View,
+        {...props, testID: 'nativeEmojiLayout', accessibilityHint: emojiLayout},
+        children,
+      ),
 }))
 jest.mock('#/features/bluemoji/InlineBluemoji', () => ({
   InlineBluemoji: () =>
@@ -125,20 +142,6 @@ it('keeps one selected emoji while native input reports subsequent edits', () =>
   expect(view.getByTestId('composerTextInput').props.value).toBe(
     `Hello ${slot} `,
   )
-  fireEvent(
-    view.getByTestId('composerEmojiImageLayer', {includeHiddenElements: true}),
-    'textLayout',
-    {
-      nativeEvent: {
-        lines: [{text: `Hello ${slot} `, x: 0, y: 0, height: 24}],
-      },
-    },
-  )
-  fireEvent(
-    view.getByTestId('composerEmojiPrefix-6', {includeHiddenElements: true}),
-    'textLayout',
-    {nativeEvent: {lines: [{width: 60}]}},
-  )
   expect(
     view.getAllByTestId('emojiImage', {includeHiddenElements: true}),
   ).toHaveLength(1)
@@ -147,31 +150,112 @@ it('keeps one selected emoji while native input reports subsequent edits', () =>
       view.getByTestId('composerTextInput').props.style,
     )?.color,
   ).toBe('#000')
-  expect(
-    StyleSheet.flatten<TextStyle>(
-      view.getByTestId('composerEmojiMeasurement', {
-        includeHiddenElements: true,
-      }).props.style,
-    )?.opacity,
-  ).toBe(0)
 
   fireEvent.changeText(view.getByTestId('composerTextInput'), `Hello ${slot} x`)
   expect(changed).toHaveBeenLastCalledWith('Hello :blobcat: x')
+  expect(
+    view.getAllByTestId('emojiImage', {includeHiddenElements: true}),
+  ).toHaveLength(1)
   fireEvent(view.getByTestId('composerTextInput'), 'selectionChange', {
     nativeEvent: {selection: {start: 9, end: 9}},
   })
   fireEvent.changeText(view.getByTestId('composerTextInput'), `Hello ${slot} `)
   expect(changed).toHaveBeenLastCalledWith('Hello :blobcat: ')
-  fireEvent(
-    view.getByTestId('composerEmojiImageLayer', {includeHiddenElements: true}),
-    'textLayout',
-    {
-      nativeEvent: {
-        lines: [{text: `Hello ${slot} `, x: 0, y: 0, height: 24}],
-      },
-    },
-  )
   expect(
     view.getAllByTestId('emojiImage', {includeHiddenElements: true}),
   ).toHaveLength(1)
+  const image = view.getByTestId('emojiImage', {includeHiddenElements: true})
+  fireEvent(view.getByTestId('composerTextInput'), 'selectionChange', {
+    nativeEvent: {selection: {start: 0, end: 0}},
+  })
+  fireEvent.changeText(view.getByTestId('composerTextInput'), `aHello ${slot} `)
+  expect(changed).toHaveBeenLastCalledWith('aHello :blobcat: ')
+  expect(view.getByTestId('emojiImage', {includeHiddenElements: true})).toBe(
+    image,
+  )
+  expect(view.queryByTestId('composerEmojiMeasurement')).toBeNull()
+  expect(
+    view.getByTestId('nativeEmojiLayout', {includeHiddenElements: true}).props
+      .accessibilityHint,
+  ).toBe(
+    JSON.stringify({
+      text: `aHello ${slot} `,
+      emojis: [{id: `composer-emoji-${item.uri}-0`, index: 7}],
+    }),
+  )
+  const observer = view.getByTestId('nativeEmojiLayout', {
+    includeHiddenElements: true,
+  })
+  expect(StyleSheet.flatten(observer.props.style)).toMatchObject({
+    position: 'absolute',
+    width: 0,
+    height: 0,
+  })
+  expect(observer.props.children).toBeUndefined()
+  expect(view.getByTestId('composerTextInputContainer').props.collapsable).toBe(
+    false,
+  )
+  expect(view.getByTestId('composerTextInput').parent).not.toBe(observer)
+
+  fireEvent(view.getByTestId('composerTextInput'), 'selectionChange', {
+    nativeEvent: {selection: {start: 7, end: 7}},
+  })
+  fireEvent.changeText(
+    view.getByTestId('composerTextInput'),
+    `aHello \n${slot} `,
+  )
+  expect(changed).toHaveBeenLastCalledWith('aHello \n:blobcat: ')
+  expect(view.getByTestId('composerTextInput').props.value).toBe(
+    `aHello \n${slot} `,
+  )
+  expect(view.getByTestId('emojiImage', {includeHiddenElements: true})).toBe(
+    image,
+  )
+  expect(
+    view.getByTestId('nativeEmojiLayout', {includeHiddenElements: true}).props
+      .accessibilityHint,
+  ).toBe(
+    JSON.stringify({
+      text: `aHello \n${slot} `,
+      emojis: [{id: `composer-emoji-${item.uri}-0`, index: 8}],
+    }),
+  )
+
+  fireEvent(view.getByTestId('composerTextInput'), 'selectionChange', {
+    nativeEvent: {selection: {start: 10, end: 10}},
+  })
+  act(() => ref.current?.insertText(`\nSecond ${item.record.name}`))
+  expect(view.getByTestId('composerTextInput').props.value).toBe(
+    `aHello \n${slot} \nSecond ${slot}`,
+  )
+  const images = view.getAllByTestId('emojiImage', {
+    includeHiddenElements: true,
+  })
+  expect(images).toHaveLength(2)
+  expect(images[0]).toBe(image)
+  fireEvent(view.getByTestId('composerTextInput'), 'selectionChange', {
+    nativeEvent: {selection: {start: 8, end: 8}},
+  })
+  fireEvent.changeText(
+    view.getByTestId('composerTextInput'),
+    `aHello ${slot} \nSecond ${slot}`,
+  )
+  expect(changed).toHaveBeenLastCalledWith(
+    'aHello :blobcat: \nSecond :blobcat:',
+  )
+  expect(
+    view.getByTestId('nativeEmojiLayout', {includeHiddenElements: true}).props
+      .accessibilityHint,
+  ).toBe(
+    JSON.stringify({
+      text: `aHello ${slot} \nSecond ${slot}`,
+      emojis: [
+        {id: `composer-emoji-${item.uri}-0`, index: 7},
+        {id: `composer-emoji-${item.uri}-1`, index: 17},
+      ],
+    }),
+  )
+  expect(
+    view.getAllByTestId('emojiImage', {includeHiddenElements: true}),
+  ).toEqual(images)
 })

@@ -21,14 +21,15 @@ protect aliases inside them. Source resolution happens before removing escapes
 so posting cannot re-enable an escaped emoji.
 
 The native composer keeps source aliases in React state and projects verified
-emoji into single full-width input slots. The native input draws visible text,
-the cursor, and selection. An invisible tree measures the same plain text's
-lines and prefix widths without inline attachments changing the baselines. Emoji
-images are drawn separately; opacity hides the measurement tree's color emoji. Editing
-maps the changed range and cursor positions back to source aliases, including
-keyboard replacement, swipe deletion, and adjacent emoji. Text is supplied only
-through the input value; imperative updates move selection without rewriting
-native text. Source verification and escaping are shared with the web composer.
+emoji into single full-width input slots. The native input draws text, the cursor,
+and selection. A zero-size native observer anchors sibling image views to the
+input's current character positions without laying out the composer or its
+children. React Native controls the container, input size, and multiline growth.
+Android updates before drawing; iOS uses
+UIKit's character rectangles. Native edit ranges move and remove anchors without
+waiting for JavaScript, and stale JS snapshots cannot rewind those positions.
+No hidden text or asynchronous JS measurement layers are needed. Source verification,
+escaping, drafts, and posting remain shared with the web composer.
 
 Images and descriptions come from the owning PDS's verified collection record,
 never from unverified facet claims or search results. Asset URLs use the verified
