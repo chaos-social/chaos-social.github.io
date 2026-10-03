@@ -1,5 +1,5 @@
-import {useMemo} from 'react'
-import {type StyleProp, type TextStyle} from 'react-native'
+import {useMemo, useState} from 'react'
+import {type StyleProp, Text as NativeText, type TextStyle} from 'react-native'
 import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
 
 import {type HtmlSegment, segmentsToText} from '#/lib/strings/bridged-html'
@@ -13,6 +13,7 @@ import {
   useAlf,
   useTheme,
 } from '#/alf'
+import {useNativeFontScale} from '#/alf/util/dimensions'
 import {InlineLinkText, type LinkProps} from '#/components/Link'
 import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import {RichTextTag} from '#/components/RichTextTag'
@@ -37,6 +38,8 @@ export type RichTextProps = TextStyleProp &
     testID?: string
     numberOfLines?: number
     disableLinks?: boolean
+    /** Enable emoji details on the focused native post. */
+    enableEmojiDetails?: boolean
     enableTags?: boolean
     authorHandle?: string
     onLinkPress?: LinkProps['onPress']
@@ -84,6 +87,7 @@ export function RichText({
   style,
   numberOfLines,
   disableLinks,
+  enableEmojiDetails = false,
   selectable,
   enableTags = false,
   authorHandle,
@@ -126,6 +130,12 @@ export function RichText({
 
   const t = useTheme()
   const {fonts} = useAlf()
+  const nativeFontScale = useNativeFontScale()
+  const [nativeEmojiMeasurement, setNativeEmojiMeasurement] = useState<{
+    fontSize: number
+    width: number
+    descender: number
+  }>()
   const {facets} = richText
   const text = htmlSegments ? segmentsToText(htmlSegments) : richText.text
   const emojiOnly = !htmlSegments && isOnlyEmojiRichText(richText)
@@ -142,6 +152,13 @@ export function RichText({
       ? android({paddingBottom: suffixOffset, marginBottom: -suffixOffset})
       : null
   const interactiveStyles = [plainStyles, interactiveStyle]
+  const scaledFontSize = fontSize * fonts.scaleMultiplier
+  const nativeEmojiFontSize = scaledFontSize * nativeFontScale
+  const customEmojiSize = IS_NATIVE
+    ? nativeEmojiMeasurement?.fontSize === nativeEmojiFontSize
+      ? nativeEmojiMeasurement.width
+      : nativeEmojiFontSize
+    : scaledFontSize
 
   if (!facets?.length && !htmlSegments) {
     return (
@@ -319,9 +336,16 @@ export function RichText({
         els.push(
           <InlineBluemoji
             key={key}
+            interactive={!IS_NATIVE || enableEmojiDetails}
             claim={bluemoji}
             fallbackText={segment.text}
-            size={fontSize * fonts.scaleMultiplier}
+            size={customEmojiSize}
+            baselineOffset={
+              IS_NATIVE &&
+              nativeEmojiMeasurement?.fontSize === nativeEmojiFontSize
+                ? nativeEmojiMeasurement.descender
+                : undefined
+            }
           />,
         )
       } else {
@@ -331,7 +355,7 @@ export function RichText({
     }
   }
 
-  return (
+  const content = (
     <Text
       emoji
       selectable={selectable}
@@ -345,5 +369,49 @@ export function RichText({
       {suffix ? ' ' : null}
       {suffix}
     </Text>
+  )
+  if (!IS_NATIVE || !facets.some(facet => facet.features.some(getBluemojiFacet)))
+    return content
+
+  /*
+   * Native emoji fonts can draw a glyph wider than its nominal font size.
+   * Measuring its advance also includes the system's accessibility font scale.
+   * Opacity hides color emoji, which ignore a transparent text color.
+   */
+  return (
+    <>
+      {content}
+      <NativeText
+        testID="nativeEmojiMeasurement"
+        accessible={false}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        allowFontScaling
+        numberOfLines={1}
+        style={{
+          position: 'absolute',
+          pointerEvents: 'none',
+          opacity: 0,
+          width: 10000,
+          fontSize: scaledFontSize,
+          includeFontPadding: false,
+        }}
+        onTextLayout={event => {
+          const line = event.nativeEvent.lines[0]
+          const width = line?.width
+          const descender = line?.descender
+          if (!width || !Number.isFinite(width)) return
+          if (!Number.isFinite(descender) || descender < 0) return
+          setNativeEmojiMeasurement(previous =>
+            previous?.fontSize === nativeEmojiFontSize &&
+            previous.width === width &&
+            previous.descender === descender
+              ? previous
+              : {fontSize: nativeEmojiFontSize, width, descender},
+          )
+        }}>
+        😀
+      </NativeText>
+    </>
   )
 }

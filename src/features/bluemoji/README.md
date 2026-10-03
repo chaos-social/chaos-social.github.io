@@ -20,11 +20,22 @@ before an alias disables its facet; escaped Markdown and angle brackets also
 protect aliases inside them. Source resolution happens before removing escapes
 so posting cannot re-enable an escaped emoji.
 
+The native composer keeps source aliases in React state and projects verified
+emoji into single full-width input slots. The native input draws visible text,
+the cursor, and selection. An invisible tree measures the same plain text's
+lines and prefix widths without inline attachments changing the baselines. Emoji
+images are drawn separately; opacity hides the measurement tree's color emoji. Editing
+maps the changed range and cursor positions back to source aliases, including
+keyboard replacement, swipe deletion, and adjacent emoji. Text is supplied only
+through the input value; imperative updates move selection without rewriting
+native text. Source verification and escaping are shared with the web composer.
+
 Images and descriptions come from the owning PDS's verified collection record,
 never from unverified facet claims or search results. Asset URLs use the verified
 blob CID through moji.blue. Source alt text labels the image; empty descriptions
 fall back to the emoji name. Clicking an emoji opens a compact popup showing its
-name and source description. Hidden, warned, missing, or unsupported emoji remain
+name and source description. Native details use a bottom sheet and are enabled
+only on the focused post; feed and reply-row emoji remain ordinary inline images. Hidden, warned, missing, or unsupported emoji remain
 readable as aliases. Animation follows the autoplay preference.
 
 Canonical references derive record keys using NFC normalization and RFC 0005
@@ -33,6 +44,9 @@ strong reference extension on the facet. Posting writes CID-based v1 formats;
 reading supports v0 and v1. The collection fallback schema permits one grapheme
 rather than one byte, since actual fallback emoji contain multibyte characters.
 
-Inline images match the surrounding emoji font metrics on web. Short emoji-only
+Inline images match the surrounding emoji font metrics on web. Native posts use
+a measured Unicode emoji advance and descender to size and align image attachments,
+including both the app's font scale and the system's accessibility font scale.
+Short emoji-only
 posts enlarge both Unicode emoji and Bluemoji using the existing post sizing rule.
 The feature schemas cover collection items, listing, search, and rich-text facets.
