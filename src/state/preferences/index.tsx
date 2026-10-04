@@ -47,6 +47,7 @@ import {Provider as NoDiscoverProvider} from './no-discover-fallback'
 import {Provider as NotoColorEmojiProvider} from './noto-color-emoji'
 import {Provider as OmitViaFieldProvider} from './omit-via-field'
 import {Provider as OpenRouterProvider} from './openrouter'
+import {Provider as PasteToLinkEnabledProvider} from './paste-to-link-enabled'
 import {Provider as PdsLabelProvider} from './pds-label'
 import {Provider as PlcDirectoryProvider} from './plc-directory'
 import {Provider as PostNameReplacementProvider} from './post-name-replacement.tsx'
@@ -129,6 +130,10 @@ export {
   useSetOpenRouterApiKey,
   useSetOpenRouterModel,
 } from './openrouter'
+export {
+  usePasteToLinkEnabled,
+  useSetPasteToLinkEnabled,
+} from './paste-to-link-enabled'
 export {
   readPlcDirectory,
   usePlcDirectory,
@@ -235,9 +240,11 @@ export function Provider({children}: PropsWithChildren<{}>) {
                                                                                                                                             <ReplyIconIndicatorsProvider>
                                                                                                                                               <ShowPostTagsProvider>
                                                                                                                                                 <NotoColorEmojiProvider>
-                                                                                                                                                  {
-                                                                                                                                                    children
-                                                                                                                                                  }
+                                                                                                                                                  <PasteToLinkEnabledProvider>
+                                                                                                                                                    {
+                                                                                                                                                      children
+                                                                                                                                                    }
+                                                                                                                                                  </PasteToLinkEnabledProvider>
                                                                                                                                                 </NotoColorEmojiProvider>
                                                                                                                                               </ShowPostTagsProvider>
                                                                                                                                             </ReplyIconIndicatorsProvider>

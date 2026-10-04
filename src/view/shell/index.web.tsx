@@ -8,6 +8,7 @@ import {RemoveScrollBar} from 'react-remove-scroll-bar'
 import {useIntentHandler} from '#/lib/hooks/useIntentHandler'
 import {handlePastedLink} from '#/lib/routes/pasteLink'
 import {type NavigationProp} from '#/lib/routes/types'
+import {usePasteToLinkEnabled} from '#/state/preferences'
 import {useSession} from '#/state/session'
 import {useIsDrawerOpen, useSetDrawerOpen} from '#/state/shell'
 import {useCloseAllActiveElements} from '#/state/util'
@@ -108,6 +109,7 @@ function upsertHeadLink({
 function ShellInner() {
   const t = useTheme()
   const navigator = useNavigation<NavigationProp>()
+  const pasteToLinkEnabled = usePasteToLinkEnabled()
   const closeAllActiveElements = useCloseAllActiveElements()
   const {state: policyUpdateState} = usePolicyUpdateContext()
   const welcomeModalControl = useWelcomeModal()
@@ -115,6 +117,8 @@ function ShellInner() {
   useIntentHandler()
 
   useEffect(() => {
+    if (!pasteToLinkEnabled) return
+
     const onPaste = (event: ClipboardEvent) => {
       handlePastedLink(event, link => {
         navigator.dispatch(StackActions.push(link.screen, link.params))
@@ -122,7 +126,7 @@ function ShellInner() {
     }
     document.addEventListener('paste', onPaste)
     return () => document.removeEventListener('paste', onPaste)
-  }, [navigator])
+  }, [navigator, pasteToLinkEnabled])
 
   useLayoutEffect(() => {
     const rootElement = document.documentElement

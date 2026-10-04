@@ -1,6 +1,11 @@
 import {Trans, useLingui} from '@lingui/react/macro'
 
-import {useGoLinksEnabled, useSetGoLinksEnabled} from '#/state/preferences'
+import {
+  useGoLinksEnabled,
+  usePasteToLinkEnabled,
+  useSetGoLinksEnabled,
+  useSetPasteToLinkEnabled,
+} from '#/state/preferences'
 import {
   useConfirmFollow,
   useSetConfirmFollow,
@@ -18,11 +23,13 @@ import {atoms as a} from '#/alf'
 import {Admonition} from '#/components/Admonition'
 import * as Toggle from '#/components/forms/Toggle'
 import {ArrowShareRight_Stroke2_Corner2_Rounded as ArrowShareRightIcon} from '#/components/icons/ArrowShareRight'
+import {ChainLink_Stroke2_Corner0_Rounded as ChainLinkIcon} from '#/components/icons/ChainLink'
 import {CircleQuestion_Stroke2_Corner2_Rounded as CircleQuestionIcon} from '#/components/icons/CircleQuestion'
 import {Envelope_Stroke2_Corner2_Rounded as EnvelopeIcon} from '#/components/icons/Envelope'
 import {Newspaper_Stroke2_Corner2_Rounded as NewspaperIcon} from '#/components/icons/Newspaper'
 import {PersonGroup_Stroke2_Corner2_Rounded as PersonGroupIcon} from '#/components/icons/Person'
 import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
+import {IS_WEB} from '#/env'
 import {RunesScreenLayout} from './components/RunesScreenLayout'
 
 export function RunesUsabilitySettingsScreen() {
@@ -30,6 +37,9 @@ export function RunesUsabilitySettingsScreen() {
 
   const confirmFollow = useConfirmFollow()
   const setConfirmFollow = useSetConfirmFollow()
+
+  const pasteToLinkEnabled = usePasteToLinkEnabled()
+  const setPasteToLinkEnabled = useSetPasteToLinkEnabled()
 
   const goLinksEnabled = useGoLinksEnabled()
   const setGoLinksEnabled = useSetGoLinksEnabled()
@@ -71,6 +81,22 @@ export function RunesUsabilitySettingsScreen() {
           <Toggle.Platform />
         </SettingsList.Item>
       </Toggle.Item>
+      {IS_WEB && (
+        <Toggle.Item
+          testID="pasteToLinkToggle"
+          name="paste_to_link"
+          label={l`Paste anywhere to open link`}
+          value={pasteToLinkEnabled}
+          onChange={setPasteToLinkEnabled}>
+          <SettingsList.Item>
+            <SettingsList.ItemIcon icon={ChainLinkIcon} />
+            <SettingsList.ItemText>
+              <Trans>Paste anywhere to open link</Trans>
+            </SettingsList.ItemText>
+            <Toggle.Platform />
+          </SettingsList.Item>
+        </Toggle.Item>
+      )}
       <Toggle.Item
         testID="confirmFollowToggle"
         name="confirm_follow"
