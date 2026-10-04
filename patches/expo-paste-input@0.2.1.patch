@@ -1,0 +1,31 @@
+diff --git a/android/src/main/java/expo/modules/pasteinput/ExpoPasteInputView.kt b/android/src/main/java/expo/modules/pasteinput/ExpoPasteInputView.kt
+index 99b0fa68814e57404d4c7f97c7fb47ced5ca59f1..d577f6267d721c6ace3949cb2519a5c6c00c096d 100644
+--- a/android/src/main/java/expo/modules/pasteinput/ExpoPasteInputView.kt
++++ b/android/src/main/java/expo/modules/pasteinput/ExpoPasteInputView.kt
+@@ -8,6 +8,7 @@ import android.net.Uri
+ import android.os.Build
+ import android.os.SystemClock
+ import android.view.View
++import android.view.FocusFinder
+ import android.view.ViewGroup
+ import android.view.ActionMode
+ import android.widget.EditText
+@@ -60,6 +61,18 @@ class ExpoPasteInputView(context: Context, appContext: AppContext) : ExpoView(co
+     })
+   }
+ 
++  override fun focusSearch(focused: View, direction: Int): View? {
++    /*
++     * Android probes vertical editor navigation while opening the IME. Keep that
++     * search in the input wrapper: RN 0.86's outer ScrollView fallback traverses
++     * transient Fabric children and can crash in findShadowNodeByTag_DEPRECATED.
++     */
++    if (direction == View.FOCUS_UP || direction == View.FOCUS_DOWN) {
++      return FocusFinder.getInstance().findNextFocus(this, focused, direction)
++    }
++    return super.focusSearch(focused, direction)
++  }
++
+   override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+     // Let the wrapper resolve its own size first, then size children to the
+     // resolved content box so wrapped RN inputs can fill like a normal container.

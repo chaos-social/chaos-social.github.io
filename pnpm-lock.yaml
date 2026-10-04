@@ -220,6 +220,7 @@ patchedDependencies:
   expo-media-library@58.0.10: 217aabb48621ae04c1d5123aef65d277101f63c412fd7392c268303f069215ef
   expo-modules-core@58.0.22: fceed08efd7dabd9c8190f781060a00d776779d0154c46eddeeee7df090b3403
   expo-notifications@58.1.5: 2454a6392a8541a3de1d8ec9cf731552c68eb9f8e0f70475ade7fcb75ebe583d
+  expo-paste-input@0.2.1: 6016b5f1e8fbbc8d91243a4036aba2497d25cd5aedc2e5444f42073a9ce20fa4
   expo-updates@58.0.17: 021469e7879209d5939504c15c39a9d94eda4e82cae30457ddc11f5f820a19e8
   expo@58.0.14: 0208b099bee03d1d30dddfe51b3a1598db2180fa85ae9a9c032a296cb0cb006f
   metro-runtime@0.87.1: 4a386cd6f62275a31620c3b0cb489d818359125e5c94f6144933de2dea7e4d98
@@ -578,7 +579,7 @@ importers:
         version: 58.1.5(patch_hash=2454a6392a8541a3de1d8ec9cf731552c68eb9f8e0f70475ade7fcb75ebe583d)(@typescript/typescript6@6.0.2)(expo@58.0.14)(react-native@0.88.0(patch_hash=80f9cea2f2985f3e01ca8798a68960e93c9d04a388aeb803bfb8040207c086d2)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2)
       expo-paste-input:
         specifier: ^0.2.1
-        version: 0.2.1(expo@58.0.14)(react-native@0.88.0(patch_hash=80f9cea2f2985f3e01ca8798a68960e93c9d04a388aeb803bfb8040207c086d2)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
+        version: 0.2.1(patch_hash=6016b5f1e8fbbc8d91243a4036aba2497d25cd5aedc2e5444f42073a9ce20fa4)(expo@58.0.14)(react-native@0.88.0(patch_hash=7fad2ee5144693e6dd7d373860a204007c0a1e2a2d5180e068d214589335970a)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
       expo-privacy-sensitive:
         specifier: ^0.2.0
         version: 0.2.0(expo@58.0.14)(react-native@0.88.0(patch_hash=80f9cea2f2985f3e01ca8798a68960e93c9d04a388aeb803bfb8040207c086d2)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
@@ -976,37 +977,6 @@ packages:
   '@ai-sdk/provider@4.0.18':
     resolution: {integrity: sha512-+GZJIgz1jk86pwEbb3f1BD2bdoSKyWE4Jg4YUc7NMnMozbWemSKYZcw2F4nMaO5qwsL5A8RmioAKW81YktRpIQ==}
     engines: {node: '>=22'}
-
-  is-emoji-supported@0.0.5:
-    resolution:
-      {
-        integrity: sha512-WOlXUhDDHxYqcSmFZis+xWhhqXiK2SU0iYiqmth5Ip0FHLZQAt9rKL5ahnilE8/86WH8tZ3bmNNNC+bTzamqlw==,
-      }
-
-  emojibase@17.0.0:
-    resolution:
-      {
-        integrity: sha512-bXdpf4HPY3p41zK5swVKZdC/VynsMZ4LoLxdYDE+GucqkFwzcM1GVc4ODfYAlwoKaf2U2oNNUoOO78N96ovpBA==,
-      }
-    engines: {node: '>=18.12.0'}
-
-  emojibase-data@15.3.2:
-    resolution:
-      {
-        integrity: sha512-TpDyTDDTdqWIJixV5sTA6OQ0P0JfIIeK2tFRR3q56G9LK65ylAZ7z3KyBXokpvTTJ+mLUXQXbLNyVkjvnTLE+A==,
-      }
-    peerDependencies:
-      emojibase: '*'
-
-  '@tiptap/extension-emoji@2.27.2':
-    resolution:
-      {
-        integrity: sha512-oAY3RPw6KAHIxxNHMyqFNM5cSyFocDcLIR47wq0L3/dT2mmO3Ik9h5DVLK7fY5IyFmCwv6Jt0ByiE1shPzYbkg==,
-      }
-    peerDependencies:
-      '@tiptap/core': ^2.7.0
-      '@tiptap/pm': ^2.7.0
-      '@tiptap/suggestion': ^2.7.0
 
   '@apideck/better-ajv-errors@0.3.7':
     resolution: {integrity: sha512-TajUJwGWbDwkCx/CZi7tRE8PVB7simCvKJfHUsSdvps+aTM/PDPP4gkLmKnc+x3CE//y9i/nj74GqdL/hwk7Iw==}
@@ -5118,6 +5088,13 @@ packages:
     peerDependencies:
       '@tiptap/core': ^2.7.0
 
+  '@tiptap/extension-emoji@2.27.2':
+    resolution: {integrity: sha512-oAY3RPw6KAHIxxNHMyqFNM5cSyFocDcLIR47wq0L3/dT2mmO3Ik9h5DVLK7fY5IyFmCwv6Jt0ByiE1shPzYbkg==}
+    peerDependencies:
+      '@tiptap/core': ^2.7.0
+      '@tiptap/pm': ^2.7.0
+      '@tiptap/suggestion': ^2.7.0
+
   '@tiptap/extension-floating-menu@2.27.2':
     resolution: {integrity: sha512-GUN6gPIGXS7ngRJOwdSmtBRBDt9Kt9CM/9pSwKebhLJ+honFoNA+Y6IpVyDvvDMdVNgBchiJLs6qA5H97gAePQ==}
     peerDependencies:
@@ -6640,6 +6617,15 @@ packages:
   emoji-regex@9.2.2:
     resolution: {integrity: sha512-L18DaJsXSUk2+42pv8mLs5jJT2hqFkFE4j21wOmgbUqsZ2hL72NsUU785g9RXgo3s0ZNgVl42TiHp3ZtOv/Vyg==}
 
+  emojibase-data@15.3.2:
+    resolution: {integrity: sha512-TpDyTDDTdqWIJixV5sTA6OQ0P0JfIIeK2tFRR3q56G9LK65ylAZ7z3KyBXokpvTTJ+mLUXQXbLNyVkjvnTLE+A==}
+    peerDependencies:
+      emojibase: '*'
+
+  emojibase@17.0.0:
+    resolution: {integrity: sha512-bXdpf4HPY3p41zK5swVKZdC/VynsMZ4LoLxdYDE+GucqkFwzcM1GVc4ODfYAlwoKaf2U2oNNUoOO78N96ovpBA==}
+    engines: {node: '>=18.12.0'}
+
   emojis-list@3.0.0:
     resolution: {integrity: sha512-/kyM18EfinwXZbno9FyUGeFh87KC8HRQBQGildHZbEuRyWFOmv1U10o9BBp8XVZDVNNuQKyIGIu5ZYAAXJ0V2Q==}
     engines: {node: '>= 4'}
@@ -7736,6 +7722,9 @@ packages:
     resolution: {integrity: sha512-eljcgEDlEns/7AXFosB5K/2nCM4P7FQPkGc/DWLy5rmFEWvZayGrik1d9/QIY5nJ4f9YsVvBkA6kJpHn9rISdQ==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
     hasBin: true
+
+  is-emoji-supported@0.0.5:
+    resolution: {integrity: sha512-WOlXUhDDHxYqcSmFZis+xWhhqXiK2SU0iYiqmth5Ip0FHLZQAt9rKL5ahnilE8/86WH8tZ3bmNNNC+bTzamqlw==}
 
   is-extglob@2.1.1:
     resolution: {integrity: sha512-SbKbANkN603Vi4jEZv49LeVJMn4yGwsbzZworEoyEiutsN3nJYdbO36zfhGJ6QEDpOZIFkDtnq5JRxmvl3jsoQ==}
@@ -11003,25 +10992,6 @@ packages:
       '@types/emscripten': '>=1.39.6'
 
 snapshots:
-
-  emojibase-data@15.3.2(emojibase@17.0.0):
-    dependencies:
-      emojibase: 17.0.0
-
-  '@tiptap/extension-emoji@2.27.2(@tiptap/core@2.27.2(@tiptap/pm@2.27.2))(@tiptap/pm@2.27.2)(@tiptap/suggestion@2.27.2(@tiptap/core@2.27.2(@tiptap/pm@2.27.2))(@tiptap/pm@2.27.2))(emojibase@17.0.0)':
-    dependencies:
-      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
-      '@tiptap/pm': 2.27.2
-      '@tiptap/suggestion': 2.27.2(@tiptap/core@2.27.2(@tiptap/pm@2.27.2))(@tiptap/pm@2.27.2)
-      emoji-regex: 10.6.0
-      emojibase-data: 15.3.2(emojibase@17.0.0)
-      is-emoji-supported: 0.0.5
-    transitivePeerDependencies:
-      - emojibase
-
-  is-emoji-supported@0.0.5: {}
-
-  emojibase@17.0.0: {}
 
   2g@1.0.1(@typescript/typescript6@6.0.2):
     optionalDependencies:
@@ -15606,6 +15576,17 @@ snapshots:
     dependencies:
       '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
 
+  '@tiptap/extension-emoji@2.27.2(@tiptap/core@2.27.2(@tiptap/pm@2.27.2))(@tiptap/pm@2.27.2)(@tiptap/suggestion@2.27.2(@tiptap/core@2.27.2(@tiptap/pm@2.27.2))(@tiptap/pm@2.27.2))(emojibase@17.0.0)':
+    dependencies:
+      '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
+      '@tiptap/pm': 2.27.2
+      '@tiptap/suggestion': 2.27.2(@tiptap/core@2.27.2(@tiptap/pm@2.27.2))(@tiptap/pm@2.27.2)
+      emoji-regex: 10.6.0
+      emojibase-data: 15.3.2(emojibase@17.0.0)
+      is-emoji-supported: 0.0.5
+    transitivePeerDependencies:
+      - emojibase
+
   '@tiptap/extension-floating-menu@2.27.2(@tiptap/core@2.27.2(@tiptap/pm@2.27.2))(@tiptap/pm@2.27.2)':
     dependencies:
       '@tiptap/core': 2.27.2(@tiptap/pm@2.27.2)
@@ -17131,6 +17112,12 @@ snapshots:
 
   emoji-regex@9.2.2: {}
 
+  emojibase-data@15.3.2(emojibase@17.0.0):
+    dependencies:
+      emojibase: 17.0.0
+
+  emojibase@17.0.0: {}
+
   emojis-list@3.0.0: {}
 
   encodeurl@1.0.2: {}
@@ -17729,7 +17716,7 @@ snapshots:
       - supports-color
       - typescript
 
-  expo-paste-input@0.2.1(expo@58.0.14)(react-native@0.88.0(patch_hash=80f9cea2f2985f3e01ca8798a68960e93c9d04a388aeb803bfb8040207c086d2)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0):
+  expo-paste-input@0.2.1(patch_hash=6016b5f1e8fbbc8d91243a4036aba2497d25cd5aedc2e5444f42073a9ce20fa4)(expo@58.0.14)(react-native@0.88.0(patch_hash=7fad2ee5144693e6dd7d373860a204007c0a1e2a2d5180e068d214589335970a)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0):
     dependencies:
       expo: 58.0.14(patch_hash=0208b099bee03d1d30dddfe51b3a1598db2180fa85ae9a9c032a296cb0cb006f)(31f99316f3f53ae9689d3531fc42f4f0)
       react: 19.3.0
@@ -18465,6 +18452,8 @@ snapshots:
   is-docker@2.2.1: {}
 
   is-docker@3.0.0: {}
+
+  is-emoji-supported@0.0.5: {}
 
   is-extglob@2.1.1: {}
 
