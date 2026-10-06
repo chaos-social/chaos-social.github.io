@@ -120,10 +120,33 @@ jest.mock('../create-account', () => ({
   createSessionBundleAndCreateAccount: () => new Promise(() => {}),
 }))
 
-import {Provider, useSession, useSessionApi} from '#/state/session'
+jest.mock('../moderation', () => ({
+  configureModerationForAccount: () => {},
+  configureModerationForGuest: () => {},
+}))
+const mockNetwork =
+  jest.fn<(input: URL | string, init?: RequestInit) => Promise<Response>>()
+jest.mock('../network', () => ({
+  networkAwareFetch: (...args: Parameters<typeof mockNetwork>) =>
+    mockNetwork(...args),
+}))
+
+import {AuthorFeedAPI} from '#/lib/api/feed/author'
+import {
+  Provider,
+  usePdsClient,
+  useSession,
+  useSessionApi,
+} from '#/state/session'
 import {type SessionApiContext} from '#/state/session/types'
 import {buildAppviewClient, buildChatClient, buildPdsClient} from '../clients'
-import {type SessionBundle} from '../session-core'
+import {
+  buildBundle,
+  makeSessionHooks,
+  type OnSessionChange,
+  registerBundleKillSwitch,
+  type SessionBundle,
+} from '../session-core'
 import {sessionAccountToSessionData} from '../session-data'
 import {
   asFetch,
@@ -159,14 +182,17 @@ type Harness = {
   api: SessionApiContext
   currentAccount: () => SessionAccount | undefined
   accounts: () => SessionAccount[]
+  client: () => ReturnType<typeof usePdsClient>
 }
 
 function renderProvider(): Harness {
   let api!: SessionApiContext
   let currentAccount: SessionAccount | undefined
   let accounts: SessionAccount[] = []
+  let client!: ReturnType<typeof usePdsClient>
   function Probe() {
     api = useSessionApi()
+    client = usePdsClient()
     const state = useSession()
     currentAccount = state.currentAccount
     accounts = state.accounts
@@ -177,7 +203,12 @@ function renderProvider(): Harness {
       <Probe />
     </Provider>,
   )
-  return {api, currentAccount: () => currentAccount, accounts: () => accounts}
+  return {
+    api,
+    currentAccount: () => currentAccount,
+    accounts: () => accounts,
+    client: () => client,
+  }
 }
 
 /** Render the provider and log `account` in through the stubbed login factory. */
@@ -195,7 +226,7 @@ async function renderLoggedIn(
 }
 
 beforeEach(() => {
-  mockPersist.mockResolvedValue(undefined)
+  mockPersist.mockReset().mockResolvedValue(undefined)
   mockOAuthResume.mockImplementation(() => new Promise(() => {}))
   mockLogin.mockReset()
 })
@@ -520,4 +551,88 @@ it('starts permission OAuth immediately without opening the login chooser', asyn
     await result
   })
   expect(mockReauthenticate).not.toHaveBeenCalled()
+})
+
+/** Log in with the real session hooks and disposal guard used by the app. */
+async function renderHookedPasswordSession() {
+  const account = makeAccount()
+  mockNetwork.mockImplementation(
+    makeMockFetch({'app.bsky.feed.getAuthorFeed': () => json({feed: []})}),
+  )
+  let bundle!: SessionBundle
+  mockLogin.mockImplementationOnce((_params, onSessionChange) => {
+    const hooks = makeSessionHooks({
+      getBundle: () => bundle,
+      getDid: () => account.did,
+      onSessionChange: onSessionChange as OnSessionChange,
+    })
+    bundle = buildBundle(
+      new PasswordSession(sessionAccountToSessionData(account), hooks),
+    )
+    registerBundleKillSwitch(bundle, hooks.kill)
+    hooks.arm()
+    return Promise.resolve({account, bundle})
+  })
+  const harness = renderProvider()
+  await act(async () => {
+    await harness.api.login({} as never, 'LoginForm')
+  })
+  return {account, bundle, harness}
+}
+
+describe('password session persistence notifications', () => {
+  it.each([false, true])(
+    'keeps a retained profile feed usable after refresh (same-tab notification: %s)',
+    async notifySameTab => {
+      const {account, bundle, harness} = await renderHookedPasswordSession()
+      const retainedFeed = new AuthorFeedAPI({
+        client: bundle.appviewClient,
+        feedParams: {actor: account.did},
+      })
+      if (notifySameTab) {
+        mockPersist.mockImplementation((key, value) => {
+          if (key === 'session') mockSessionUpdate(value as never)
+          return Promise.resolve()
+        })
+      }
+      await act(async () => {
+        await bundle.session.refresh()
+      })
+      expect(harness.currentAccount()?.refreshJwt).toBe('refresh-jwt-2')
+      expect(bundle.session.session.refreshJwt).toBe('refresh-jwt-2')
+      expect(harness.client()).toBe(bundle.pdsClient)
+      await expect(
+        retainedFeed.fetch({cursor: undefined, limit: 30}),
+      ).resolves.toEqual({cursor: undefined, feed: []})
+    },
+  )
+
+  it('still installs rotated tokens received from another tab', async () => {
+    const {account, bundle, harness} = await renderHookedPasswordSession()
+    const updated = {
+      ...account,
+      accessJwt: 'other-tab-access',
+      refreshJwt: 'other-tab-refresh',
+    }
+    act(() => {
+      mockSessionUpdate({
+        accounts: [updated],
+        currentAccount: {did: account.did},
+      })
+    })
+    expect(harness.client()).not.toBe(bundle.pdsClient)
+    expect(harness.currentAccount()?.refreshJwt).toBe('other-tab-refresh')
+    const feed = new AuthorFeedAPI({
+      client: harness.client(),
+      feedParams: {actor: account.did},
+    })
+    await expect(feed.fetch({cursor: undefined, limit: 30})).resolves.toEqual({
+      cursor: undefined,
+      feed: [],
+    })
+    const [, init] = mockNetwork.mock.calls.at(-1)!
+    expect(new Headers(init?.headers).get('authorization')).toBe(
+      'Bearer other-tab-access',
+    )
+  })
 })

@@ -115,6 +115,7 @@ ApiContext.displayName = 'SessionApiContext'
 
 class SessionStore {
   private state: State
+  private persisting = false
   // A synced account can be selected before its asynchronous restore finishes.
   private selectedDid: string | undefined =
     persisted.get('session').currentAccount?.did
@@ -129,6 +130,11 @@ class SessionStore {
 
   getState = (): State => {
     return this.state
+  }
+
+  /** Whether this store is making a synchronous call to persistence. */
+  isPersisting = (): boolean => {
+    return this.persisting
   }
 
   subscribe = (listener: () => void) => {
@@ -169,7 +175,12 @@ class SessionStore {
         type: 'persisted:broadcast',
         data: redactPersistedSession(persistedData),
       })
-      void persisted.write('session', persistedData)
+      this.persisting = true
+      try {
+        void persisted.write('session', persistedData)
+      } finally {
+        this.persisting = false
+      }
     }
     this.listeners.forEach(listener => listener())
   }
@@ -867,7 +878,17 @@ export function Provider({children}: PropsWithChildren<{}>) {
         }
       }
     }
-    const unsubscribe = persisted.onUpdate('session', syncSession)
+    const unsubscribe = persisted.onUpdate('session', nextSession => {
+      /*
+       * Web persistence notifies this tab synchronously during write(). The
+       * store already applied that update, while PasswordSession's onUpdated
+       * hook has not yet committed its new tokens to the live session. Treating
+       * our own write as a remote update would replace and kill that session.
+       */
+      if (!store.isPersisting()) {
+        syncSession(nextSession)
+      }
+    })
     // AppView selection can change while the saved account itself is identical.
     // Defer until both the DID and URL have been written by the callback.
     let timer: ReturnType<typeof setTimeout> | undefined
