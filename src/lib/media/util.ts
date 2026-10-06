@@ -75,6 +75,8 @@ export function convertCdnPreset(uri: string, preset: ImgproxyPreset): string {
 
 /** Preserve non-CDN URLs, including blobs and already-resolved originals. */
 export function modifyImageFormat(uri: string, format: string) {
+  if (format === 'default') return uri
+
   let url: URL
   try {
     url = new URL(uri)

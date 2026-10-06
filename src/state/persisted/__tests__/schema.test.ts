@@ -95,6 +95,80 @@ describe('persisted schema helpers', () => {
     ).toEqual({youtube: 'show'})
   })
 
+  it('defaults absent image formats to the app server formats', () => {
+    const parsed = tryParse(JSON.stringify(partialState))
+    const normalized = normalizeData(parsed!)
+
+    expect(defaults.thumbnailFormat).toBe('default')
+    expect(defaults.fullsizeFormat).toBe('default')
+    expect(normalized.thumbnailFormat).toBe('default')
+    expect(normalized.fullsizeFormat).toBe('default')
+    expect(normalized.downloadFormat).toBe('original')
+  })
+
+  it('migrates saved WebP formats to app server defaults', () => {
+    const parsed = tryParse(
+      JSON.stringify({
+        ...partialState,
+        thumbnailFormat: 'webp',
+        fullsizeFormat: 'webp',
+      }),
+    )
+    const normalized = normalizeData(parsed!)
+
+    expect(normalized.thumbnailFormat).toBe('default')
+    expect(normalized.fullsizeFormat).toBe('default')
+    expect(normalized.imageFormatDefaultsVersion).toBe(1)
+  })
+
+  it.each([
+    ['webp', 'png', 'default', 'png'],
+    ['original', 'webp', 'original', 'default'],
+    ['avif', 'jpeg', 'avif', 'jpeg'],
+  ])(
+    'preserves explicit formats when migrating %s thumbnails and %s full-size images',
+    (thumbnailFormat, fullsizeFormat, expectedThumbnail, expectedFullsize) => {
+      const parsed = tryParse(
+        JSON.stringify({...partialState, thumbnailFormat, fullsizeFormat}),
+      )
+      const normalized = normalizeData(parsed!)
+
+      expect(normalized.thumbnailFormat).toBe(expectedThumbnail)
+      expect(normalized.fullsizeFormat).toBe(expectedFullsize)
+    },
+  )
+
+  it('preserves legacy high-quality PNG preferences', () => {
+    const parsed = tryParse(
+      JSON.stringify({...partialState, highQualityImages: true}),
+    )
+    const normalized = normalizeData(parsed!)
+
+    expect(normalized.thumbnailFormat).toBe('png')
+    expect(normalized.fullsizeFormat).toBe('png')
+  })
+
+  it('preserves WebP selections made after the default migration across restarts', () => {
+    const parsed = tryParse(
+      JSON.stringify({
+        ...partialState,
+        thumbnailFormat: 'webp',
+        fullsizeFormat: 'webp',
+      }),
+    )
+    const migrated = normalizeData(parsed!)
+    const selected = normalizeData({
+      ...migrated,
+      thumbnailFormat: 'webp',
+      fullsizeFormat: 'webp',
+    })
+    const raw = tryStringify(selected)
+    const restarted = normalizeData(tryParse(raw!)!)
+
+    expect(restarted.thumbnailFormat).toBe('webp')
+    expect(restarted.fullsizeFormat).toBe('webp')
+  })
+
   it('migrates legacy disable metrics booleans to display modes', () => {
     const parsed = tryParse(
       JSON.stringify({

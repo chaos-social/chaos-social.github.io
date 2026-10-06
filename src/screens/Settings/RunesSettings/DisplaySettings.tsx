@@ -48,7 +48,7 @@ import {
   useThumbnailFormat,
 } from '#/state/preferences/thumbnail-format'
 import * as SettingsList from '#/screens/Settings/components/SettingsList'
-import {atoms as a} from '#/alf'
+import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
 import * as Toggle from '#/components/forms/Toggle'
@@ -67,6 +67,7 @@ import {ItemTextWithSubtitle} from '../NotificationSettings/components/ItemTextW
 import {RunesScreenLayout} from './components/RunesScreenLayout'
 
 export function RunesDisplaySettingsScreen() {
+  const t = useTheme()
   const {t: l} = useLingui()
 
   const alsoLikedFeedEnabled = useAlsoLikedFeedEnabled()
@@ -85,14 +86,18 @@ export function RunesDisplaySettingsScreen() {
   const sixSevenCelebration = useSixSevenCelebration()
   const setSixSevenCelebration = useSetSixSevenCelebration()
 
-  const thumbnailFormat = useThumbnailFormat() ?? 'webp'
+  const thumbnailFormat = useThumbnailFormat() ?? 'default'
   const setThumbnailFormat = useSetThumbnailFormat()
-  const fullsizeFormat = useFullsizeFormat() ?? 'webp'
+  const fullsizeFormat = useFullsizeFormat() ?? 'default'
   const setFullsizeFormat = useSetFullsizeFormat()
   const downloadFormat = useDownloadFormat() ?? 'original'
   const setDownloadFormat = useSetDownloadFormat()
   const loadAsPngs = useLoadAsPngs()
   const setLoadAsPngs = useSetLoadAsPngs()
+  const imageFormatItems = [
+    {value: 'default', label: l`App server default`},
+    ...IMAGE_FORMATS,
+  ]
 
   const setPostReplacementDialogControl = Dialog.useDialogControl()
 
@@ -197,6 +202,11 @@ export function RunesDisplaySettingsScreen() {
         <SettingsList.ItemText>
           <Trans>Images</Trans>
         </SettingsList.ItemText>
+        <Text style={[a.w_full, a.text_xs, t.atoms.text_contrast_medium]}>
+          <Trans>
+            Choosing a different image format may increase load times.
+          </Trans>
+        </Text>
         <View style={[a.gap_md, a.w_full, a.pt_xs]}>
           <Text style={[a.font_bold]}>
             <Trans>Thumbnail format</Trans>
@@ -216,7 +226,7 @@ export function RunesDisplaySettingsScreen() {
                   <Select.ItemText>{label}</Select.ItemText>
                 </Select.Item>
               )}
-              items={IMAGE_FORMATS}
+              items={imageFormatItems}
             />
           </Select.Root>
         </View>
@@ -239,7 +249,7 @@ export function RunesDisplaySettingsScreen() {
                   <Select.ItemText>{label}</Select.ItemText>
                 </Select.Item>
               )}
-              items={IMAGE_FORMATS}
+              items={imageFormatItems}
             />
           </Select.Root>
         </View>

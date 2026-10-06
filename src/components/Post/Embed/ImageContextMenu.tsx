@@ -67,7 +67,7 @@ export function ImageContextMenu({
           type: 'image',
           uri: applyImageTransforms(fullsizeUri, {
             imageCdnHost,
-            format: fullsizeFormat ?? 'webp',
+            format: fullsizeFormat ?? 'default',
           }),
           thumbUri: thumbUri
             ? applyImageTransforms(thumbUri, {

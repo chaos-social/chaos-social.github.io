@@ -4,6 +4,21 @@ import {getDownloadImageUri, modifyImageFormat} from './util'
 const image =
   'https://cdn.bsky.app/img/feed_fullsize/plain/did:plc:example/bafyexample@jpeg'
 
+it('preserves app server image URLs when using the app server format', () => {
+  for (const uri of [image, image.replace('@jpeg', ''), `${image}?v=1`]) {
+    expect(modifyImageFormat(uri, 'default')).toBe(uri)
+  }
+})
+
+it('preserves app server formats for small images despite the PNG preference', () => {
+  const thumb = image.replace('/feed_fullsize/', '/feed_thumbnail/')
+  const result = resolveEmbedImageUris(
+    {fullsize: image, thumb, aspectRatio: {width: 100, height: 100}},
+    {thumbnailFormat: 'default', fullsizeFormat: 'default', loadAsPngs: true},
+  )
+  expect(result).toEqual({fullsize: image, thumb})
+})
+
 it('downloads original blobs without a CDN conversion', () => {
   const original = new URL(getDownloadImageUri(image, 'original'))
   expect(original.pathname).toBe('/xrpc/com.atproto.sync.getBlob')

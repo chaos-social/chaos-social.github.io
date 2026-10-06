@@ -82,7 +82,7 @@ export function ImageEmbed({
     const items = images.map(img => {
       const {fullsize, thumb} = resolveEmbedImageUris(img, {
         thumbnailFormat,
-        fullsizeFormat: fullsizeFormat ?? 'webp',
+        fullsizeFormat: fullsizeFormat ?? 'default',
         loadAsPngs: loadAsPngs ?? true,
       })
       return {

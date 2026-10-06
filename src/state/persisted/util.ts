@@ -98,6 +98,16 @@ function migrateMetricsDisplayPrefs(data: Schema): Schema {
 export function normalizeData(data: Schema) {
   const next = hydrateWithDefaults(migrateMetricsDisplayPrefs(data))
 
+  if ((data.imageFormatDefaultsVersion ?? 0) < 1) {
+    /*
+     * Older builds persisted automatic and explicitly selected WebP identically.
+     * Migrate both once, then preserve any subsequent explicit WebP selections.
+     */
+    if (next.thumbnailFormat === 'webp') next.thumbnailFormat = 'default'
+    if (next.fullsizeFormat === 'webp') next.fullsizeFormat = 'default'
+    next.imageFormatDefaultsVersion = 1
+  }
+
   if (next.imageCdnHost) {
     try {
       const origin = new URL(next.imageCdnHost).origin
