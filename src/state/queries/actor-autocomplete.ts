@@ -2,11 +2,12 @@ import {useCallback} from 'react'
 import {moderateProfile, type ModerationOpts} from '@bsky/sdk/moderation'
 import {keepPreviousData, useQuery, useQueryClient} from '@tanstack/react-query'
 
+import {searchActorsTypeahead} from '#/lib/api/search-actors-typeahead'
 import {isJustAMute, moduiContainsHideableOffense} from '#/lib/moderation'
 import {logger} from '#/logger'
 import {STALE} from '#/state/queries'
 import {useAppviewClient} from '#/state/session'
-import {app} from '#/lexicons'
+import {type app} from '#/lexicons'
 import {useModerationOpts} from '../preferences/moderation-opts'
 import {DEFAULT_LOGGED_OUT_PREFERENCES} from './preferences'
 
@@ -37,7 +38,7 @@ export function useActorAutocompleteQuery(
     queryKey: RQKEY(prefix || ''),
     async queryFn() {
       const data = prefix
-        ? await client.call(app.bsky.actor.searchActorsTypeahead, {
+        ? await searchActorsTypeahead(client, {
             q: prefix,
             limit: limit || 8,
           })
@@ -73,11 +74,13 @@ export function useActorAutocompleteFn() {
           res = await queryClient.fetchQuery({
             staleTime: STALE.MINUTES.ONE,
             queryKey: RQKEY(query || ''),
-            queryFn: () =>
-              client.call(app.bsky.actor.searchActorsTypeahead, {
+            queryFn: async () => {
+              const data = await searchActorsTypeahead(client, {
                 q: query,
                 limit,
-              }),
+              })
+              return data.actors
+            },
           })
         } catch (e) {
           logger.error('useActorSearch: searchActorsTypeahead failed', {
@@ -88,7 +91,7 @@ export function useActorAutocompleteFn() {
 
       return computeSuggestions({
         q: query,
-        searched: res?.actors,
+        searched: res,
         moderationOpts: moderationOpts || DEFAULT_MOD_OPTS,
       })
     },

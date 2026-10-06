@@ -2,6 +2,7 @@ import {useCallback, useMemo} from 'react'
 import {moderateProfile, type ModerationOpts} from '@bsky/sdk/moderation'
 import {keepPreviousData, useQuery} from '@tanstack/react-query'
 
+import {searchActorsTypeahead} from '#/lib/api/search-actors-typeahead'
 import {isJustAMute, moduiContainsHideableOffense} from '#/lib/moderation'
 import {parseSearchLink} from '#/lib/routes/searchLink'
 import {
@@ -12,15 +13,13 @@ import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {STALE} from '#/state/queries'
 import {DEFAULT_LOGGED_OUT_PREFERENCES} from '#/state/queries/preferences'
 import {useAppviewClient} from '#/state/session'
-import {useAgent, useSession} from '#/state/session'
-import {createPublicAgent} from '#/state/session/agent'
 import {
   type AutocompleteApi,
   type AutocompleteItem,
   type AutocompleteItemType,
   type AutocompleteProfile,
 } from '#/components/Autocomplete/types'
-import {app} from '#/lexicons'
+import {type app} from '#/lexicons'
 import {useEmojiSearch} from './useEmojiSearch'
 
 const DEFAULT_MOD_OPTS = {
@@ -40,18 +39,10 @@ export function useAutocomplete({
   showSearchFallback?: boolean
 }): AutocompleteApi {
   const client = useAppviewClient()
-  const {hasSession} = useSession()
-  const sessionAgent = useAgent()
   const [appViewDid] = useCustomAppViewDid()
   const [appViewUrl] = useCustomAppViewUrl()
   const moderationOpts = useModerationOpts()
   const emojiSearch = useEmojiSearch()
-
-  /*
-   * While logged out, the session agent is created once at startup and does not
-   * pick up App server changes from the login dialog. Rebuild a guest agent
-   * from persisted AppView settings whenever that selection changes.
-   */
 
   const query = useQuery({
     staleTime: STALE.MINUTES.ONE,
@@ -72,7 +63,7 @@ export function useAutocomplete({
         // Going from "foo" to "foo." should not clear matches.
         q = q.toLowerCase().trim().replace(/\.$/, '')
 
-        const data = await client.call(app.bsky.actor.searchActorsTypeahead, {
+        const data = await searchActorsTypeahead(client, {
           q,
           limit: limit || 8,
         })
