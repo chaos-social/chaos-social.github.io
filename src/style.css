@@ -326,6 +326,13 @@ input:focus {
   }
 }
 
+/* Prevent text selection from interfering with dropdown menu clicks. */
+.dropdown-menu-constrain-size,
+.dropdown-menu-constrain-size * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+
 /* animating radix dropdowns requires knowing the data attributes */
 .dropdown-menu-transform-origin > * {
   transform-origin: var(--radix-dropdown-menu-content-transform-origin);
