@@ -1,5 +1,6 @@
 import {type PropsWithChildren} from 'react'
 
+import {Provider as EmojiFontProvider} from '#/state/preferences/emoji-font'
 import {Provider as AlsoLikedCollapseByDefaultProvider} from './also-liked-collapse-by-default'
 import {Provider as AlsoLikedFeedProvider} from './also-liked-feed-enabled'
 import {Provider as AltTextRequiredProvider} from './alt-text-required'
@@ -44,7 +45,6 @@ import {Provider as LargeAltBadgeProvider} from './large-alt-badge'
 import {Provider as LoadSmallPNGsProvider} from './load-small-pngs'
 import {MetricsDisplayPreferencesProvider} from './metrics-display-preference'
 import {Provider as NoDiscoverProvider} from './no-discover-fallback'
-import {Provider as NotoColorEmojiProvider} from './noto-color-emoji'
 import {Provider as OmitViaFieldProvider} from './omit-via-field'
 import {Provider as OpenRouterProvider} from './openrouter'
 import {Provider as PasteToLinkEnabledProvider} from './paste-to-link-enabled'
@@ -239,13 +239,13 @@ export function Provider({children}: PropsWithChildren<{}>) {
                                                                                                                                           <HideQuotesOfBlockedAccountsProvider>
                                                                                                                                             <ReplyIconIndicatorsProvider>
                                                                                                                                               <ShowPostTagsProvider>
-                                                                                                                                                <NotoColorEmojiProvider>
+                                                                                                                                                <EmojiFontProvider>
                                                                                                                                                   <PasteToLinkEnabledProvider>
                                                                                                                                                     {
                                                                                                                                                       children
                                                                                                                                                     }
                                                                                                                                                   </PasteToLinkEnabledProvider>
-                                                                                                                                                </NotoColorEmojiProvider>
+                                                                                                                                                </EmojiFontProvider>
                                                                                                                                               </ShowPostTagsProvider>
                                                                                                                                             </ReplyIconIndicatorsProvider>
                                                                                                                                           </HideQuotesOfBlockedAccountsProvider>

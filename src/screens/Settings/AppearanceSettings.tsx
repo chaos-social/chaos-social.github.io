@@ -29,13 +29,13 @@ import {
 } from '#/state/preferences/repost-carousel-enabled'
 import {useSession} from '#/state/session'
 import {useSetThemePrefs, useThemePrefs} from '#/state/shell'
+import {AppearanceToggleButtonGroup} from '#/screens/Settings/components/AppearanceToggleButtonGroup'
+import {EmojiFontControl} from '#/screens/Settings/components/EmojiFontControl'
 import {ItemTextWithSubtitle} from '#/screens/Settings/NotificationSettings/components/ItemTextWithSubtitle'
 import {type Alf, atoms as a, native, useAlf, useTheme} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
-import * as SegmentedControl from '#/components/forms/SegmentedControl'
 import * as Toggle from '#/components/forms/Toggle'
 import {At_Stroke2_Corner0_Rounded as AtIcon} from '#/components/icons/At'
-import {type Props as SVGIconProps} from '#/components/icons/common'
 import {Person_Stroke2_Corner0_Rounded as PersonIcon} from '#/components/icons/Person'
 import {Repost_Stroke2_Corner3_Rounded as RepostIcon} from '#/components/icons/Repost'
 import {Sparkle_Stroke2_Corner0_Rounded as SparkleIcon} from '#/components/icons/Sparkle'
@@ -52,7 +52,6 @@ import {
   type ThemeView,
 } from '#/features/themes/types'
 import {ThemeQuickSelector} from './AppearanceSettings/ThemeQuickSelector'
-import {NotoColorEmojiToggle} from './components/NotoColorEmojiToggle'
 import * as SettingsList from './components/SettingsList'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'AppearanceSettings'>
@@ -264,9 +263,9 @@ export function AppearanceSettingsScreen({}: Props) {
                 onChange={onChangeFontScale}
               />
 
-              <SettingsList.Divider />
+              <EmojiFontControl />
 
-              <NotoColorEmojiToggle />
+              <SettingsList.Divider />
 
               <Toggle.Item
                 name="hide_display_names"
@@ -385,61 +384,5 @@ export function AppearanceSettingsScreen({}: Props) {
         )}
       </Layout.Screen>
     </LayoutAnimationConfig>
-  )
-}
-
-export function AppearanceToggleButtonGroup<T extends string>({
-  title,
-  description,
-  icon: Icon,
-  items,
-  value,
-  onChange,
-}: {
-  title: string
-  description?: string
-  icon: React.ComponentType<SVGIconProps>
-  items: {
-    label: string
-    name: T
-  }[]
-  value: T
-  onChange: (value: T) => void
-}) {
-  const t = useTheme()
-  return (
-    <>
-      <SettingsList.Group contentContainerStyle={[a.gap_sm]} iconInset={false}>
-        <SettingsList.ItemIcon icon={Icon} />
-        <SettingsList.ItemText>{title}</SettingsList.ItemText>
-        {description && (
-          <Text
-            style={[
-              a.text_sm,
-              a.leading_snug,
-              t.atoms.text_contrast_medium,
-              a.w_full,
-            ]}>
-            {description}
-          </Text>
-        )}
-        <SegmentedControl.Root
-          type="radio"
-          label={title}
-          value={value}
-          onChange={onChange}>
-          {items.map(item => (
-            <SegmentedControl.Item
-              key={item.name}
-              label={item.label}
-              value={item.name}>
-              <SegmentedControl.ItemText>
-                {item.label}
-              </SegmentedControl.ItemText>
-            </SegmentedControl.Item>
-          ))}
-        </SegmentedControl.Root>
-      </SettingsList.Group>
-    </>
   )
 }

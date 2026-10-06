@@ -315,7 +315,7 @@ const schema = z.object({
   compactPosts: z.boolean().optional(),
   enableSquareAvatars: z.boolean().optional(),
   enableSquareButtons: z.boolean().optional(),
-  useNotoColorEmoji: z.boolean().optional(),
+  emojiFont: z.enum(['system', 'noto', 'twemoji']).optional(),
   useCompactAccountSwitcher: z.boolean().optional(),
   autoCompactAccountSwitcher: z.boolean().optional(),
   disableVerifyEmailReminder: z.boolean().optional(),
@@ -517,7 +517,7 @@ export const defaults: Schema = {
   compactPosts: false,
   enableSquareAvatars: true,
   enableSquareButtons: true,
-  useNotoColorEmoji: false,
+  emojiFont: 'system',
   useCompactAccountSwitcher: false,
   autoCompactAccountSwitcher: true,
   disableVerifyEmailReminder: false,
@@ -596,6 +596,12 @@ export function tryParse(rawData: string): Schema | undefined {
   const parsed = schema.safeParse(objData)
   if (parsed.success) {
     let data = parsed.data
+    if (
+      data.emojiFont === undefined &&
+      (objData as {useNotoColorEmoji?: boolean}).useNotoColorEmoji === true
+    ) {
+      data = {...data, emojiFont: 'noto'}
+    }
     if (
       (objData as {noAppLabelers?: boolean}).noAppLabelers &&
       !data.ignoredAppLabelers?.length

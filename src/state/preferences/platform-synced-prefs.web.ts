@@ -1,1 +1,1 @@
-export const PLATFORM_SYNCED_PREFS_KEYS = ['useNotoColorEmoji'] as const
+export const PLATFORM_SYNCED_PREFS_KEYS = ['emojiFont'] as const

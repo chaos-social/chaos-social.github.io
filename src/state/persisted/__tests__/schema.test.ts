@@ -48,16 +48,34 @@ describe('persisted schema helpers', () => {
     expect(tryParse(raw!)?.confirmFollow).toBe(true)
   })
 
-  it('defaults Noto Color Emoji off and preserves an enabled preference', () => {
+  it('defaults to system emoji and migrates the legacy Noto preference', () => {
     const existing = tryParse(JSON.stringify(partialState))
-    expect(normalizeData(existing!).useNotoColorEmoji).toBe(false)
+    expect(normalizeData(existing!).emojiFont).toBe('system')
 
     const enabled = tryParse(
       JSON.stringify({...partialState, useNotoColorEmoji: true}),
     )
-    const raw = tryStringify(normalizeData(enabled!))
-    expect(tryParse(raw!)?.useNotoColorEmoji).toBe(true)
+    expect(normalizeData(enabled!).emojiFont).toBe('noto')
+    expect(enabled).not.toHaveProperty('useNotoColorEmoji')
+    expect(tryStringify(normalizeData(enabled!))).not.toContain(
+      'useNotoColorEmoji',
+    )
   })
+
+  it.each(['system', 'noto', 'twemoji'] as const)(
+    'preserves %s emoji across restarts and overrides the legacy Noto preference',
+    emojiFont => {
+      const parsed = tryParse(
+        JSON.stringify({
+          ...partialState,
+          useNotoColorEmoji: true,
+          emojiFont,
+        }),
+      )
+      const raw = tryStringify(normalizeData(parsed!))
+      expect(normalizeData(tryParse(raw!)!).emojiFont).toBe(emojiFont)
+    },
+  )
 
   it('preserves hydrated defaults on later writes', () => {
     const hydrated = tryParse(JSON.stringify(partialState))

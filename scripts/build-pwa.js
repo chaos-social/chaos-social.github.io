@@ -30,8 +30,11 @@ async function buildPwa() {
       'pwa/**/*.{html,png,webmanifest}',
       'static/**/*.{js,css,woff2,ttf,png,jpg,webp,svg}',
     ],
-    // Download the optional emoji font only after its preference is enabled.
-    globIgnores: ['static/media/WitchskyNotoColorEmoji.*.woff2'],
+    // Download optional emoji fonts only after they are selected.
+    globIgnores: [
+      'static/media/WitchskyNotoColorEmoji.*.woff2',
+      'static/media/WitchskyTwemoji.*.woff2',
+    ],
     swDest: path.join(output, 'sw.js'),
     cacheId: 'witchsky',
     inlineWorkboxRuntime: true,

@@ -13,6 +13,6 @@ export function applyFonts(
   applySharedFonts(style, fontFamily)
   style.fontFamily = style.fontFamily?.replace(
     /^([^,]+)(.*)$/,
-    '$1, var(--noto-emoji-font, "__disabledNotoEmoji")$2',
+    '$1, var(--emoji-font, "__disabledEmojiFont")$2',
   )
 }
