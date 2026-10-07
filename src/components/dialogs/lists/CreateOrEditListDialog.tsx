@@ -5,6 +5,7 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Plural, Trans} from '@lingui/react/macro'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {cleanError} from '#/lib/strings/errors'
 import {isOverMaxGraphemeCount} from '#/lib/strings/helpers'
 import {richTextToString} from '#/lib/strings/rich-text-helpers'
@@ -306,7 +307,9 @@ function DialogInner({
         size="small"
         color="primary"
         variant="ghost"
-        style={[enableSquareButtons ? a.rounded_sm : a.rounded_full]}
+        style={[
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
+        ]}
         testID="editProfileCancelBtn">
         <ButtonText style={[a.text_md]}>
           <Trans>Cancel</Trans>
@@ -331,7 +334,9 @@ function DialogInner({
         size="small"
         color="primary"
         variant="ghost"
-        style={[enableSquareButtons ? a.rounded_sm : a.rounded_full]}
+        style={[
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
+        ]}
         testID="editProfileSaveBtn">
         <ButtonText style={[a.text_md, !dirty && t.atoms.text_contrast_low]}>
           <Trans>Save</Trans>

@@ -17,6 +17,7 @@ import {
   type CommonNavigatorParams,
   type NavigationProp,
 } from '#/lib/routes/types'
+import {getShapeStyle} from '#/lib/shapes'
 import {getAuthorPrimaryName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {userStyle} from '#/lib/userstyles'
@@ -252,7 +253,11 @@ export function SettingsScreen({}: Props) {
                             a.absolute,
                             {top: 10, right: 48},
                             a.p_xs,
-                            enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                            getShapeStyle(
+                              enableSquareButtons,
+                              a.rounded_sm,
+                              a.rounded_full,
+                            ),
                             (state.hovered || state.pressed) &&
                               t.atoms.bg_contrast_25,
                           ]}>
@@ -942,7 +947,11 @@ function AccountRow({
                   a.absolute,
                   {top: 12, right: tokens.space.lg},
                   a.p_xs,
-                  enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                  getShapeStyle(
+                    enableSquareButtons,
+                    a.rounded_sm,
+                    a.rounded_full,
+                  ),
                   (state.hovered || state.pressed) && t.atoms.bg_contrast_25,
                 ]}>
                 <DotsHorizontal size="md" style={t.atoms.text} />

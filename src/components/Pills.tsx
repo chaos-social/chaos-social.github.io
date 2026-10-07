@@ -5,6 +5,7 @@ import {type ModerationCause} from '@bsky/sdk/moderation'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {useModerationCauseDescription} from '#/lib/moderation/useModerationCauseDescription'
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme, type ViewStyleProp} from '#/alf'
@@ -169,7 +170,7 @@ export function LabelBase({
           style={[
             a.flex_row,
             a.align_center,
-            enableSquareButtons ? a.rounded_sm : a.rounded_full,
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
             outer,
             (hovered || pressed) && t.atoms.bg_contrast_50,
           ]}>

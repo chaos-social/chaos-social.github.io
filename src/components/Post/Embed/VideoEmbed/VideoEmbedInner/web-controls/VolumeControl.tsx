@@ -4,6 +4,8 @@ import Animated, {FadeIn, FadeOut} from 'react-native-reanimated'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a} from '#/alf'
 import {Mute_Stroke2_Corner0_Rounded as MuteIcon} from '#/components/icons/Mute'
 import {SpeakerVolumeFull_Stroke2_Corner0_Rounded as UnmuteIcon} from '#/components/icons/Speaker'
@@ -26,6 +28,8 @@ export function VolumeControl({
   onEndHover: () => void
   drawFocus: () => void
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const {_} = useLingui()
   const [volume, setVolume] = useVideoVolumeState()
 
@@ -71,6 +75,7 @@ export function VolumeControl({
               {backgroundColor: 'rgba(0, 0, 0, 0.6)'},
               a.rounded_xs,
               a.align_center,
+              shapePreference === 'sharp' && SHARP_CORNERS,
             ]}>
             <input
               type="range"

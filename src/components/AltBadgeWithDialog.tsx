@@ -1,6 +1,8 @@
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {HITSLOP_20} from '#/lib/constants'
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useLargeAltBadgeEnabled} from '#/state/preferences/large-alt-badge'
 import {atoms as a, useTheme} from '#/alf'
 import {Pressable} from '#/components/Pressable'
@@ -34,6 +36,7 @@ export function AltBadgeWithDialog({
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 }) {
   const t = useTheme()
+  const cornerShape = useEnableSquareButtons()
   const {t: l} = useLingui()
   const large = useLargeAltBadgeEnabled()
   const control = Prompt.usePromptControl()
@@ -51,7 +54,7 @@ export function AltBadgeWithDialog({
         onPress={control.open}
         style={({pressed, hovered}) => [
           a.justify_center,
-          a.rounded_sm,
+          getShapeStyle(cornerShape, a.rounded_sm, a.rounded_sm),
           a.p_xs,
           a.z_10,
           t.atoms.bg_contrast_25,

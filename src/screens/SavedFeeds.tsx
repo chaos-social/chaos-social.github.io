@@ -15,9 +15,11 @@ import {
   type CommonNavigatorParams,
   type NavigationProp,
 } from '#/lib/routes/types'
+import {getShapeRadius} from '#/lib/shapes'
 import {userStyle} from '#/lib/userstyles'
 import {logger} from '#/logger'
 import {useA11y} from '#/state/a11y'
+import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {
   useOverwriteSavedFeedsMutation,
   usePreferencesQuery,
@@ -605,13 +607,14 @@ function SectionHeaderText({children}: {children: React.ReactNode}) {
 
 function FollowingFeedCard() {
   const t = useTheme()
+  const avatarShape = useEnableSquareAvatars()
   return (
     <View style={[a.flex_row, a.align_center, a.flex_1, a.p_lg]}>
       <View
         style={[
           a.align_center,
           a.justify_center,
-          a.rounded_sm,
+          {borderRadius: getShapeRadius(avatarShape, 8, 8)},
           a.mr_md,
           {
             width: 36,

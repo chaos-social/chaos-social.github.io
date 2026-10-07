@@ -29,6 +29,38 @@ describe('persisted schema helpers', () => {
     expect(parsed?.material3Style).toBe('TONAL_SPOT')
   })
 
+  it.each([false, true, 'sharp'] as const)(
+    'preserves the %s button and avatar shapes across restarts',
+    shape => {
+      const parsed = tryParse(
+        JSON.stringify({
+          ...partialState,
+          enableSquareButtons: shape,
+          enableSquareAvatars: shape,
+        }),
+      )
+      const raw = tryStringify(normalizeData(parsed!))
+      const restored = normalizeData(tryParse(raw!)!)
+      expect(restored.enableSquareButtons).toBe(shape)
+      expect(restored.enableSquareAvatars).toBe(shape)
+      expect(restored.requireAltTextEnabled).toBe(true)
+    },
+  )
+
+  it('stores button and avatar shapes independently', () => {
+    const parsed = tryParse(
+      JSON.stringify({
+        ...partialState,
+        enableSquareButtons: 'sharp',
+        enableSquareAvatars: false,
+      }),
+    )
+    const raw = tryStringify(normalizeData(parsed!))
+    const restored = normalizeData(tryParse(raw!)!)
+    expect(restored.enableSquareButtons).toBe('sharp')
+    expect(restored.enableSquareAvatars).toBe(false)
+  })
+
   it('defaults follow confirmation off even when legacy confirmation was enabled', () => {
     const parsed = tryParse(
       JSON.stringify({...partialState, confirmFollowUnfollow: true}),

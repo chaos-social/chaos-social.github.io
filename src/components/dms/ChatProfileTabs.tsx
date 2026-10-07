@@ -5,6 +5,7 @@ import {moderateProfile} from '@bsky/sdk/moderation'
 import {useLingui} from '@lingui/react/macro'
 
 import {HITSLOP_10} from '#/lib/constants'
+import {getShapeStyle} from '#/lib/shapes'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
@@ -118,7 +119,7 @@ function Tab({
         a.align_center,
         a.border,
         a.justify_center,
-        enableSquareButtons ? a.rounded_sm : a.rounded_lg,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_lg),
         isLabeler ? a.pl_sm : a.pl_xs,
         a.pr_sm,
         a.py_xs,

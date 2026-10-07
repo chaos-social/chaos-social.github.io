@@ -7,6 +7,7 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 import ReactCrop, {type PercentCrop} from 'react-image-crop'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {
   type ImageSource,
   type ImageTransformation,
@@ -51,7 +52,7 @@ function DialogInner({
         size="small"
         color="primary"
         variant="ghost"
-        style={enableSquareButtons ? [a.rounded_sm] : [a.rounded_full]}
+        style={getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full)}
         testID="cropImageCancelBtn">
         <ButtonText style={[a.text_md]}>
           <Trans>Cancel</Trans>
@@ -81,7 +82,7 @@ function DialogInner({
         size="small"
         color="primary"
         variant="ghost"
-        style={enableSquareButtons ? [a.rounded_sm] : [a.rounded_full]}
+        style={getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full)}
         testID="cropImageSaveBtn">
         <ButtonText style={[a.text_md]}>
           <Trans>Save</Trans>

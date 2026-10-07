@@ -7,6 +7,7 @@ import {
   type ViewStyle,
 } from 'react-native'
 
+import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
 import {s} from '#/lib/styles'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
@@ -61,7 +62,7 @@ export function PostLoadingPlaceholder({
             position: 'relative',
             top: -6,
           },
-          enableSquareAvatars && {borderRadius: 8},
+          {borderRadius: getShapeRadius(enableSquareAvatars, 8, 999)},
         ]}
       />
       <View style={[a.flex_1]}>
@@ -152,7 +153,7 @@ export function NotificationLoadingPlaceholder({
             height={35}
             style={[
               styles.smallAvatar,
-              enableSquareAvatars && {borderRadius: 8},
+              {borderRadius: getShapeRadius(enableSquareAvatars, 8, 999)},
             ]}
           />
         </View>
@@ -291,7 +292,7 @@ export function ChatListItemLoadingPlaceholder({
       <LoadingPlaceholder
         width={52}
         height={52}
-        style={enableSquareButtons ? a.rounded_sm : a.rounded_full}
+        style={getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full)}
       />
       <View>
         <LoadingPlaceholder width={140} height={12} style={a.mt_xs} />

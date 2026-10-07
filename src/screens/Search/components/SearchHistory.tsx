@@ -4,6 +4,7 @@ import {Plural, Trans, useLingui} from '@lingui/react/macro'
 
 import {createHitslop} from '#/lib/constants'
 import {makeProfileLink} from '#/lib/routes/links'
+import {getShapeStyle} from '#/lib/shapes'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
@@ -158,7 +159,11 @@ function SearchHistoryItem({
               <View
                 style={[
                   a.flex_shrink_0,
-                  enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                  getShapeStyle(
+                    enableSquareButtons,
+                    a.rounded_sm,
+                    a.rounded_full,
+                  ),
                   a.px_sm,
                   a.py_2xs,
                   t.atoms.bg_contrast_25,

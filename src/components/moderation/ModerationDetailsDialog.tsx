@@ -8,7 +8,9 @@ import {Trans} from '@lingui/react/macro'
 import {useGetTimeAgo} from '#/lib/hooks/useTimeAgo'
 import {useModerationCauseDescription} from '#/lib/moderation/useModerationCauseDescription'
 import {makeProfileLink} from '#/lib/routes/links'
+import {SHARP_CORNERS} from '#/lib/shapes'
 import {listUriToHref} from '#/lib/strings/url-helpers'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useSession} from '#/state/session'
 import {atoms as a, useBreakpoints, useGutters, useTheme, web} from '#/alf'
 import {Admonition} from '#/components/Admonition'
@@ -44,6 +46,8 @@ function ModerationDetailsDialogInner({
 }: ModerationDetailsDialogProps & {
   control: Dialog.DialogOuterProps['control']
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   const xGutters = useGutters([0, 'base'])
   const {_} = useLingui()
@@ -248,6 +252,7 @@ function ModerationDetailsDialogInner({
               borderBottomLeftRadius: a.rounded_md.borderRadius,
               borderBottomRightRadius: a.rounded_md.borderRadius,
             },
+            shapePreference === 'sharp' && SHARP_CORNERS,
           ]}>
           {modcause.source.type === 'user' ? (
             <Text style={[t.atoms.text, a.text_md, a.leading_snug]}>

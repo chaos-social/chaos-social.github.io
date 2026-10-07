@@ -4,6 +4,8 @@ import {useLingui} from '@lingui/react'
 import {useNavigation} from '@react-navigation/native'
 
 import {type NavigationProp} from '#/lib/routes/types'
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useSetThemePrefs, useThemePrefs} from '#/state/shell'
 import {atoms as a, useBreakpoints, useTheme, web} from '#/alf'
 import {useMaterialYouPalette} from '#/alf/util/materialYou'
@@ -23,6 +25,7 @@ import {
 export function ThemeQuickSelector() {
   const {_} = useLingui()
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
   const {gtMobile} = useBreakpoints()
   const navigation = useNavigation<NavigationProp>()
   const {activeTheme: storedTheme, colorMode, material3Accent} = useThemePrefs()
@@ -161,6 +164,7 @@ export function ThemeQuickSelector() {
                       borderBottomRightRadius: 8,
                       opacity: pressed ? 0.7 : 1,
                     },
+                    enableSquareButtons === 'sharp' && SHARP_CORNERS,
                   ]}>
                   <ChevronIcon size="sm" />
                 </Pressable>

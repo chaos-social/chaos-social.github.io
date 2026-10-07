@@ -11,6 +11,7 @@ import {
   type CommonNavigatorParams,
   type NavigationProp,
 } from '#/lib/routes/types'
+import {getShapeStyle} from '#/lib/shapes'
 import {getAuthorPrimaryName} from '#/lib/strings/display-names'
 import {isInvalidHandle, sanitizeHandle} from '#/lib/strings/handles'
 import {userStyle} from '#/lib/userstyles'
@@ -150,7 +151,11 @@ function ProfileCard({minimal}: {minimal: boolean}) {
                     a.w_full,
                     a.transition_color,
                     active ? t.atoms.bg_contrast_25 : a.transition_delay_50ms,
-                    enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                    getShapeStyle(
+                      enableSquareButtons,
+                      a.rounded_sm,
+                      a.rounded_full,
+                    ),
                     a.justify_between,
                     a.align_center,
                     a.flex_row,
@@ -235,7 +240,7 @@ function ProfileCard({minimal}: {minimal: boolean}) {
           width={LARGE_ELEMENT_SIZE}
           height={LARGE_ELEMENT_SIZE}
           style={[
-            enableSquareAvatars ? a.rounded_sm : a.rounded_full,
+            getShapeStyle(enableSquareAvatars, a.rounded_sm, a.rounded_full),
             !minimal && a.ml_lg,
           ]}
         />
@@ -518,7 +523,7 @@ function NavItem({
         a.flex_row,
         a.align_center,
         a.p_md,
-        enableSquareButtons ? a.rounded_sm : a.rounded_full,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
         a.gap_sm,
         a.outline_inset_1,
         a.transition_color,
@@ -562,7 +567,11 @@ function NavItem({
                 a.absolute,
                 a.text_xs,
                 a.font_semi_bold,
-                enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                getShapeStyle(
+                  enableSquareButtons,
+                  a.rounded_sm,
+                  a.rounded_full,
+                ),
                 a.text_center,
                 a.leading_tight,
                 a.z_20,
@@ -584,7 +593,7 @@ function NavItem({
           <View
             style={[
               a.absolute,
-              enableSquareButtons ? a.rounded_sm : a.rounded_full,
+              getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
               a.z_20,
               {
                 backgroundColor: t.palette.primary_500,
@@ -666,7 +675,7 @@ function ComposeBtn({minimal}: {minimal: boolean}) {
         shape={minimal && enableSquareButtons ? 'square' : 'default'}
         style={
           enableSquareButtons
-            ? [a.rounded_sm]
+            ? [getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full)]
             : [
                 a.rounded_full,
                 minimal && {

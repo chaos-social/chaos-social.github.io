@@ -10,6 +10,7 @@ import {
   shouldShowFollowedByText,
 } from '#/lib/metrics-display'
 import {makeProfileLink} from '#/lib/routes/links'
+import {getShapeRadius, type ShapePreference} from '#/lib/shapes'
 import {getAuthorPrimaryName} from '#/lib/strings/display-names'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {useHideDisplayNames} from '#/state/preferences/hide-display-names'
@@ -25,11 +26,12 @@ const AVI_SIZE = 30
 const AVI_SIZE_SMALL = 20
 const AVI_BORDER = 1
 
-function avatarBorderRadius(size: number, square: boolean) {
-  if (square) {
-    return size > 32 ? 8 : 3
-  }
-  return (size + AVI_BORDER * 2) / 2
+function avatarBorderRadius(size: number, preference: ShapePreference) {
+  return getShapeRadius(
+    preference,
+    size > 32 ? 8 : 3,
+    (size + AVI_BORDER * 2) / 2,
+  )
 }
 
 /**

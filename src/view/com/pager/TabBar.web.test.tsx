@@ -7,6 +7,9 @@ import {switchPageTab} from '#/features/keyboardShortcuts/postNavigation.web'
 import {TabBar} from './TabBar.web'
 
 jest.mock('react-native', () => jest.requireActual('react-native-web'))
+jest.mock('#/state/preferences/enable-square-buttons', () => ({
+  useEnableSquareButtons: () => 'sharp',
+}))
 jest.mock('#/lib/userstyles', () => ({userStyle: () => ({})}))
 jest.mock('#/alf', () => ({
   atoms: {},

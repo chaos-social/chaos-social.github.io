@@ -12,9 +12,11 @@ import {
   type CommonNavigatorParams,
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
+import {getShapeRadius} from '#/lib/shapes'
 import {cleanError} from '#/lib/strings/errors'
 import {s} from '#/lib/styles'
 import {userStyle} from '#/lib/userstyles'
+import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {
   type SavedFeedItem,
@@ -572,6 +574,7 @@ function FeedOrFollowing({savedFeed}: {savedFeed: SavedFeedItem}) {
 
 function FollowingFeed() {
   const t = useTheme()
+  const avatarShape = useEnableSquareAvatars()
   const {_} = useLingui()
   return (
     <View
@@ -590,7 +593,7 @@ function FollowingFeed() {
             {
               width: 28,
               height: 28,
-              borderRadius: 3,
+              borderRadius: getShapeRadius(avatarShape, 3, 3),
               backgroundColor: t.palette.primary_500,
             },
           ]}>

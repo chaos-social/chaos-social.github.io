@@ -5,6 +5,7 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
 import {isJwtExpired} from '#/lib/jwt'
+import {getShapeStyle} from '#/lib/shapes'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useAutoCompactAccountSwitcher} from '#/state/preferences/auto-compact-account-switcher'
@@ -125,7 +126,11 @@ export function AccountList({
                   <View
                     style={[
                       t.atoms.bg_contrast_25,
-                      enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                      getShapeStyle(
+                        enableSquareButtons,
+                        a.rounded_sm,
+                        a.rounded_full,
+                      ),
                       {width: 48, height: 48},
                       a.justify_center,
                       a.align_center,
@@ -265,7 +270,11 @@ function AccountItem({
                     height: 20,
                     backgroundColor: t.palette.positive_500,
                   },
-                  enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                  getShapeStyle(
+                    enableSquareButtons,
+                    a.rounded_sm,
+                    a.rounded_full,
+                  ),
                   a.justify_center,
                   a.align_center,
                 ]}>

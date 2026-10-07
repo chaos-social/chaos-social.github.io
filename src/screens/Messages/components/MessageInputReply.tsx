@@ -3,6 +3,7 @@ import {useLingui} from '@lingui/react/macro'
 
 import {HITSLOP_20} from '#/lib/constants'
 import {createSanitizedDisplayName} from '#/lib/moderation/create-sanitized-display-name'
+import {getShapeStyle} from '#/lib/shapes'
 import {useConvoActive} from '#/state/messages/convo'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useUnavailableProfileLabel} from '#/state/queries/unavailable-content'
@@ -60,7 +61,7 @@ function MessageInputReplyInner({
         a.gap_sm,
         a.align_start,
         t.atoms.border_contrast_high,
-        enableSquareButtons ? a.rounded_sm : a.rounded_md,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_md),
         a.border,
         a.p_sm,
         a.mt_sm,

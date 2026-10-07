@@ -2,6 +2,7 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useListBlockMutation, useListMuteMutation} from '#/state/queries/list'
 import {atoms as a} from '#/alf'
@@ -70,7 +71,13 @@ export function SubscribeMenu({list}: {list: app.bsky.graph.defs.ListView}) {
               testID="subscribeBtn"
               size="small"
               color="primary_subtle"
-              style={[enableSquareButtons ? a.rounded_sm : a.rounded_full]}
+              style={[
+                getShapeStyle(
+                  enableSquareButtons,
+                  a.rounded_sm,
+                  a.rounded_full,
+                ),
+              ]}
               disabled={isPending}
               {...props}>
               {isPending && <ButtonIcon icon={Loader} />}

@@ -12,8 +12,10 @@ import {
 import {useGlobalLabelStrings} from '#/lib/moderation/useGlobalLabelStrings'
 import {getDefinition, getLabelStrings} from '#/lib/moderation/useLabelInfo'
 import {useModerationCauseDescription} from '#/lib/moderation/useModerationCauseDescription'
+import {SHARP_CORNERS} from '#/lib/shapes'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {useLabelDefinitions} from '#/state/preferences'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, native, useBreakpoints, useTheme, web} from '#/alf'
 import {Button} from '#/components/Button'
 import {
@@ -71,6 +73,8 @@ function ContentHiderActive({
   childContainerStyle?: StyleProp<ViewStyle>
   children?: React.ReactNode
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   const {t: l} = useLingui()
   const {gtMobile} = useBreakpoints()
@@ -143,7 +147,10 @@ function ContentHiderActive({
       style={[a.overflow_hidden, style]}>
       <ModerationDetailsDialog control={control} modcause={blur} />
       <Button
-        style={[a.rounded_sm, gtMobile && a.mt_xs]}
+        style={[
+          [a.rounded_sm, gtMobile && a.mt_xs],
+          shapePreference === 'sharp' && SHARP_CORNERS,
+        ]}
         {...{
           dataSet: {
             keyboardNavigationItem: 'true',
@@ -171,17 +178,20 @@ function ContentHiderActive({
         {state => (
           <View
             style={[
-              a.flex_row,
-              a.w_full,
-              a.justify_start,
-              a.align_center,
-              a.py_md,
-              a.px_lg,
-              a.gap_xs,
-              a.rounded_sm,
-              t.atoms.bg_contrast_25,
-              gtMobile && [a.gap_sm, a.py_lg, a.px_xl],
-              (state.hovered || state.pressed) && t.atoms.bg_contrast_50,
+              [
+                a.flex_row,
+                a.w_full,
+                a.justify_start,
+                a.align_center,
+                a.py_md,
+                a.px_lg,
+                a.gap_xs,
+                a.rounded_sm,
+                t.atoms.bg_contrast_25,
+                gtMobile && [a.gap_sm, a.py_lg, a.px_xl],
+                (state.hovered || state.pressed) && t.atoms.bg_contrast_50,
+              ],
+              shapePreference === 'sharp' && SHARP_CORNERS,
             ]}>
             <desc.icon
               size="md"

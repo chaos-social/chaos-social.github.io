@@ -7,6 +7,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import {type $Typed} from '@atproto/lex'
 
+import {getShapeRadius} from '#/lib/shapes'
 import {useConvoActive} from '#/state/messages/convo'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {isKnownJoinLinkPreview} from '#/state/queries/join-links'
@@ -37,7 +38,7 @@ let MessageItemInviteEmbed = ({
   const t = useTheme()
   const screen = useWindowDimensions()
   const convo = useConvoActive()
-  const borderRadius = enableSquareButtons ? 4 : BORDER_RADIUS
+  const borderRadius = getShapeRadius(enableSquareButtons, 4, BORDER_RADIUS)
 
   const restingColor = isFromSelf ? t.palette.primary_50 : t.palette.contrast_50
   const highlightColor = isFromSelf

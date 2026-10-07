@@ -10,6 +10,8 @@ interface SliderProps {
   minimumValue?: number
   maximumValue?: number
   step?: number
+  trackMarks?: number[]
+  renderTrackMarkComponent?: (index: number) => React.ReactNode
   trackStyle?: ViewStyle
   minimumTrackStyle?: ViewStyle
   thumbStyle?: ViewStyle
@@ -23,6 +25,8 @@ export function Slider({
   minimumValue = 0,
   maximumValue = 1,
   step = 1,
+  trackMarks,
+  renderTrackMarkComponent,
   trackStyle,
   minimumTrackStyle,
   thumbStyle,
@@ -59,6 +63,8 @@ export function Slider({
       minimumValue={minimumValue}
       maximumValue={maximumValue}
       step={step}
+      trackMarks={trackMarks}
+      renderTrackMarkComponent={renderTrackMarkComponent}
       trackStyle={{
         height: 4,
         borderRadius: 2,

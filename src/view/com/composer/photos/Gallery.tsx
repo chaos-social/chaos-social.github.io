@@ -17,6 +17,7 @@ import {Trans} from '@lingui/react/macro'
 
 import {useWebMediaQueries} from '#/lib/hooks/useWebMediaQueries'
 import {type Dimensions} from '#/lib/media/types'
+import {getShapeStyle} from '#/lib/shapes'
 import {colors} from '#/lib/styles'
 import {type ComposerImage, cropImage} from '#/state/gallery'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
@@ -204,7 +205,14 @@ const GalleryItem = ({
         accessibilityLabel={_(msg`Add alt text`)}
         accessibilityHint=""
         onPress={onAltTextEdit}
-        style={[styles.altTextControl, altTextControlStyle]}>
+        style={[
+          getShapeStyle(
+            enableSquareButtons,
+            styles.altTextControl,
+            styles.altTextControl,
+          ),
+          altTextControlStyle,
+        ]}>
         {image.alt.length !== 0 ? (
           <CheckIcon width={10} style={{color: t.palette.white}} />
         ) : (
@@ -221,11 +229,11 @@ const GalleryItem = ({
           accessibilityLabel={_(msg`Edit image`)}
           accessibilityHint=""
           onPress={onImageEdit}
-          style={
-            enableSquareButtons
-              ? styles.imageControlSquare
-              : styles.imageControl
-          }>
+          style={getShapeStyle(
+            enableSquareButtons,
+            styles.imageControlSquare,
+            styles.imageControl,
+          )}>
           <PencilIcon width={12} style={{color: colors.white}} />
         </TouchableOpacity>
         <TouchableOpacity
@@ -234,11 +242,11 @@ const GalleryItem = ({
           accessibilityLabel={_(msg`Remove image`)}
           accessibilityHint=""
           onPress={onRemove}
-          style={
-            enableSquareButtons
-              ? styles.imageControlSquare
-              : styles.imageControl
-          }>
+          style={getShapeStyle(
+            enableSquareButtons,
+            styles.imageControlSquare,
+            styles.imageControl,
+          )}>
           <TimesIcon width={16} style={{color: colors.white}} />
         </TouchableOpacity>
       </View>

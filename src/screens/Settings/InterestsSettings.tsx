@@ -14,6 +14,7 @@ import {
   useInterestsDisplayNames,
 } from '#/lib/interests'
 import {type CommonNavigatorParams} from '#/lib/routes/types'
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {
   preferencesQueryKey,
@@ -225,7 +226,7 @@ export function InterestButton({interest}: {interest: Interest}) {
   return (
     <View
       style={[
-        enableSquareButtons ? a.rounded_sm : a.rounded_full,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
         a.py_md,
         a.px_xl,
         t.atoms.bg_contrast_50,

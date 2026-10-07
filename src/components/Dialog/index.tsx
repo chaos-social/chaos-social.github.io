@@ -33,6 +33,7 @@ import {ScrollProvider} from '#/lib/ScrollContext'
 import {logger} from '#/logger'
 import {useA11y} from '#/state/a11y'
 import {useDialogStateControlContext} from '#/state/dialogs'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {List, type ListMethods, type ListProps} from '#/view/com/util/List'
 import {android, atoms as a, ios, platform, tokens, useTheme} from '#/alf'
 import {useThemeName} from '#/alf/util/useColorModeTheme'
@@ -67,6 +68,7 @@ export function Outer({
   nativeOptions,
   testID,
 }: React.PropsWithChildren<DialogOuterProps>) {
+  const enableSquareButtons = useEnableSquareButtons()
   const themeName = useThemeName()
   const t = useTheme(themeName)
   const ref = useRef<BottomSheetNativeComponent>(null)
@@ -182,6 +184,7 @@ export function Outer({
       cornerRadius={IS_LIQUID_GLASS ? undefined : 20}
       backgroundColor={t.atoms.bg.backgroundColor}
       {...nativeOptions}
+      {...(enableSquareButtons === 'sharp' && {cornerRadius: 0})}
       onSnapPointChange={onSnapPointChange}
       onStateChange={onStateChange}
       disableDrag={disableDrag}>

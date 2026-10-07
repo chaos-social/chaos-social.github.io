@@ -10,6 +10,7 @@ import Animated, {Easing, LinearTransition} from 'react-native-reanimated'
 
 import {HITSLOP_10} from '#/lib/constants'
 import {useHaptics} from '#/lib/haptics'
+import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {
   atoms as a,
@@ -218,7 +219,7 @@ export function Item({
 
   const highlightStyle = highlightRow
     ? [
-        enableSquareButtons ? a.rounded_sm : a.rounded_full,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
         a.p_md,
         hovered && t.atoms.bg_contrast_25,
         selected && {backgroundColor: t.palette.primary_50},
@@ -380,6 +381,7 @@ export function createSharedToggleStyles({
 
 export function Checkbox() {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
   const {selected, hovered, focused, disabled, isInvalid} = useItemContext()
   const {baseStyles, baseHoverStyles} = createSharedToggleStyles({
     theme: t,
@@ -400,7 +402,7 @@ export function Checkbox() {
           borderWidth: 1,
           height: 24,
           width: 24,
-          borderRadius: 6,
+          borderRadius: getShapeRadius(enableSquareButtons, 6, 6),
         },
         baseStyles,
         hovered ? baseHoverStyles : {},
@@ -500,7 +502,7 @@ export function Switch() {
     <View
       style={[
         a.relative,
-        enableSquareButtons ? a.rounded_sm : a.rounded_full,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
         t.atoms.bg,
         {
           height: 28,
@@ -519,9 +521,11 @@ export function Switch() {
           }),
         ).easing(Easing.inOut(Easing.cubic))}
         style={[
-          enableSquareButtons
-            ? {borderRadius: tokens.borderRadius.sm - 3}
-            : a.rounded_full,
+          getShapeStyle(
+            enableSquareButtons,
+            {borderRadius: tokens.borderRadius.sm - 3},
+            a.rounded_full,
+          ),
           {
             backgroundColor:
               selected && !isInvalid && !disabled

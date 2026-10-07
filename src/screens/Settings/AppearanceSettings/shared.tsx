@@ -3,7 +3,9 @@ import {Pressable, View} from 'react-native'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {type Schema} from '#/state/persisted'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
 import {
   BLACKSKY_PALETTE,
@@ -135,6 +137,7 @@ export function ColorSchemeGrid({
   onSchemeChange: (scheme: ColorSchemeName) => void
 }) {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
 
   return (
     <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
@@ -149,7 +152,7 @@ export function ColorSchemeGrid({
             onPress={() => onSchemeChange(name)}
             style={[
               a.flex_1,
-              a.rounded_md,
+              getShapeStyle(enableSquareButtons, a.rounded_md, a.rounded_md),
               a.overflow_hidden,
               {minWidth: '30%'},
               a.border,
@@ -169,7 +172,11 @@ export function ColorSchemeGrid({
               <View
                 style={[
                   a.w_full,
-                  a.rounded_xs,
+                  getShapeStyle(
+                    enableSquareButtons,
+                    a.rounded_xs,
+                    a.rounded_xs,
+                  ),
                   {backgroundColor: primary, height: 24},
                 ]}
               />

@@ -1,6 +1,8 @@
 import {useMemo} from 'react'
 import {View} from 'react-native'
 
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {createEmbedViewRecordFromPost} from '#/state/queries/postgate/util'
 import {useResolveLinkQuery} from '#/state/queries/resolve-link'
 import {atoms as a, useTheme} from '#/alf'
@@ -13,6 +15,8 @@ export function LazyQuoteEmbed({
   uri: string
   linkDisabled?: boolean
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   const {data} = useResolveLinkQuery(uri)
 
@@ -39,6 +43,7 @@ export function LazyQuoteEmbed({
         {
           height: 68,
         },
+        shapePreference === 'sharp' && SHARP_CORNERS,
       ]}
     />
   )

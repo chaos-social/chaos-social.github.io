@@ -8,6 +8,7 @@ import {Trans} from '@lingui/react/macro'
 import {MAX_POST_LINES} from '#/lib/constants'
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {makeProfileLink} from '#/lib/routes/links'
+import {getShapeRadius} from '#/lib/shapes'
 import {countLines} from '#/lib/strings/helpers'
 import {userStyle} from '#/lib/userstyles'
 import {
@@ -500,7 +501,7 @@ export function ThreadItemPostSkeleton({index}: {index: number}) {
       <Skele.Row style={[a.align_start, a.gap_md]}>
         <Skele.Circle
           size={LINEAR_AVI_WIDTH}
-          style={enableSquareAvatars && {borderRadius: 8}}
+          style={{borderRadius: getShapeRadius(enableSquareAvatars, 8, 999)}}
         />
 
         <Skele.Col style={[a.gap_xs]}>

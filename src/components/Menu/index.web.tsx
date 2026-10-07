@@ -10,6 +10,7 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {DropdownMenu} from 'radix-ui'
 
+import {getShapeStyle, SHARP_CORNERS} from '#/lib/shapes'
 import {userStyle} from '#/lib/userstyles'
 import {useA11y} from '#/state/a11y'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
@@ -213,6 +214,7 @@ export function Outer({
   >['onCloseAutoFocus']
 }>) {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
   const {reduceMotionEnabled} = useA11y()
 
   return (
@@ -229,7 +231,7 @@ export function Outer({
         <View
           style={[
             userStyle('wsky-menu'),
-            a.rounded_sm,
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_sm),
             a.p_xs,
             a.border,
             t.name === 'light' ? t.atoms.bg : t.atoms.bg_contrast_25,
@@ -238,6 +240,7 @@ export function Outer({
             a.overflow_auto,
             !reduceMotionEnabled && a.zoom_fade_in,
             style,
+            enableSquareButtons === 'sharp' && SHARP_CORNERS,
           ]}>
           {children}
         </View>
@@ -265,6 +268,7 @@ export function Item({
   ...rest
 }: ItemProps) {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
   const {control} = useMenuContext()
   const {
     state: hovered,
@@ -303,7 +307,7 @@ export function Item({
           a.align_center,
           a.gap_md,
           a.py_sm,
-          a.rounded_xs,
+          getShapeStyle(enableSquareButtons, a.rounded_xs, a.rounded_xs),
           a.overflow_hidden,
           {minHeight: 32, paddingHorizontal: 8},
           web({outline: 0}),
@@ -315,6 +319,7 @@ export function Item({
                 : t.atoms.bg_contrast_50,
             ],
           style,
+          enableSquareButtons === 'sharp' && SHARP_CORNERS,
         ])}
         {...web({
           onMouseEnter,
@@ -332,6 +337,7 @@ export function Item({
 /** A conventional hover- and keyboard-accessible web submenu. */
 export function Submenu({children, label, trigger, style}: SubmenuProps) {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
   const {reduceMotionEnabled} = useA11y()
   const [open, setOpen] = useState(false)
   const triggerRef = useRef<React.ElementRef<typeof Pressable>>(null)
@@ -383,7 +389,7 @@ export function Submenu({children, label, trigger, style}: SubmenuProps) {
             a.align_center,
             a.gap_md,
             a.py_sm,
-            a.rounded_xs,
+            getShapeStyle(enableSquareButtons, a.rounded_xs, a.rounded_xs),
             a.overflow_hidden,
             {minHeight: 32, paddingHorizontal: 8},
             web({outline: 0}),
@@ -394,6 +400,7 @@ export function Submenu({children, label, trigger, style}: SubmenuProps) {
                 : t.atoms.bg_contrast_50,
             ],
             style,
+            enableSquareButtons === 'sharp' && SHARP_CORNERS,
           ])}
           {...web({onMouseEnter, onMouseLeave})}>
           <ItemContext.Provider value={{disabled: false, destructive: false}}>
@@ -427,7 +434,7 @@ export function Submenu({children, label, trigger, style}: SubmenuProps) {
           <View
             style={[
               userStyle('wsky-menu'),
-              a.rounded_sm,
+              getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_sm),
               a.p_xs,
               a.border,
               t.name === 'light' ? t.atoms.bg : t.atoms.bg_contrast_25,
@@ -498,7 +505,7 @@ export function ItemRadio({selected}: {selected: boolean}) {
       style={[
         a.justify_center,
         a.align_center,
-        enableSquareButtons ? a.rounded_sm : a.rounded_full,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
         t.atoms.border_contrast_high,
         {
           borderWidth: 1,
@@ -510,9 +517,11 @@ export function ItemRadio({selected}: {selected: boolean}) {
         <View
           style={[
             a.absolute,
-            enableSquareButtons
-              ? {borderRadius: tokens.borderRadius.sm - 3}
-              : a.rounded_full,
+            getShapeStyle(
+              enableSquareButtons,
+              {borderRadius: tokens.borderRadius.sm - 3},
+              a.rounded_full,
+            ),
             {height: 14, width: 14},
             selected
               ? {

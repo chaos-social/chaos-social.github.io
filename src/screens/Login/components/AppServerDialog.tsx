@@ -6,6 +6,7 @@ import {Trans, useLingui} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
 import {useNavigationDeduped} from '#/lib/hooks/useNavigationDeduped'
+import {getShapeRadius} from '#/lib/shapes'
 import {cleanError, isNetworkError} from '#/lib/strings/errors'
 import {logger} from '#/logger'
 import {
@@ -446,7 +447,7 @@ function AppServerDialogInner({
       style={web([
         {
           maxWidth: 400,
-          borderRadius: enableSquareButtons ? 18 : 36,
+          borderRadius: getShapeRadius(enableSquareButtons, 18, 36),
         },
       ])}>
       <View style={[a.relative, a.gap_md, a.w_full]}>

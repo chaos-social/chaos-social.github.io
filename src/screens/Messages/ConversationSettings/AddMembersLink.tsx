@@ -3,6 +3,7 @@ import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {createSanitizedDisplayName} from '#/lib/moderation/create-sanitized-display-name'
+import {getShapeStyle} from '#/lib/shapes'
 import {logger} from '#/logger'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useAddGroupMembers} from '#/state/queries/messages/add-group-members'
@@ -91,7 +92,11 @@ export function AddMembersLink({
                   a.align_center,
                   a.justify_center,
                   a.p_lg,
-                  enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                  getShapeStyle(
+                    enableSquareButtons,
+                    a.rounded_sm,
+                    a.rounded_full,
+                  ),
                   interacting
                     ? t.atoms.bg_contrast_100
                     : t.atoms.bg_contrast_50,

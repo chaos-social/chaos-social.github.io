@@ -8,6 +8,7 @@ import {useNavigation} from '@react-navigation/native'
 import {isBlockedOrBlocking, isMuted} from '#/lib/moderation/blocked-and-muted'
 import {createSanitizedDisplayName} from '#/lib/moderation/create-sanitized-display-name'
 import {type NavigationProp} from '#/lib/routes/types'
+import {getShapeStyle} from '#/lib/shapes'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
@@ -194,7 +195,7 @@ function ConvoSkeleton() {
         style={[
           t.atoms.bg_contrast_50,
           {width: WIDTH - 8, height: WIDTH - 8},
-          enableSquareButtons ? a.rounded_sm : a.rounded_full,
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
         ]}
       />
       <View

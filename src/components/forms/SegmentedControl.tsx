@@ -11,6 +11,8 @@ import Animated, {Easing, LinearTransition} from 'react-native-reanimated'
 
 import {useHaptics} from '#/lib/haptics'
 import {useNonReactiveCallback} from '#/lib/hooks/useNonReactiveCallback'
+import {getShapeRadius, SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, native, platform, useTheme} from '#/alf'
 import {
   Button,
@@ -70,6 +72,7 @@ export function Root<T extends string>({
   accessibilityHint?: string
 }) {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
   const [selectedPosition, setSelectedPosition] = useState<{
     width: number
     x: number
@@ -117,6 +120,7 @@ export function Root<T extends string>({
         a.curve_continuous,
         a.p_xs,
         style,
+        enableSquareButtons === 'sharp' && SHARP_CORNERS,
       ]}
       role={type === 'tabs' ? 'tablist' : 'radiogroup'}>
       {selectedPosition !== null && (
@@ -248,6 +252,7 @@ export function ItemText({style, ...props}: ButtonTextProps) {
 
 function Slider({x, width}: {x: number; width: number}) {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
 
   return (
     <Animated.View
@@ -261,7 +266,7 @@ function Slider({x, width}: {x: number; width: number}) {
           bottom: 4,
           left: 0,
           width,
-          borderRadius: 10,
+          borderRadius: getShapeRadius(enableSquareButtons, 10, 10),
         },
         // TODO: new arch supports boxShadow on native
         // in the meantime this is an attempt to get close

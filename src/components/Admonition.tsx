@@ -1,6 +1,8 @@
 import {createContext, useContext} from 'react'
 import {type StyleProp, View, type ViewStyle} from 'react-native'
 
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useBreakpoints, useTheme} from '#/alf'
 import {Button as BaseButton, type ButtonProps} from '#/components/Button'
 import {CircleInfo_Stroke2_Corner0_Rounded as CircleInfoIcon} from '#/components/icons/CircleInfo'
@@ -101,6 +103,8 @@ export function Outer({
   type?: Context['type']
   style?: StyleProp<ViewStyle>
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   const {gtMobile} = useBreakpoints()
   const borderColor = {
@@ -121,6 +125,7 @@ export function Outer({
           t.atoms.bg,
           {borderColor},
           style,
+          shapePreference === 'sharp' && SHARP_CORNERS,
         ]}>
         {children}
       </View>

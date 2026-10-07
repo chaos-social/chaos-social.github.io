@@ -11,6 +11,7 @@ import {moderateProfile, type ModerationOpts} from '@bsky/sdk/moderation'
 import {type RichText as RichTextAPI} from '@bsky/sdk/richtext'
 import {useIsFocused} from '@react-navigation/native'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
@@ -46,12 +47,12 @@ let ProfileHeaderLoading = (_props: {}): React.ReactNode => {
           t.atoms.bg,
           {borderColor: t.atoms.bg.backgroundColor},
           styles.avi,
-          enableSquareAvatars && styles.aviSquare,
+          getShapeStyle(enableSquareAvatars, styles.aviSquare, {}),
         ]}>
         <LoadingPlaceholder
           width={90}
           height={90}
-          style={enableSquareAvatars ? styles.br8 : styles.br45}
+          style={getShapeStyle(enableSquareAvatars, styles.br8, styles.br45)}
         />
       </View>
       <View style={styles.content}>
@@ -59,7 +60,7 @@ let ProfileHeaderLoading = (_props: {}): React.ReactNode => {
           <LoadingPlaceholder
             width={140}
             height={34}
-            style={enableSquareButtons ? styles.br8 : styles.br50}
+            style={getShapeStyle(enableSquareButtons, styles.br8, styles.br50)}
           />
         </View>
       </View>

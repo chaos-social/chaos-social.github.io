@@ -13,6 +13,7 @@ import Animated, {
 import {scheduleOnRN} from 'react-native-worklets'
 
 import {useHaptics} from '#/lib/haptics'
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, tokens, useTheme} from '#/alf'
 import {ArrowCornerDownRight_Stroke2_Corner3_Rounded as ReplyIcon} from '#/components/icons/ArrowCornerDownRight'
@@ -175,7 +176,7 @@ export function SwipeToReply({
           style={[
             a.justify_center,
             a.align_center,
-            enableSquareButtons ? a.rounded_sm : a.rounded_full,
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
             t.atoms.bg_contrast_50,
             {width: ICON_DIAMETER, height: ICON_DIAMETER},
           ]}>

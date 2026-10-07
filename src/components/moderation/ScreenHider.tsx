@@ -12,6 +12,7 @@ import {useNavigation} from '@react-navigation/native'
 import {useWebMediaQueries} from '#/lib/hooks/useWebMediaQueries'
 import {useModerationCauseDescription} from '#/lib/moderation/useModerationCauseDescription'
 import {type NavigationProp} from '#/lib/routes/types'
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {CenteredView} from '#/view/com/util/Views'
 import {atoms as a, useTheme, web} from '#/alf'
@@ -156,7 +157,9 @@ export function ScreenHider({
           variant="solid"
           color="primary"
           size="large"
-          style={[enableSquareButtons ? a.rounded_sm : a.rounded_full]}
+          style={[
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
+          ]}
           label={l`Go back`}
           onPress={() => {
             if (navigation.canGoBack()) {
@@ -174,7 +177,9 @@ export function ScreenHider({
             variant="solid"
             color="secondary"
             size="large"
-            style={[enableSquareButtons ? a.rounded_sm : a.rounded_full]}
+            style={[
+              getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
+            ]}
             label={l`Show anyway`}
             onPress={() => setOverride(v => !v)}>
             <ButtonText>

@@ -9,6 +9,7 @@ import {
 import {BlurView} from 'expo-blur'
 
 import {HITSLOP_20} from '#/lib/constants'
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a} from '#/alf'
 import {type Props as IconProps} from '#/components/icons/common'
@@ -53,7 +54,7 @@ export function CircleChromeButton({
       testID={testID}
       style={({pressed}) => [
         styles.root,
-        enableSquareButtons ? a.rounded_sm : a.rounded_full,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
         pressed && styles.pressed,
       ]}>
       <BlurView intensity={20} tint="dark" style={styles.inner}>

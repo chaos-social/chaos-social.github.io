@@ -1,6 +1,7 @@
 import {View} from 'react-native'
 import {moderateProfile} from '@bsky/sdk/moderation'
 
+import {getShapeRadius} from '#/lib/shapes'
 import {logger} from '#/logger'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
@@ -63,7 +64,11 @@ export function AvatarStack({
               left: i * -translation,
               borderWidth,
               borderColor: backgroundColor ?? t.atoms.bg.backgroundColor,
-              borderRadius: enableSquareAvatars ? (size > 32 ? 8 : 3) : 999,
+              borderRadius: getShapeRadius(
+                enableSquareAvatars,
+                size > 32 ? 8 : 3,
+                999,
+              ),
               zIndex: 3 - i,
             },
           ]}>

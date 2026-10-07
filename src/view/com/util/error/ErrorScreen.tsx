@@ -4,6 +4,7 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
 import {usePalette} from '#/lib/hooks/usePalette'
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
@@ -49,7 +50,7 @@ export function ErrorScreen({
         <View style={[a.mb_md, a.align_center]}>
           <View
             style={[
-              enableSquareButtons ? a.rounded_sm : a.rounded_full,
+              getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
               {width: 50, height: 50},
               a.align_center,
               a.justify_center,

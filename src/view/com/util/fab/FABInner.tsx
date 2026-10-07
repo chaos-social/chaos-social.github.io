@@ -13,6 +13,7 @@ import {PressableScale} from '#/lib/custom-animations/PressableScale'
 import {useHaptics} from '#/lib/haptics'
 import {useMinimalShellFabTransform} from '#/lib/hooks/useMinimalShellTransform'
 import {clamp} from '#/lib/numbers'
+import {getShapeStyle} from '#/lib/shapes'
 import {userStyle} from '#/lib/userstyles'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, ios, useBreakpoints, useTheme} from '#/alf'
@@ -42,12 +43,16 @@ export function FABInner({
   const enableSquareButtons = useEnableSquareButtons()
 
   const size = gtMobile
-    ? enableSquareButtons
-      ? styles.sizeLargeSquare
-      : styles.sizeLarge
-    : enableSquareButtons
-      ? styles.sizeRegularSquare
-      : styles.sizeRegular
+    ? getShapeStyle(
+        enableSquareButtons,
+        styles.sizeLargeSquare,
+        styles.sizeLarge,
+      )
+    : getShapeStyle(
+        enableSquareButtons,
+        styles.sizeRegularSquare,
+        styles.sizeRegular,
+      )
 
   const tabletSpacing = gtMobile
     ? {right: 50, bottom: 50}
@@ -78,7 +83,7 @@ export function FABInner({
         })}
         targetScale={0.9}
         style={[
-          enableSquareButtons ? a.rounded_sm : a.rounded_full,
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
           size,
           {backgroundColor: t.palette.primary_500},
           a.align_center,

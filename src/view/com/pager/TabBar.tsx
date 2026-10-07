@@ -16,6 +16,8 @@ import Animated, {
 } from 'react-native-reanimated'
 import {scheduleOnRN, scheduleOnUI} from 'react-native-worklets'
 
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {PressableWithHover} from '#/view/com/util/PressableWithHover'
 import {BlockDrawerGesture} from '#/view/shell/BlockDrawerGesture'
 import {atoms as a, useTheme} from '#/alf'
@@ -400,6 +402,7 @@ function TabBarItem({
   align: 'center' | 'left'
 }) {
   const t = useTheme()
+  const cornerShape = useEnableSquareButtons()
   const style = useAnimatedStyle(() => {
     if (!_WORKLET) {
       return {opacity: 0.7}
@@ -439,7 +442,7 @@ function TabBarItem({
         testID={`${testID}-selector-${index}`}
         style={[
           styles.item,
-          a.rounded_sm,
+          getShapeStyle(cornerShape, a.rounded_sm, a.rounded_sm),
           align === 'center' && styles.itemCentered,
         ]}
         hoverStyle={t.atoms.bg_contrast_25}

@@ -21,6 +21,8 @@ import {
 
 import {HITSLOP_20} from '#/lib/constants'
 import {mergeRefs} from '#/lib/merge-refs'
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {
   applyFonts,
   atoms as a,
@@ -251,6 +253,7 @@ export function createInput(Component: typeof TextInput) {
     ...rest
   }: InputProps) {
     const t = useTheme()
+    const enableSquareButtons = useEnableSquareButtons()
     const {fonts} = useAlf()
     const ctx = useContext(Context)
     const withinRoot = Boolean(ctx.inputRef)
@@ -340,6 +343,7 @@ export function createInput(Component: typeof TextInput) {
             paddingRight: 16,
           }),
         style,
+        enableSquareButtons === 'sharp' && SHARP_CORNERS,
       ]),
     }
 
@@ -402,6 +406,7 @@ export function createInput(Component: typeof TextInput) {
             (ctx.isInvalid || isInvalid) && (ctx.hovered || ctx.focused)
               ? chromeErrorHover
               : {},
+            enableSquareButtons === 'sharp' && SHARP_CORNERS,
           ]}
         />
       </>

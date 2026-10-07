@@ -3,8 +3,10 @@ import {View} from 'react-native'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
+import {SHARP_CORNERS} from '#/lib/shapes'
 import {type EmbedPlayerParams} from '#/lib/strings/embed-player'
 import {useAutoplayDisabled} from '#/state/preferences'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
 import {Fill} from '#/components/Fill'
 import {ConstrainedImage} from '#/components/images/AutoSizedImage'
@@ -26,6 +28,8 @@ export function GifEmbed({
   isPreferredAltText: boolean
   hideAlt?: boolean
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   const {_} = useLingui()
   const autoplayDisabled = useAutoplayDisabled()
@@ -65,6 +69,7 @@ export function GifEmbed({
           a.rounded_md,
           a.overflow_hidden,
           {backgroundColor: t.palette.black},
+          shapePreference === 'sharp' && SHARP_CORNERS,
         ]}>
         <View style={[a.absolute, a.inset_0]}>
           <MediaInsetBorder />

@@ -1,6 +1,8 @@
 import {useMemo} from 'react'
 import {moderateUserList} from '@bsky/sdk/moderation'
 
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {atoms as a, useTheme} from '#/alf'
 import * as ListCard from '#/components/ListCard'
@@ -13,11 +15,19 @@ export function ListEmbed({
 }: CommonProps & {
   embed: EmbedType<'list'>
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   return (
     <ListCard.Default
       view={embed.view}
-      style={[a.border, t.atoms.border_contrast_low, a.p_md, a.rounded_sm]}
+      style={[
+        a.border,
+        t.atoms.border_contrast_low,
+        a.p_md,
+        a.rounded_sm,
+        shapePreference === 'sharp' && SHARP_CORNERS,
+      ]}
     />
   )
 }

@@ -1,6 +1,7 @@
 import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {
   useTrendingSettings,
@@ -58,7 +59,12 @@ function Inner() {
   return error || noTopics ? null : (
     <>
       <View
-        style={[a.p_lg, a.rounded_md, a.border, t.atoms.border_contrast_low]}>
+        style={[
+          a.p_lg,
+          getShapeStyle(enableSquareButtons, a.rounded_md, a.rounded_md),
+          a.border,
+          t.atoms.border_contrast_low,
+        ]}>
         <View style={[a.flex_row, a.align_center, a.gap_xs, a.pb_md]}>
           <TrendingIcon width={16} height={16} fill={t.atoms.text.color} />
           <Text style={[a.flex_1, a.text_md, a.font_semi_bold]}>
@@ -112,7 +118,11 @@ function Inner() {
                   </Text>
                   <View
                     style={[
-                      a.rounded_xs,
+                      getShapeStyle(
+                        enableSquareButtons,
+                        a.rounded_xs,
+                        a.rounded_xs,
+                      ),
                       t.atoms.bg_contrast_50,
                       {height: 14, width: i % 2 === 0 ? 80 : 100},
                     ]}

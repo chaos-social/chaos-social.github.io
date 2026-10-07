@@ -7,6 +7,7 @@ import {Trans} from '@lingui/react/macro'
 
 import {useHaptics} from '#/lib/haptics'
 import {makeListLink} from '#/lib/routes/links'
+import {getShapeStyle} from '#/lib/shapes'
 import {logger} from '#/logger'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useListBlockMutation, useListMuteMutation} from '#/state/queries/list'
@@ -160,7 +161,9 @@ export function Header({
             onPress={onTogglePinned}
             disabled={isPending}
             size="small"
-            style={[enableSquareButtons ? a.rounded_sm : a.rounded_full]}>
+            style={[
+              getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
+            ]}>
             {!isPinned && <ButtonIcon icon={isPending ? Loader : PinIcon} />}
             <ButtonText>
               {isPinned ? <Trans>Unpin</Trans> : <Trans>Pin to home</Trans>}
@@ -174,7 +177,13 @@ export function Header({
               label={_(msg`Unblock`)}
               onPress={onUnsubscribeBlock}
               size="small"
-              style={[enableSquareButtons ? a.rounded_sm : a.rounded_full]}
+              style={[
+                getShapeStyle(
+                  enableSquareButtons,
+                  a.rounded_sm,
+                  a.rounded_full,
+                ),
+              ]}
               disabled={isBlockPending}>
               {isBlockPending && <ButtonIcon icon={Loader} />}
               <ButtonText>
@@ -188,7 +197,13 @@ export function Header({
               label={_(msg`Unmute`)}
               onPress={onUnsubscribeMute}
               size="small"
-              style={[enableSquareButtons ? a.rounded_sm : a.rounded_full]}
+              style={[
+                getShapeStyle(
+                  enableSquareButtons,
+                  a.rounded_sm,
+                  a.rounded_full,
+                ),
+              ]}
               disabled={isMutePending}>
               {isMutePending && <ButtonIcon icon={Loader} />}
               <ButtonText>

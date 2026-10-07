@@ -77,6 +77,7 @@ import {createVideoTelemetry} from '#/lib/media/video/telemetry'
 import {mimeToExt} from '#/lib/media/video/util'
 import {useCallOnce} from '#/lib/once'
 import {type NavigationProp} from '#/lib/routes/types'
+import {getShapeStyle} from '#/lib/shapes'
 import {cleanError} from '#/lib/strings/errors'
 import {colors} from '#/lib/styles'
 import {userStyle} from '#/lib/userstyles'
@@ -2114,7 +2115,11 @@ let ComposerPost = memo(function ComposerPost({
               {...triggerProps}
               style={[
                 a.transition_color,
-                enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                getShapeStyle(
+                  enableSquareButtons,
+                  a.rounded_sm,
+                  a.rounded_full,
+                ),
                 a.self_start,
               ]}>
               <UserAvatar

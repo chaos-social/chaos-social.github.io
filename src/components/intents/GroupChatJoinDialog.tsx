@@ -9,6 +9,7 @@ import {createSanitizedDisplayName} from '#/lib/moderation/create-sanitized-disp
 import {useCallOnce} from '#/lib/once'
 import {makeProfileLink} from '#/lib/routes/links'
 import {type NavigationProp} from '#/lib/routes/types'
+import {getShapeRadius} from '#/lib/shapes'
 import {isNetworkError} from '#/lib/strings/errors'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {matchXrpcError} from '#/lib/xrpc-error'
@@ -59,7 +60,11 @@ export function GroupChatJoinDialog() {
       control={groupChatJoinDialogControl}
       nativeOptions={{
         preventExpansion: true,
-        cornerRadius: enableSquareButtons ? a.rounded_sm.borderRadius : 20,
+        cornerRadius: getShapeRadius(
+          enableSquareButtons,
+          a.rounded_sm.borderRadius,
+          20,
+        ),
       }}>
       <Dialog.Handle />
       <GroupChatJoinDialogInner code={groupChatJoinState?.code} />
@@ -77,7 +82,7 @@ function GroupChatJoinDialogInner({code}: {code?: string}) {
       style={[
         web({
           maxWidth: 400,
-          borderRadius: enableSquareButtons ? 18 : 36,
+          borderRadius: getShapeRadius(enableSquareButtons, 18, 36),
         }),
       ]}>
       <View style={[a.gap_2xl, a.align_center]}>

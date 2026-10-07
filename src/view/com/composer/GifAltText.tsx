@@ -6,11 +6,13 @@ import {Plural, Trans} from '@lingui/react/macro'
 
 import {HITSLOP_10, MAX_ALT_TEXT} from '#/lib/constants'
 import {parseAltFromGIFDescription} from '#/lib/gif-alt-text'
+import {getShapeRadius} from '#/lib/shapes'
 import {
   type EmbedPlayerParams,
   parseEmbedPlayerFromUrl,
 } from '#/lib/strings/embed-player'
 import {enforceLen} from '#/lib/strings/helpers'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useResolveGifQuery} from '#/state/queries/resolve-link'
 import {AltTextCounterWrapper} from '#/view/com/composer/AltTextCounterWrapper'
 import {atoms as a, useTheme} from '#/alf'
@@ -68,6 +70,7 @@ export function GifAltTextDialogLoaded({
   const control = Dialog.useDialogControl()
   const {_} = useLingui()
   const t = useTheme()
+  const cornerShape = useEnableSquareButtons()
   const [altTextDraft, setAltTextDraft] = useState(altText || vendorAltText)
   return (
     <>
@@ -81,7 +84,7 @@ export function GifAltTextDialogLoaded({
         style={[
           a.absolute,
           {top: 8, left: 8},
-          {borderRadius: 6},
+          {borderRadius: getShapeRadius(cornerShape, 6, 6)},
           a.pl_xs,
           a.pr_sm,
           a.py_2xs,

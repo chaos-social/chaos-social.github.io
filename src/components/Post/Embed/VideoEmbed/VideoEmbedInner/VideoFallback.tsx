@@ -3,6 +3,8 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {ArrowRotateCounterClockwise_Stroke2_Corner0_Rounded as ArrowRotateIcon} from '#/components/icons/ArrowRotate'
@@ -10,6 +12,8 @@ import {MediaInsetBorder} from '#/components/MediaInsetBorder'
 import {Text as TypoText} from '#/components/Typography'
 
 export function Container({children}: {children: React.ReactNode}) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   return (
     <View
@@ -22,6 +26,7 @@ export function Container({children}: {children: React.ReactNode}) {
         a.rounded_md,
         a.overflow_hidden,
         a.gap_lg,
+        shapePreference === 'sharp' && SHARP_CORNERS,
       ]}>
       {children}
       <MediaInsetBorder />

@@ -7,6 +7,8 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
 import {type Dimensions} from '#/lib/media/types'
+import {getShapeRadius, SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {
   applyImageTransforms,
   useImageCdnHost,
@@ -51,6 +53,8 @@ export function GalleryItem({
   containerRefs,
   thumbDimsRef,
 }: Props) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   const {_} = useLingui()
   const largeAltBadge = useLargeAltBadgeEnabled()
@@ -77,7 +81,11 @@ export function GalleryItem({
         fullsizeUri={image.fullsize}
         thumbUri={image.thumb}
         aspectRatio={aspect}
-        borderRadius={tokens.borderRadius.md}
+        borderRadius={getShapeRadius(
+          shapePreference,
+          tokens.borderRadius.md,
+          tokens.borderRadius.md,
+        )}
         onPreviewPress={openLightboxAtIndex}
         style={a.flex_1}>
         <Pressable
@@ -141,6 +149,7 @@ export function GalleryItem({
                 padding: 6,
               },
             ],
+            shapePreference === 'sharp' && SHARP_CORNERS,
           ]}>
           <Text
             style={[a.font_bold, largeAltBadge ? a.text_xs : {fontSize: 8}]}>

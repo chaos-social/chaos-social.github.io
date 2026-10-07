@@ -3,6 +3,7 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, select, useTheme, type ViewStyleProp} from '#/alf'
 import {AgeAssuranceConfigUnavailableError} from '#/components/ageAssurance/AgeAssuranceErrors'
@@ -73,7 +74,7 @@ function Inner({
             style={[
               a.align_center,
               a.justify_center,
-              enableSquareButtons ? a.rounded_sm : a.rounded_full,
+              getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
               {
                 width: 32,
                 height: 32,

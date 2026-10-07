@@ -1,6 +1,7 @@
 import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {getShapeRadius} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
@@ -24,7 +25,7 @@ export function MessagesListDeletedAccountFooter({convoId}: {convoId: string}) {
           a.justify_center,
           a.p_lg,
           t.atoms.bg_contrast_50,
-          {borderRadius: enableSquareButtons ? 20 : 40},
+          {borderRadius: getShapeRadius(enableSquareButtons, 20, 40)},
         ]}>
         <PersonXIcon fill={t.atoms.text.color} size="lg" style={[a.mb_xs]} />
         <Text

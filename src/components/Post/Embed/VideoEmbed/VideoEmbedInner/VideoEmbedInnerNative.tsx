@@ -5,6 +5,7 @@ import {useLingui} from '@lingui/react/macro'
 
 import {HITSLOP_30} from '#/lib/constants'
 import {hasPlaybackStarted} from '#/lib/media/video/analytics'
+import {getShapeStyle, SHARP_CORNERS} from '#/lib/shapes'
 import {useAutoplayDisabled} from '#/state/preferences'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
@@ -43,6 +44,8 @@ export function VideoEmbedInnerNative({
    */
   onError?: (error: string) => void
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const {t: l} = useLingui()
   const videoRef = useRef<BlueskyVideoView>(null)
   const autoplayDisabled = useAutoplayDisabled()
@@ -75,7 +78,7 @@ export function VideoEmbedInnerNative({
         url={embed.playlist}
         autoplay={autoplay}
         beginMuted={isGif || (autoplayDisabled ? false : muted)}
-        style={[a.rounded_sm]}
+        style={[a.rounded_sm, shapePreference === 'sharp' && SHARP_CORNERS]}
         onActiveChange={e => {
           setIsActive(e.nativeEvent.isActive)
         }}
@@ -240,7 +243,7 @@ function ControlButton({
     <View
       style={[
         a.absolute,
-        enableSquareButtons ? a.rounded_sm : a.rounded_full,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
         a.justify_center,
         {
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -251,6 +254,7 @@ function ControlButton({
           minWidth: 21,
         },
         style,
+        enableSquareButtons === 'sharp' && SHARP_CORNERS,
       ]}>
       <Pressable
         onPress={onPress}

@@ -6,6 +6,7 @@ import {useLingui} from '@lingui/react'
 
 import {parseAltFromGIFDescription} from '#/lib/gif-alt-text'
 import {useHaptics} from '#/lib/haptics'
+import {SHARP_CORNERS} from '#/lib/shapes'
 import {shareUrl} from '#/lib/sharing'
 import {
   exemptExternalEmbedSources,
@@ -13,6 +14,7 @@ import {
 } from '#/lib/strings/embed-player'
 import {toNiceDomain} from '#/lib/strings/url-helpers'
 import {useExternalEmbedsPrefs} from '#/state/preferences'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {
   applyImageTransforms,
   useImageCdnHost,
@@ -48,6 +50,8 @@ export const ExternalEmbed = ({
   preview?: boolean
   viewContext?: PostEmbedViewContext
 }) => {
+  const shapePreference = useEnableSquareButtons()
+
   const {_} = useLingui()
   const t = useTheme()
   const playHaptic = useHaptics()
@@ -114,7 +118,7 @@ export const ExternalEmbed = ({
       to={link.uri}
       shouldProxy={true}
       peek
-      style={[a.rounded_md]}
+      style={[a.rounded_md, shapePreference === 'sharp' && SHARP_CORNERS]}
       onPress={onPress}
       onLongPress={onShareExternal}>
       {({hovered, pressed}) => (
@@ -131,6 +135,7 @@ export const ExternalEmbed = ({
             hovered
               ? t.atoms.border_contrast_high
               : t.atoms.border_contrast_low,
+            shapePreference === 'sharp' && SHARP_CORNERS,
           ]}>
           {imageUri && !embedPlayerParams ? (
             <Image

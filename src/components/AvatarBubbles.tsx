@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import {moderateProfile} from '@bsky/sdk/moderation'
 
+import {getShapeRadius, type ShapePreference} from '#/lib/shapes'
 import {useMaybeProfileShadow} from '#/state/cache/profile-shadow'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
@@ -137,7 +138,7 @@ function AvatarBubble({
 }) {
   const t = useTheme()
   const enableSquareAvatars = useEnableSquareAvatars()
-  const borderRadius = avatarBorderRadius(size, !!enableSquareAvatars)
+  const borderRadius = avatarBorderRadius(size, enableSquareAvatars)
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{translateX: x}, {translateY: y}, {scale: scale.get()}],
   }))
@@ -177,7 +178,7 @@ function AvatarBubble({
 function AvatarPlaceholder({size}: {size: number}) {
   const t = useTheme()
   const enableSquareAvatars = useEnableSquareAvatars()
-  const borderRadius = avatarBorderRadius(size, !!enableSquareAvatars)
+  const borderRadius = avatarBorderRadius(size, enableSquareAvatars)
 
   return (
     <View
@@ -196,11 +197,8 @@ function AvatarPlaceholder({size}: {size: number}) {
   )
 }
 
-function avatarBorderRadius(size: number, square: boolean) {
-  if (square) {
-    return size > 32 ? 8 : 3
-  }
-  return Math.floor(size / 2)
+function avatarBorderRadius(size: number, preference: ShapePreference) {
+  return getShapeRadius(preference, size > 32 ? 8 : 3, Math.floor(size / 2))
 }
 
 function getLayouts(count: number): Layout[] {

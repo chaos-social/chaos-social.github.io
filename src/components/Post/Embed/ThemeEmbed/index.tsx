@@ -3,6 +3,8 @@ import {type AppBskyEmbedExternal} from '@atproto/api'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
 import {InlineLinkText, Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
@@ -18,6 +20,8 @@ export function ThemeEmbed({
   view: AppBskyEmbedExternal.ViewExternal
   onOpen?: () => void
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const {_} = useLingui()
   const t = useTheme()
   const route = getThemeEmbedRoute(view)
@@ -39,6 +43,7 @@ export function ThemeEmbed({
         a.border,
         a.w_full,
         t.atoms.border_contrast_low,
+        shapePreference === 'sharp' && SHARP_CORNERS,
       ]}>
       <Link
         label={_(msg`Preview theme ${title}`)}

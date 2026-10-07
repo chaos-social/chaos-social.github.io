@@ -1,5 +1,7 @@
 import {type StyleProp, View, type ViewStyle} from 'react-native'
 
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {
   type ChatInvitePreview,
   isKnownJoinLinkPreview,
@@ -53,11 +55,12 @@ export function JoinRequestEmbedBody({
   onOpen?: () => void
 }) {
   const t = useTheme()
+  const shapePreference = useEnableSquareButtons()
   const {status} = ChatInvite.useChatInvite()
 
   const box = [
     a.border,
-    a.rounded_lg,
+    getShapeStyle(shapePreference, a.rounded_lg, a.rounded_lg),
     t.atoms.border_contrast_low,
     {height: JOIN_REQUEST_EMBED_HEIGHT},
   ]

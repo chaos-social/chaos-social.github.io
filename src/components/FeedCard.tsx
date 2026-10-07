@@ -5,8 +5,10 @@ import {RichText as RichTextApi} from '@bsky/sdk/richtext'
 import {Plural, Trans, useLingui} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
+import {getShapeRadius} from '#/lib/shapes'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {logger} from '#/logger'
+import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {precacheFeedFromGeneratorView} from '#/state/queries/feed'
 import {
   useAddSavedFeedsMutation,
@@ -104,6 +106,7 @@ export function Avatar({src, size = 40}: AvatarProps) {
 
 export function AvatarPlaceholder({size = 40}: Omit<AvatarProps, 'src'>) {
   const t = useTheme()
+  const avatarShape = useEnableSquareAvatars()
   return (
     <View
       style={[
@@ -111,7 +114,7 @@ export function AvatarPlaceholder({size = 40}: Omit<AvatarProps, 'src'>) {
         {
           width: size,
           height: size,
-          borderRadius: 8,
+          borderRadius: getShapeRadius(avatarShape, 8, 8),
         },
       ]}
     />

@@ -16,6 +16,7 @@ import {Trans} from '@lingui/react/macro'
 import {useMutation, useQueryClient} from '@tanstack/react-query'
 
 import {HITSLOP_10, urls} from '#/lib/constants'
+import {getShapeStyle} from '#/lib/shapes'
 import {cleanError} from '#/lib/strings/errors'
 import {
   createFullHandle,
@@ -87,7 +88,9 @@ function ChangeHandleDialogInner() {
         size="small"
         color="primary"
         variant="ghost"
-        style={[enableSquareButtons ? a.rounded_sm : a.rounded_full]}>
+        style={[
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
+        ]}>
         <ButtonText style={[a.text_md]}>
           <Trans>Cancel</Trans>
         </ButtonText>
@@ -647,7 +650,7 @@ function SuccessMessage({text}: {text: string}) {
       <View
         style={[
           {height: 20, width: 20},
-          enableSquareButtons ? a.rounded_sm : a.rounded_full,
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
           a.align_center,
           a.justify_center,
           {backgroundColor: t.palette.positive_500},

@@ -4,7 +4,9 @@ import {type AnimatedRef} from 'react-native-reanimated'
 import {Image} from 'expo-image'
 
 import {resolveEmbedImageUris} from '#/lib/media/embed-image-formats'
+import {getShapeRadius} from '#/lib/shapes'
 import {userStyle} from '#/lib/userstyles'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useFullsizeFormat} from '#/state/preferences/fullsize-format'
 import {
   applyImageTransforms,
@@ -37,6 +39,8 @@ export function ImageEmbed({
 }: CommonProps & {
   embed: EmbedType<'images'> | EmbedType<'gallery'>
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const ax = useAnalytics()
   const {openLightbox} = useLightboxControls()
   const fullsizeFormat = useFullsizeFormat()
@@ -111,7 +115,11 @@ export function ImageEmbed({
           thumbRect: null,
           thumbRef: refs[i] ?? null,
           thumbDimensions: fetchedDims[i] ?? null,
-          thumbBorderRadius: tokens.borderRadius.md,
+          thumbBorderRadius: getShapeRadius(
+            shapePreference,
+            tokens.borderRadius.md,
+            tokens.borderRadius.md,
+          ),
           type: 'image',
         })),
         index,
@@ -142,7 +150,11 @@ export function ImageEmbed({
             fullsizeUri={image.fullsize}
             thumbUri={image.thumb}
             aspectRatio={aspect}
-            borderRadius={tokens.borderRadius.md}
+            borderRadius={getShapeRadius(
+              shapePreference,
+              tokens.borderRadius.md,
+              tokens.borderRadius.md,
+            )}
             onPreviewPress={openFromSingle}>
             <AutoSizedImage
               crop={

@@ -11,6 +11,7 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
 import {usePalette} from '#/lib/hooks/usePalette'
+import {getShapeStyle} from '#/lib/shapes'
 import {cleanError} from '#/lib/strings/errors'
 import {s} from '#/lib/styles'
 import {logger} from '#/logger'
@@ -112,7 +113,11 @@ export function MyLists({
               style={[
                 a.align_center,
                 a.justify_center,
-                enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                getShapeStyle(
+                  enableSquareButtons,
+                  a.rounded_sm,
+                  a.rounded_full,
+                ),
                 {
                   width: 64,
                   height: 64,

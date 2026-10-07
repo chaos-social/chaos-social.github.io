@@ -1,6 +1,8 @@
 import {Pressable, View} from 'react-native'
 import {useLingui} from '@lingui/react'
 
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, native, useTheme, web} from '#/alf'
 import * as TextField from '#/components/forms/TextField'
 import {useInteractionState} from '#/components/hooks/useInteractionState'
@@ -28,6 +30,7 @@ export function DateFieldButton({
 }) {
   const {i18n} = useLingui()
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
 
   const {
     state: pressed,
@@ -82,6 +85,7 @@ export function DateFieldButton({
           focused || pressed ? chromeFocus : {},
           isInvalid ? chromeError : {},
           isInvalid && (hovered || focused) ? chromeErrorHover : {},
+          enableSquareButtons === 'sharp' && SHARP_CORNERS,
         ]}>
         <TextField.Icon icon={CalendarDays} />
         <Text

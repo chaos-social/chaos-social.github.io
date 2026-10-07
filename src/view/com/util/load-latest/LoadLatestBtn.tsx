@@ -8,6 +8,7 @@ import {PressableScale} from '#/lib/custom-animations/PressableScale'
 import {useMinimalShellFabTransform} from '#/lib/hooks/useMinimalShellTransform'
 import {useWebMediaQueries} from '#/lib/hooks/useWebMediaQueries'
 import {clamp} from '#/lib/numbers'
+import {getShapeStyle} from '#/lib/shapes'
 import {userStyle} from '#/lib/userstyles'
 import {useDisableTopOfFeedButton} from '#/state/preferences/disable-top-of-feed-button'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
@@ -85,7 +86,7 @@ export function LoadLatestBtn({
             width: 42,
             height: 42,
           },
-          enableSquareButtons ? a.rounded_sm : a.rounded_full,
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
           a.align_center,
           a.justify_center,
           a.border,
@@ -101,7 +102,9 @@ export function LoadLatestBtn({
         onPointerLeave={onHoverOut}>
         <SubtleHover
           hover={hovered}
-          style={[enableSquareButtons ? a.rounded_sm : a.rounded_full]}
+          style={[
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
+          ]}
         />
         <ArrowIcon
           size="md"

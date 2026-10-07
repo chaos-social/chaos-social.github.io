@@ -23,6 +23,7 @@ import {
   type ViewStyle,
 } from 'react-native'
 
+import {getShapeRadius, getShapeStyle, SHARP_CORNERS} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useThemePrefs} from '#/state/shell'
 import {atoms as a, flatten, useTheme} from '#/alf'
@@ -524,29 +525,41 @@ export const Button = forwardRef<React.ComponentRef<typeof View>, ButtonProps>(
 
       if (shape === 'default') {
         if (size === 'large') {
-          baseStyles.push(enableSquareButtons ? a.rounded_sm : a.rounded_full, {
-            paddingVertical: 12,
-            paddingHorizontal: 24,
-            gap: 6,
-          })
+          baseStyles.push(
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
+            {
+              paddingVertical: 12,
+              paddingHorizontal: 24,
+              gap: 6,
+            },
+          )
         } else if (size === 'medium') {
-          baseStyles.push(enableSquareButtons ? a.rounded_sm : a.rounded_full, {
-            paddingVertical: 9,
-            paddingHorizontal: 28,
-            gap: 5,
-          })
+          baseStyles.push(
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
+            {
+              paddingVertical: 9,
+              paddingHorizontal: 28,
+              gap: 5,
+            },
+          )
         } else if (size === 'small') {
-          baseStyles.push(enableSquareButtons ? a.rounded_sm : a.rounded_full, {
-            paddingVertical: 8,
-            paddingHorizontal: 14,
-            gap: 5,
-          })
+          baseStyles.push(
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
+            {
+              paddingVertical: 8,
+              paddingHorizontal: 14,
+              gap: 5,
+            },
+          )
         } else if (size === 'tiny') {
-          baseStyles.push(enableSquareButtons ? a.rounded_sm : a.rounded_full, {
-            paddingVertical: 5,
-            paddingHorizontal: 10,
-            gap: 3,
-          })
+          baseStyles.push(
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
+            {
+              paddingVertical: 5,
+              paddingHorizontal: 10,
+              gap: 3,
+            },
+          )
         }
       } else if (shape === 'rectangular') {
         if (size === 'large') {
@@ -610,7 +623,9 @@ export const Button = forwardRef<React.ComponentRef<typeof View>, ButtonProps>(
         }
 
         if (shape === 'round') {
-          baseStyles.push(enableSquareButtons ? a.rounded_sm : a.rounded_full)
+          baseStyles.push(
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
+          )
         } else if (shape === 'square') {
           if (size === 'tiny') {
             baseStyles.push({
@@ -672,6 +687,7 @@ export const Button = forwardRef<React.ComponentRef<typeof View>, ButtonProps>(
           ...(state.hovered || state.pressed
             ? [hoverStyles, hoverStyleProp]
             : []),
+          enableSquareButtons === 'sharp' && SHARP_CORNERS,
         ]}
         onPressIn={onPressIn}
         onPressOut={onPressOut}
@@ -1031,7 +1047,7 @@ export function StackedButton({children, ...props}: StackedButtonProps) {
         {
           height: 72,
           paddingHorizontal: 16,
-          borderRadius: enableSquareButtons ? 4 : 20,
+          borderRadius: getShapeRadius(enableSquareButtons, 4, 20),
           gap: 4,
         },
         props.style,

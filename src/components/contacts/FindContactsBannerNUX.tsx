@@ -7,6 +7,7 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
 import {HITSLOP_10} from '#/lib/constants'
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {Nux, useNux, useSaveNux} from '#/state/queries/nuxs'
 import {atoms as a, useTheme} from '#/alf'
@@ -38,7 +39,7 @@ export function FindContactsBannerNUX() {
           }}
           style={[
             a.w_full,
-            enableSquareButtons ? a.rounded_sm : a.rounded_xl,
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_xl),
             a.curve_continuous,
             a.overflow_hidden,
           ]}>

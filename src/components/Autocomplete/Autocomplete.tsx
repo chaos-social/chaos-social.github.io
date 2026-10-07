@@ -1,6 +1,8 @@
 import {useCallback} from 'react'
 import {Sift, type UseSiftReturn} from '@bsky.app/sift'
 
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
 import {type AutocompleteItem} from '#/components/Autocomplete/types'
 import {useOnKeyboard} from '#/components/hooks/useOnKeyboard'
@@ -49,6 +51,7 @@ export function Autocomplete({
   fullWidth?: boolean
 }) {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
 
   const updatePosition = useCallback(() => {
     void sift.updatePosition()
@@ -67,10 +70,15 @@ export function Autocomplete({
         data={data}
         onSelect={onSelect}
         onDismiss={onDismiss}
-        outerStyle={[a.rounded_md, a.w_full, t.atoms.shadow_lg, maxWidth]}
+        outerStyle={[
+          getShapeStyle(enableSquareButtons, a.rounded_md, a.rounded_md),
+          a.w_full,
+          t.atoms.shadow_lg,
+          maxWidth,
+        ]}
         innerStyle={[
           a.overflow_hidden,
-          a.rounded_md,
+          getShapeStyle(enableSquareButtons, a.rounded_md, a.rounded_md),
           a.border,
           t.atoms.border_contrast_low,
           t.atoms.bg,

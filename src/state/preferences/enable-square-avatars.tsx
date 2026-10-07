@@ -9,10 +9,9 @@ import {
 
 import * as persisted from '#/state/persisted'
 
-// Preference: enableSquareAvatars – when true, disables notifications sent when liking/reposting a post someone else reposted
+/** Shape preference: false is circular, true is rounded, and sharp has no rounding. */
 
 type StateContext = persisted.Schema['enableSquareAvatars']
-// Same setter signature used across other preference modules
 type SetContext = (v: persisted.Schema['enableSquareAvatars']) => void
 
 const stateContext = createContext<StateContext>(

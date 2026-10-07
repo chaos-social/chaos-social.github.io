@@ -53,6 +53,7 @@ import flattenReactChildren from 'react-keyed-flatten-children'
 import {HITSLOP_10} from '#/lib/constants'
 import {useHaptics} from '#/lib/haptics'
 import {useNonReactiveCallback} from '#/lib/hooks/useNonReactiveCallback'
+import {getShapeStyle} from '#/lib/shapes'
 import {logger} from '#/logger'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, flatten, platform, tokens, useTheme} from '#/alf'
@@ -924,7 +925,7 @@ export function ItemRadio({selected}: {selected: boolean}) {
       style={[
         a.justify_center,
         a.align_center,
-        enableSquareButtons ? a.rounded_sm : a.rounded_full,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
         t.atoms.border_contrast_high,
         {
           borderWidth: 1,
@@ -936,7 +937,7 @@ export function ItemRadio({selected}: {selected: boolean}) {
         <View
           style={[
             a.absolute,
-            enableSquareButtons ? a.rounded_sm : a.rounded_full,
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
             {height: 14, width: 14},
             selected ? {backgroundColor: t.palette.primary_500} : {},
           ]}

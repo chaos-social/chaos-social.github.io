@@ -13,6 +13,7 @@ import {
   ScaleAndFadeOut,
 } from '#/lib/custom-animations/ScaleAndFade'
 import {useHaptics} from '#/lib/haptics'
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
 import {ArrowBottom_Stroke2_Corner0_Rounded as ArrowDownIcon} from '#/components/icons/Arrow'
@@ -69,7 +70,7 @@ export function NewMessagesPill({
         style={[
           a.align_center,
           a.justify_center,
-          enableSquareButtons ? a.rounded_sm : a.rounded_full,
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
           a.shadow_sm,
           a.border,
           t.atoms.bg,

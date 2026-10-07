@@ -5,6 +5,7 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
@@ -149,7 +150,11 @@ export function AvatarStack({
   const [size, setSize] = useState<number | null>(null)
 
   const enableSquareAvatars = useEnableSquareAvatars()
-  const avatarRounding = enableSquareAvatars ? a.rounded_sm : a.rounded_full
+  const avatarRounding = getShapeStyle(
+    enableSquareAvatars,
+    a.rounded_sm,
+    a.rounded_full,
+  )
 
   const isPending = (numPending && profiles.length === 0) || !moderationOpts
 

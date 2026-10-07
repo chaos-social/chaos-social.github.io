@@ -3,6 +3,8 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useLargeAltBadgeEnabled} from '#/state/preferences/large-alt-badge'
 import {atoms as a, useTheme} from '#/alf'
 import {AltBadgeWithDialog} from '#/components/AltBadgeWithDialog'
@@ -22,6 +24,8 @@ export function GifPresentationControls({
   isLoading?: boolean
   altText?: string
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const {_} = useLingui()
   const t = useTheme()
   const largeBadge = useLargeAltBadgeEnabled()
@@ -89,6 +93,7 @@ export function GifPresentationControls({
             {
               opacity: 0.8,
             },
+            shapePreference === 'sharp' && SHARP_CORNERS,
           ]}>
           <Text style={[a.font_bold, largeBadge ? a.text_xs : {fontSize: 8}]}>
             <Trans>GIF</Trans>

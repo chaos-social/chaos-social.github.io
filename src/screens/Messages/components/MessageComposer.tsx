@@ -22,6 +22,7 @@ import {countGraphemes} from 'unicode-segmenter/grapheme'
 import {HITSLOP_10, MAX_DM_GRAPHEME_LENGTH} from '#/lib/constants'
 import {useHaptics} from '#/lib/haptics'
 import {useNonReactiveCallback} from '#/lib/hooks/useNonReactiveCallback'
+import {getShapeStyle} from '#/lib/shapes'
 import {
   applyFacetSyntax,
   parseMarkdownLinks,
@@ -213,7 +214,7 @@ export function MessageComposer({
             glassEffectStyle="regular"
             style={[
               a.flex_1,
-              enableSquareButtons ? a.rounded_sm : a.rounded_xl,
+              getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_xl),
               {minHeight: MIN_HEIGHT},
             ]}
             tintColor={t.palette.contrast_50}
@@ -334,7 +335,7 @@ function SubmitButton({
     <GlassView
       isInteractive
       glassEffectStyle="regular"
-      style={[enableSquareButtons ? a.rounded_sm : a.rounded_full]}
+      style={[getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full)]}
       tintColor={disabled ? t.palette.contrast_100 : t.palette.primary_500}
       fallbackStyle={{
         backgroundColor: disabled
@@ -347,7 +348,7 @@ function SubmitButton({
         accessibilityHint=""
         hitSlop={HITSLOP_10}
         style={[
-          enableSquareButtons ? a.rounded_sm : a.rounded_full,
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
           a.align_center,
           a.justify_center,
           {height: MIN_HEIGHT, width: MIN_HEIGHT},

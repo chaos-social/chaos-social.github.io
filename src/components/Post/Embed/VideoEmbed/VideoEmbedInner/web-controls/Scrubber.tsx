@@ -5,6 +5,7 @@ import {useLingui} from '@lingui/react'
 
 import {formatTime} from '#/lib/media/video/formatTime'
 import {clamp} from '#/lib/numbers'
+import {getShapeStyle, SHARP_CORNERS} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme, web} from '#/alf'
 import {useInteractionState} from '#/components/hooks/useInteractionState'
@@ -176,11 +177,12 @@ export function Scrubber({
         <View
           style={[
             a.w_full,
-            enableSquareButtons ? a.rounded_sm : a.rounded_full,
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
             a.overflow_hidden,
             {backgroundColor: 'rgba(255, 255, 255, 0.4)'},
             {height: hovered || scrubberActive ? 6 : 3},
             web({transition: 'height 0.1s ease'}),
+            enableSquareButtons === 'sharp' && SHARP_CORNERS,
           ]}>
           {duration > 0 && (
             <View
@@ -212,14 +214,14 @@ export function Scrubber({
             height: 16,
             width: 16,
             left: `calc(${progressPercent}% - 8px)`,
-            borderRadius: 8,
+            borderRadius: enableSquareButtons === 'sharp' ? 0 : 8,
             pointerEvents: 'none',
           }}>
           <View
             style={[
               a.w_full,
               a.h_full,
-              enableSquareButtons ? a.rounded_sm : a.rounded_full,
+              getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
               {backgroundColor: t.palette.white},
               {
                 transform: [
@@ -233,6 +235,7 @@ export function Scrubber({
                   },
                 ],
               },
+              enableSquareButtons === 'sharp' && SHARP_CORNERS,
             ]}
           />
         </div>

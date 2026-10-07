@@ -7,7 +7,9 @@ import {Trans} from '@lingui/react/macro'
 import {useGetTimeAgo} from '#/lib/hooks/useTimeAgo'
 import {useLabelInfo} from '#/lib/moderation/useLabelInfo'
 import {makeProfileLink} from '#/lib/routes/links'
+import {SHARP_CORNERS} from '#/lib/shapes'
 import {sanitizeHandle} from '#/lib/strings/handles'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useSession} from '#/state/session'
 import {atoms as a, useTheme} from '#/alf'
 import {Admonition} from '#/components/Admonition'
@@ -128,6 +130,8 @@ function Label({
   control: Dialog.DialogOuterProps['control']
   onPressAppeal: (label: com.atproto.label.defs.Label) => void
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   const {_} = useLingui()
   const {labeler, strings} = useLabelInfo(label)
@@ -142,6 +146,7 @@ function Label({
         t.atoms.border_contrast_low,
         a.rounded_sm,
         a.overflow_hidden,
+        shapePreference === 'sharp' && SHARP_CORNERS,
       ]}>
       <View style={[a.p_md, a.gap_sm, a.flex_row]}>
         <View style={[a.flex_1, a.gap_xs]}>

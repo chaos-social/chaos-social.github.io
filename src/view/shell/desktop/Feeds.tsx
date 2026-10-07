@@ -4,8 +4,11 @@ import {useNavigation, useNavigationState} from '@react-navigation/native'
 
 import {getCurrentRoute} from '#/lib/routes/helpers'
 import {type NavigationProp} from '#/lib/routes/types'
+import {getShapeStyle} from '#/lib/shapes'
 import {getLocalizedFeedName} from '#/lib/strings/feed-names'
 import {emitSoftReset} from '#/state/events'
+import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {
   type SavedFeedSourceInfo,
   usePinnedFeedsInfos,
@@ -23,6 +26,7 @@ import {accentForeground} from '#/features/themes/accentForeground'
 
 export function DesktopFeeds() {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
   const {t: l} = useLingui()
   const ax = useAnalytics()
   const {data: pinnedFeedInfos, isLoading} = usePinnedFeedsInfos()
@@ -45,7 +49,7 @@ export function DesktopFeeds() {
             <View
               key={i}
               style={[
-                a.rounded_sm,
+                getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_sm),
                 t.atoms.bg_contrast_25,
                 {
                   height: 16,
@@ -113,7 +117,7 @@ export function DesktopFeeds() {
           a.align_center,
           a.gap_sm,
           a.self_start,
-          a.rounded_sm,
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_sm),
           {paddingVertical: 6, paddingHorizontal: 8},
           route.name === 'Feeds' && {backgroundColor: t.palette.primary_50},
         ]}>
@@ -125,7 +129,11 @@ export function DesktopFeeds() {
                 style={[
                   a.align_center,
                   a.justify_center,
-                  a.rounded_xs,
+                  getShapeStyle(
+                    enableSquareButtons,
+                    a.rounded_xs,
+                    a.rounded_xs,
+                  ),
                   isActive
                     ? {backgroundColor: t.palette.primary_100}
                     : t.atoms.bg_contrast_50,
@@ -176,6 +184,7 @@ function FeedItem({
   onPress: () => void
 }) {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
   const {t: l, i18n} = useLingui()
   const {
     state: hovered,
@@ -183,6 +192,7 @@ function FeedItem({
     onOut: onHoverOut,
   } = useInteractionState()
   const isFollowing = feedInfo.feedDescriptor === 'following'
+  const avatarShape = useEnableSquareAvatars()
   const displayName = getLocalizedFeedName(feedInfo, i18n)
 
   return (
@@ -198,7 +208,7 @@ function FeedItem({
         a.align_center,
         a.gap_sm,
         a.self_start,
-        a.rounded_sm,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_sm),
         {paddingVertical: 6, paddingHorizontal: 8},
         current && {backgroundColor: t.palette.primary_50},
       ]}>
@@ -207,7 +217,7 @@ function FeedItem({
           style={[
             a.align_center,
             a.justify_center,
-            a.rounded_xs,
+            getShapeStyle(avatarShape, a.rounded_xs, a.rounded_xs),
             {
               width: 20,
               height: 20,

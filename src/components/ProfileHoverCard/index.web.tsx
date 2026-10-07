@@ -28,6 +28,7 @@ import {
 import {getModerationCauseKey} from '#/lib/moderation'
 import {makeProfileLink} from '#/lib/routes/links'
 import {type NavigationProp} from '#/lib/routes/types'
+import {getShapeStyle} from '#/lib/shapes'
 import {getAuthorPrimaryName} from '#/lib/strings/display-names'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
 import {useConfirmFollow} from '#/state/preferences/confirm-follow'
@@ -431,6 +432,7 @@ let Card = ({
   const t = useTheme()
 
   const profile = useProfileQuery({did})
+  const cornerShape = useEnableSquareButtons()
   const moderationOpts = useModerationOpts()
 
   const data = profile.data
@@ -450,7 +452,7 @@ let Card = ({
       style={[
         !status.isActive && a.p_lg,
         a.border,
-        a.rounded_md,
+        getShapeStyle(cornerShape, a.rounded_md, a.rounded_md),
         a.overflow_hidden,
         t.atoms.bg,
         t.atoms.border_contrast_low,
@@ -609,7 +611,11 @@ function Inner({
               size="small"
               color="secondary"
               variant="solid"
-              style={enableSquareButtons ? [a.rounded_sm] : [a.rounded_full]}>
+              style={getShapeStyle(
+                enableSquareButtons,
+                a.rounded_sm,
+                a.rounded_full,
+              )}>
               <ButtonText>{_(msg`View profile`)}</ButtonText>
             </Link>
           ) : (
@@ -626,7 +632,11 @@ function Inner({
                     ? _(msg`Follow back`)
                     : _(msg`Follow`)
               }
-              style={enableSquareButtons ? [a.rounded_sm] : [a.rounded_full]}
+              style={getShapeStyle(
+                enableSquareButtons,
+                a.rounded_sm,
+                a.rounded_full,
+              )}
               onPress={
                 profileShadow.viewer?.following ? handleUnfollow : handleFollow
               }>

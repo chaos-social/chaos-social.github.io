@@ -2,7 +2,9 @@ import {useCallback, useEffect, useRef} from 'react'
 import {type ScrollView, StyleSheet, View} from 'react-native'
 import {type SharedValue} from 'react-native-reanimated'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {userStyle} from '#/lib/userstyles'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useBreakpoints, useTheme, web} from '#/alf'
 import {Text} from '#/components/Typography'
 import {PressableWithHover} from '../util/PressableWithHover'
@@ -41,6 +43,7 @@ export function TabBar({
   onPressSelected,
 }: TabBarProps) {
   const t = useTheme()
+  const cornerShape = useEnableSquareButtons()
   const scrollElRef = useRef<React.ComponentRef<typeof ScrollView>>(null)
   const itemRefs = useRef<Array<Element>>([])
   const {gtMobile} = useBreakpoints()
@@ -125,7 +128,7 @@ export function TabBar({
               }}
               style={[
                 styles.item,
-                a.rounded_sm,
+                getShapeStyle(cornerShape, a.rounded_sm, a.rounded_sm),
                 align === 'left' && leftAlignedStyles.item,
               ]}
               hoverStyle={t.atoms.bg_contrast_25}

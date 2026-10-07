@@ -4,6 +4,7 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 import {useNavigation} from '@react-navigation/native'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {logger} from '#/logger'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
@@ -218,7 +219,7 @@ function PostThreadFollowBtnLoaded({
       onPress={onPress}
       size="small"
       color={isFollowing ? 'secondary' : 'secondary_inverted'}
-      style={enableSquareButtons ? [a.rounded_sm] : [a.rounded_full]}>
+      style={getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full)}>
       {gtMobile && (
         <ButtonIcon
           icon={

@@ -17,6 +17,7 @@ import {
 import {Trans, useLingui} from '@lingui/react/macro'
 import flattenReactChildren from 'react-keyed-flatten-children'
 
+import {getShapeStyle, SHARP_CORNERS} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, tokens, useTheme} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
@@ -178,6 +179,7 @@ export function Outer({
 
 function NativeSubmenuContent() {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
   const {t: l} = useLingui()
   const context = useMenuContext()
   const activeId = context.nativeSubmenu?.activeId
@@ -194,7 +196,7 @@ function NativeSubmenuContent() {
       <LabelText>{submenu.label}</LabelText>
       <View
         style={[
-          a.rounded_lg,
+          getShapeStyle(enableSquareButtons, a.rounded_lg, a.rounded_lg),
           a.curve_continuous,
           a.overflow_hidden,
           a.border,
@@ -233,6 +235,7 @@ export function Item({
   ...rest
 }: ItemProps) {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
   const context = useMenuContext()
   const {state: focused, onIn: onFocus, onOut: onBlur} = useInteractionState()
   const {
@@ -278,13 +281,14 @@ export function Item({
         a.align_center,
         a.gap_sm,
         a.px_md,
-        a.rounded_md,
+        getShapeStyle(enableSquareButtons, a.rounded_md, a.rounded_md),
         a.overflow_hidden,
         a.border,
         t.atoms.bg_contrast_25,
         t.atoms.border_contrast_low,
         {minHeight: 44, paddingVertical: 10},
         style,
+        enableSquareButtons === 'sharp' && SHARP_CORNERS,
         (focused || pressed) && !rest.disabled && [t.atoms.bg_contrast_50],
       ]}>
       <ItemContext.Provider
@@ -302,6 +306,7 @@ export function Item({
  */
 export function Submenu({children, label, trigger, style}: SubmenuProps) {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
   const context = useMenuContext()
   const id = useId()
   context.nativeSubmenu?.registry.set(id, {label, children})
@@ -328,13 +333,14 @@ export function Submenu({children, label, trigger, style}: SubmenuProps) {
           a.align_center,
           a.gap_sm,
           a.px_md,
-          a.rounded_md,
+          getShapeStyle(enableSquareButtons, a.rounded_md, a.rounded_md),
           a.overflow_hidden,
           a.border,
           t.atoms.bg_contrast_25,
           t.atoms.border_contrast_low,
           {minHeight: 44, paddingVertical: 10},
           style,
+          enableSquareButtons === 'sharp' && SHARP_CORNERS,
           (focused || pressed) && t.atoms.bg_contrast_50,
         ]}>
         <ItemContext.Provider value={{disabled: false, destructive: false}}>
@@ -398,7 +404,7 @@ export function ItemRadio({selected}: {selected: boolean}) {
       style={[
         a.justify_center,
         a.align_center,
-        enableSquareButtons ? a.rounded_sm : a.rounded_full,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
         t.atoms.border_contrast_high,
         {
           borderWidth: 1,
@@ -410,9 +416,11 @@ export function ItemRadio({selected}: {selected: boolean}) {
         <View
           style={[
             a.absolute,
-            enableSquareButtons
-              ? {borderRadius: tokens.borderRadius.sm - 3}
-              : a.rounded_full,
+            getShapeStyle(
+              enableSquareButtons,
+              {borderRadius: tokens.borderRadius.sm - 3},
+              a.rounded_full,
+            ),
             {height: 14, width: 14},
             selected
               ? {
@@ -439,6 +447,7 @@ export function ContainerItem({
   style?: StyleProp<ViewStyle>
 }) {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
   return (
     <View
       style={[
@@ -446,13 +455,14 @@ export function ContainerItem({
         a.align_center,
         a.gap_sm,
         a.px_md,
-        a.rounded_lg,
+        getShapeStyle(enableSquareButtons, a.rounded_lg, a.rounded_lg),
         a.curve_continuous,
         a.border,
         t.atoms.bg_contrast_25,
         t.atoms.border_contrast_low,
         {paddingVertical: 10},
         style,
+        enableSquareButtons === 'sharp' && SHARP_CORNERS,
       ]}>
       {children}
     </View>
@@ -482,15 +492,17 @@ export function LabelText({
 
 export function Group({children, style}: GroupProps) {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
   return (
     <View
       style={[
-        a.rounded_lg,
+        getShapeStyle(enableSquareButtons, a.rounded_lg, a.rounded_lg),
         a.curve_continuous,
         a.overflow_hidden,
         a.border,
         t.atoms.border_contrast_low,
         style,
+        enableSquareButtons === 'sharp' && SHARP_CORNERS,
       ]}>
       {flattenReactChildren(children).map((child, i) => {
         return isValidElement(child) &&

@@ -2,7 +2,9 @@ import {createContext, forwardRef, Fragment, useContext, useMemo} from 'react'
 import {View} from 'react-native'
 import {Select as RadixSelect} from 'radix-ui'
 
+import {SHARP_CORNERS} from '#/lib/shapes'
 import {useA11y} from '#/state/a11y'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, flatten, flattenToCSS, useTheme, web} from '#/alf'
 import {useInteractionState} from '#/components/hooks/useInteractionState'
 import {Check_Stroke2_Corner0_Rounded as CheckIcon} from '#/components/icons/Check'
@@ -53,6 +55,8 @@ const RadixTriggerPassThrough = forwardRef(
 RadixTriggerPassThrough.displayName = 'RadixTriggerPassThrough'
 
 export function Trigger({children, label}: TriggerProps) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   const {
     state: hovered,
@@ -114,6 +118,7 @@ export function Trigger({children, label}: TriggerProps) {
               ? t.palette.primary_500
               : t.palette.contrast_50,
           },
+          shapePreference === 'sharp' && SHARP_CORNERS,
         ])}>
         {children}
       </RadixSelect.Trigger>
@@ -154,6 +159,8 @@ export function Content<T>({
   renderItem,
   valueExtractor = defaultItemValueExtractor,
 }: ContentProps<T>) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   const selectedValue = useContext(SelectedValueContext)
   const {reduceMotionEnabled} = useA11y()
@@ -196,7 +203,12 @@ export function Content<T>({
   return (
     <RadixSelect.Portal>
       <RadixSelect.Content
-        style={flattenToCSS([t.atoms.bg, a.rounded_sm, a.overflow_hidden])}
+        style={flattenToCSS([
+          t.atoms.bg,
+          a.rounded_sm,
+          a.overflow_hidden,
+          shapePreference === 'sharp' && SHARP_CORNERS,
+        ])}
         position="popper"
         align="center"
         sideOffset={5}
@@ -211,6 +223,7 @@ export function Content<T>({
             a.rounded_sm,
             a.overflow_hidden,
             !reduceMotionEnabled && a.zoom_fade_in,
+            shapePreference === 'sharp' && SHARP_CORNERS,
           ]}>
           <RadixSelect.ScrollUpButton style={flattenToCSS(up)}>
             <ChevronUpIcon style={[t.atoms.text]} size="xs" />
@@ -253,6 +266,8 @@ export function useItemContext() {
 }
 
 export function Item({ref, value, style, children}: ItemProps) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   const {
     state: hovered,
@@ -288,6 +303,7 @@ export function Item({ref, value, style, children}: ItemProps) {
         selected && [a.font_semi_bold],
         a.transition_color,
         style,
+        shapePreference === 'sharp' && SHARP_CORNERS,
       ])}>
       <ItemContext.Provider value={ctx}>{children}</ItemContext.Provider>
     </RadixSelect.Item>

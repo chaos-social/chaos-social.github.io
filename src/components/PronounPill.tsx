@@ -1,6 +1,7 @@
 import {type StyleProp, View, type ViewStyle} from 'react-native'
 import {Trans} from '@lingui/react/macro'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {sanitizePronouns} from '#/lib/strings/pronouns'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
@@ -23,7 +24,7 @@ export function PronounPill({
     <View
       style={[
         t.atoms.bg_contrast_50,
-        square ? a.rounded_xs : a.rounded_full,
+        getShapeStyle(square, a.rounded_xs, a.rounded_full),
         a.px_xs,
         a.py_2xs,
         a.flex_shrink,

@@ -11,6 +11,7 @@ import {moderateProfile, type ModerationOpts} from '@bsky/sdk/moderation'
 import {Plural, Trans, useLingui} from '@lingui/react/macro'
 
 import {createSanitizedDisplayName} from '#/lib/moderation/create-sanitized-display-name'
+import {getShapeStyle} from '#/lib/shapes'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
@@ -594,7 +595,7 @@ function ProfileCardSkeleton() {
       ]}>
       <View
         style={[
-          enableSquareButtons ? a.rounded_sm : a.rounded_full,
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
           {width: 42, height: 42},
           t.atoms.bg_contrast_25,
         ]}

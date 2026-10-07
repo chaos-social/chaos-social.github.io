@@ -5,9 +5,12 @@ import {plural} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react/macro'
 
 import {useHaptics} from '#/lib/haptics'
+import {getShapeStyle, SHARP_CORNERS} from '#/lib/shapes'
 import {shareUrl} from '#/lib/sharing'
 import {niceDate} from '#/lib/strings/time'
 import {toNiceDomain} from '#/lib/strings/url-helpers'
+import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useBreakpoints, useTheme, utils, web} from '#/alf'
 import {ButtonIcon, ButtonText} from '#/components/Button'
@@ -44,6 +47,8 @@ export const StandardSiteEmbed = ({
     style?: StyleProp<ViewStyle>
     viewContext?: PostEmbedViewContext
   }) => {
+  const shapePreference = useEnableSquareButtons()
+
   const ax = useAnalytics()
   const {t: l, i18n} = useLingui()
   const t = useTheme()
@@ -138,6 +143,7 @@ export const StandardSiteEmbed = ({
         interacted ? t.atoms.border_contrast_high : t.atoms.border_contrast_low,
         preview && a.pointer_events_none,
         style,
+        shapePreference === 'sharp' && SHARP_CORNERS,
       ]}>
       {/*
        * The article is an in-flow `Link` wrapping the content so the iOS peek
@@ -153,7 +159,7 @@ export const StandardSiteEmbed = ({
         label={view.title || l`Open link to ${niceUrl}`}
         onPress={onPress}
         onLongPress={onLongPress}
-        style={[a.rounded_lg]}
+        style={[a.rounded_lg, shapePreference === 'sharp' && SHARP_CORNERS]}
         {...web({
           onMouseEnter: onInteract,
           onMouseLeave: onInteractOut,
@@ -178,6 +184,7 @@ export const StandardSiteEmbed = ({
                 borderBottomRightRadius: a.rounded_lg.borderRadius,
               },
               interacted ? t.atoms.bg_contrast_25 : pressed && t.atoms.bg,
+              shapePreference === 'sharp' && SHARP_CORNERS,
             ]}>
             {imageUri ? (
               <Image
@@ -318,6 +325,8 @@ export function PublicationCard({
     style?: StyleProp<ViewStyle>
     isAndroidCarousel?: boolean
   }) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   const {t: l} = useLingui()
   const {gtPhone} = useBreakpoints()
@@ -341,6 +350,7 @@ export function PublicationCard({
           ? [t.atoms.bg_contrast_25, t.atoms.border_contrast_high]
           : [t.atoms.bg, t.atoms.border_contrast_low],
         style,
+        shapePreference === 'sharp' && SHARP_CORNERS,
       ]}>
       <Link
         shouldProxy
@@ -567,6 +577,9 @@ function PublicationIcon({
   interacted?: boolean
   themeColors: ssTypes.ThemeColors
 }) {
+  const shapePreference = useEnableSquareButtons()
+  const avatarShape = useEnableSquareAvatars()
+
   const t = useTheme()
   if (!view.source) return null
   const icon = view.source?.icon ? (
@@ -578,7 +591,14 @@ function PublicationIcon({
         avatar={view.source.icon}
         extraAviStyle={PUBLICATION_AVATAR_STYLE}
       />
-      <MediaInsetBorder opaque style={[a.rounded_sm]} />
+      <MediaInsetBorder
+        opaque
+        style={getShapeStyle(
+          avatarShape,
+          PUBLICATION_AVATAR_STYLE,
+          PUBLICATION_AVATAR_STYLE,
+        )}
+      />
     </View>
   ) : (
     <View
@@ -591,13 +611,25 @@ function PublicationIcon({
           height: size,
           backgroundColor: themeColors.accent,
         },
+        getShapeStyle(
+          avatarShape,
+          PUBLICATION_AVATAR_STYLE,
+          PUBLICATION_AVATAR_STYLE,
+        ),
       ]}>
       <Text
         emoji
         style={[a.text_xl, a.font_bold, {color: themeColors.accentForeground}]}>
         {[...view.source.title][0] ?? ''}
       </Text>
-      <MediaInsetBorder opaque style={[a.rounded_sm]} />
+      <MediaInsetBorder
+        opaque
+        style={getShapeStyle(
+          avatarShape,
+          PUBLICATION_AVATAR_STYLE,
+          PUBLICATION_AVATAR_STYLE,
+        )}
+      />
     </View>
   )
   return (
@@ -616,6 +648,7 @@ function PublicationIcon({
             top: -6,
             left: -6,
           },
+          shapePreference === 'sharp' && SHARP_CORNERS,
         ]}>
         <StandardSite size="xs" fill={t.atoms.text_contrast_medium.color} />
         <MediaInsetBorder />
@@ -643,6 +676,8 @@ export function PublicationFooter({
     interactedOuter?: boolean
     isAndroidCarousel?: boolean
   }) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   const {t: l} = useLingui()
   const {gtPhone} = useBreakpoints()
@@ -673,6 +708,7 @@ export function PublicationFooter({
         gtPhone && [a.flex_row, a.gap_sm],
         interactedOuter && t.atoms.bg_contrast_25,
         preview && a.pointer_events_none,
+        shapePreference === 'sharp' && SHARP_CORNERS,
       ]}>
       <Link
         shouldProxy

@@ -1,6 +1,8 @@
 import {createContext, useContext} from 'react'
 import {View, type ViewStyle} from 'react-native'
 
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, tokens, useTheme} from '#/alf'
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import {Text} from '#/components/Typography'
@@ -20,6 +22,7 @@ export function Panel({
   adjacent?: 'leading' | 'trailing' | 'both'
 }) {
   const t = useTheme()
+  const shapePreference = useEnableSquareButtons()
 
   const leading = adjacent === 'leading' || adjacent === 'both'
   const trailing = adjacent === 'trailing' || adjacent === 'both'
@@ -49,6 +52,7 @@ export function Panel({
         a.py_md,
         {minHeight: tokens.space._2xl + tokens.space.md * 2},
         rounding,
+        shapePreference === 'sharp' && SHARP_CORNERS,
         active
           ? {backgroundColor: t.palette.primary_50}
           : t.atoms.bg_contrast_50,

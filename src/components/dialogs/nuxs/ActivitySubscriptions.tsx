@@ -5,6 +5,7 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme, web} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
@@ -59,7 +60,7 @@ export function ActivitySubscriptionsNUX() {
               a.pl_sm,
               a.pr_md,
               a.py_sm,
-              enableSquareButtons ? a.rounded_sm : a.rounded_full,
+              getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
               a.flex_row,
               a.align_center,
               a.gap_xs,

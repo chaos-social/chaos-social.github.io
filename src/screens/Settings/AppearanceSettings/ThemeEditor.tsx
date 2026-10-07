@@ -4,6 +4,8 @@ import {Trans, useLingui} from '@lingui/react/macro'
 import {type NativeStackScreenProps} from '@react-navigation/native-stack'
 
 import {type CommonNavigatorParams} from '#/lib/routes/types'
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useAgent, useSession} from '#/state/session'
 import {useThemePrefs} from '#/state/shell'
 import {PairedThemePicker} from '#/screens/Settings/AppearanceSettings/PairedThemePicker'
@@ -101,6 +103,8 @@ function editableRecord(source: ThemeRecord): ThemeRecord {
 }
 
 export function ThemeEditorScreen({route, navigation}: Props) {
+  const shapePreference = useEnableSquareButtons()
+
   const {t: l} = useLingui()
   const agent = useAgent()
   const t = useTheme()
@@ -410,6 +414,7 @@ export function ThemeEditorScreen({route, navigation}: Props) {
                     index === selectedIndex
                       ? {backgroundColor: t.palette.primary_100}
                       : t.atoms.bg_contrast_50,
+                    shapePreference === 'sharp' && SHARP_CORNERS,
                   ]}>
                   <Text
                     style={[
@@ -466,6 +471,7 @@ export function ThemeEditorScreen({route, navigation}: Props) {
                             backgroundColor: selected.colors[role.key],
                             borderColor: t.palette.contrast_200,
                           },
+                          shapePreference === 'sharp' && SHARP_CORNERS,
                         ]}
                       />
                     </View>

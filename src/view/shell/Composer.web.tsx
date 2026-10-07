@@ -3,7 +3,9 @@ import {StyleSheet, View} from 'react-native'
 import {DismissableLayer, FocusGuards, FocusScope} from 'radix-ui/internal'
 import {RemoveScrollBar} from 'react-remove-scroll-bar'
 
+import {SHARP_CORNERS} from '#/lib/shapes'
 import {useA11y} from '#/state/a11y'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {type ComposerOpts, useComposerState} from '#/state/shell/composer'
 import {ComposePost, useComposerCancelRef} from '#/view/com/composer/Composer'
 import {atoms as a, flatten, useBreakpoints, useTheme} from '#/alf'
@@ -29,6 +31,7 @@ export function Composer() {
 function Inner({state}: {state: ComposerOpts}) {
   const ref = useComposerCancelRef()
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
   const {gtMobile} = useBreakpoints()
   const {reduceMotionEnabled} = useA11y()
 
@@ -71,6 +74,7 @@ function Inner({state}: {state: ComposerOpts}) {
               {animationDelay: 0.1},
               {animationFillMode: 'backwards'},
             ],
+            enableSquareButtons === 'sharp' && SHARP_CORNERS,
           ]}>
           <ComposePost
             recoveredState={state.recoveredState}

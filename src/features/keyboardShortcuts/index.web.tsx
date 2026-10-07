@@ -437,6 +437,27 @@ export function KeyboardShortcuts() {
         pointer-events: none;
         z-index: 100;
       }
+      [data-keyboard-navigation-card]:has([data-keyboard-navigation-selected="true"]) {
+        position: relative;
+      }
+      [data-keyboard-navigation-card]:has([data-keyboard-navigation-selected="true"])::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: ${a.rounded_md.borderRadius - 1}px;
+        box-shadow: inset 0 0 0 2px ${t.palette.primary_500};
+        pointer-events: none;
+        z-index: 100;
+      }
+      [data-keyboard-navigation-card-sharp="true"]:has([data-keyboard-navigation-selected="true"])::after {
+        border-radius: 0;
+      }
+      [data-keyboard-navigation-card] [data-keyboard-navigation-selected="true"] {
+        outline: none !important;
+      }
+      [data-keyboard-navigation-card] [data-keyboard-navigation-selected="true"]::after {
+        display: none;
+      }
     `
     document.head.appendChild(style)
     return () => style.remove()

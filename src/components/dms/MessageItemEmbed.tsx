@@ -7,6 +7,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import {type $Typed} from '@atproto/lex'
 
+import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, native, useTheme, web} from '#/alf'
 import {Embed, PostEmbedViewContext} from '#/components/Post/Embed'
@@ -33,7 +34,7 @@ let MessageItemEmbed = ({
   const enableSquareButtons = useEnableSquareButtons()
   const t = useTheme()
   const screen = useWindowDimensions()
-  const borderRadius = enableSquareButtons ? 4 : 20
+  const borderRadius = getShapeRadius(enableSquareButtons, 4, 20)
 
   const restingColor = isFromSelf ? t.palette.primary_50 : t.palette.contrast_50
   const highlightColor = isFromSelf
@@ -83,7 +84,7 @@ let MessageItemEmbed = ({
         ]}>
         <Animated.View
           style={[
-            enableSquareButtons ? a.rounded_sm : a.rounded_xl,
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_xl),
             a.overflow_hidden,
             radiiStyle,
             highlightStyle,
@@ -93,7 +94,7 @@ let MessageItemEmbed = ({
             allowNestedQuotes
             viewContext={PostEmbedViewContext.ChatMessage}
             style={[
-              enableSquareButtons ? a.rounded_sm : a.rounded_xl,
+              getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_xl),
               a.overflow_hidden,
               a.border_0,
               radiiStyle,

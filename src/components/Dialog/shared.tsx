@@ -6,6 +6,8 @@ import {
   type ViewStyle,
 } from 'react-native'
 
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
 import {Text} from '#/components/Typography'
 import {IS_LIQUID_GLASS} from '#/env'
@@ -24,6 +26,7 @@ export function Header({
   onLayout?: (event: LayoutChangeEvent) => void
 }) {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
   return (
     <View
       onLayout={onLayout}
@@ -43,6 +46,7 @@ export function Header({
         {borderTopLeftRadius: a.rounded_md.borderRadius},
         {borderTopRightRadius: a.rounded_md.borderRadius},
         style,
+        enableSquareButtons === 'sharp' && SHARP_CORNERS,
       ]}>
       {renderLeft && (
         <View style={[a.absolute, {left: IS_LIQUID_GLASS ? 12 : 6}]}>

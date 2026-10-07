@@ -9,6 +9,7 @@ import {
 import {LinearGradient} from 'expo-linear-gradient'
 import {Plural, useLingui} from '@lingui/react/macro'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {type FeedPostSlice} from '#/state/queries/post-feed'
 import {BlockDrawerGesture} from '#/view/shell/BlockDrawerGesture'
@@ -92,6 +93,7 @@ function RepostCard({
 }) {
   const t = useTheme()
   const item = slice.items[0]
+  const cornerShape = useEnableSquareButtons()
 
   /*
    * GalleryBleed sizes nested image carousels to this card instead of the
@@ -101,12 +103,19 @@ function RepostCard({
     <GalleryBleed>
       <View
         ref={itemRef}
+        {...(IS_WEB && {
+          dataSet: {
+            keyboardNavigationCard: 'true',
+            keyboardNavigationCardSharp:
+              cornerShape === 'sharp' ? 'true' : 'false',
+          },
+        })}
         style={[
           {
             width: CARD_WIDTH,
             alignSelf: 'flex-start',
           },
-          a.rounded_md,
+          getShapeStyle(cornerShape, a.rounded_md, a.rounded_md),
           a.border,
           t.atoms.bg,
           t.atoms.border_contrast_low,

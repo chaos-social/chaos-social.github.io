@@ -3,6 +3,8 @@ import {View} from 'react-native'
 import {msg, plural} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
 import {Text} from '#/components/Typography'
 
@@ -17,6 +19,8 @@ export function TimeIndicator({
   time: number
   style?: StyleProp<ViewStyle>
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   const {_} = useLingui()
 
@@ -50,6 +54,7 @@ export function TimeIndicator({
         a.absolute,
         a.justify_center,
         style,
+        shapePreference === 'sharp' && SHARP_CORNERS,
       ]}>
       <Text
         style={[

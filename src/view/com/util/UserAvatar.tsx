@@ -28,6 +28,7 @@ import {openCamera, openCropper, openPicker} from '#/lib/media/picker'
 import {type PickerImage} from '#/lib/media/picker.shared'
 import {convertCdnPreset} from '#/lib/media/util'
 import {makeProfileLink} from '#/lib/routes/links'
+import {getShapeRadius, type ShapePreference, SHARP_CORNERS} from '#/lib/shapes'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {isCancelledError} from '#/lib/strings/errors'
 import {sanitizeHandle} from '#/lib/strings/handles'
@@ -67,15 +68,18 @@ import {LiveStatusDialog} from '#/features/liveNow/components/LiveStatusDialog'
 import {accentForeground} from '#/features/themes/accentForeground'
 import type * as bsky from '#/types/bsky'
 
-export function getSquareAvatarRadius(size: number) {
-  return size > 32 ? 8 : 3
+export function getSquareAvatarRadius(
+  size: number,
+  preference?: ShapePreference,
+) {
+  return getShapeRadius(preference, size > 32 ? 8 : 3, size > 32 ? 8 : 3)
 }
 
 export type UserAvatarType = 'user' | 'algo' | 'list' | 'labeler'
 
 interface BaseUserAvatarProps {
   type?: UserAvatarType
-  shape?: 'circle' | 'square'
+  shape?: 'circle' | 'square' | 'sharp'
   size: number
   avatar?: string | null
   live?: boolean
@@ -112,16 +116,25 @@ let DefaultAvatar = ({
   size,
 }: {
   type: UserAvatarType
-  shape?: 'square' | 'circle'
+  shape?: 'square' | 'circle' | 'sharp'
   size: number
 }): React.ReactNode => {
-  const finalShape = overrideShape ?? (type === 'user' ? 'circle' : 'square')
+  const preference = useEnableSquareAvatars()
+  const finalShape =
+    preference === 'sharp'
+      ? 'sharp'
+      : (overrideShape ??
+        (type === 'user' ? (preference ? 'square' : 'circle') : 'square'))
   const t = useTheme()
 
   const aviStyle = useMemo(() => {
-    if (finalShape === 'square') {
+    if (finalShape !== 'circle') {
       return {
-        borderRadius: getSquareAvatarRadius(size),
+        ...(finalShape === 'sharp' && SHARP_CORNERS),
+        borderRadius: getSquareAvatarRadius(
+          size,
+          finalShape === 'sharp' ? 'sharp' : true,
+        ),
         overflow: 'hidden',
       } as const
     }
@@ -139,7 +152,12 @@ let DefaultAvatar = ({
         fill="none"
         stroke="none"
         style={aviStyle}>
-        <Rect width="32" height="32" rx="4" fill={t.palette.primary_500} />
+        <Rect
+          width="32"
+          height="32"
+          rx={finalShape === 'sharp' ? 0 : 4}
+          fill={t.palette.primary_500}
+        />
         <Path
           d="M13.5 7.25C13.5 6.55859 14.0586 6 14.75 6C20.9648 6 26 11.0352 26 17.25C26 17.9414 25.4414 18.5 24.75 18.5C24.0586 18.5 23.5 17.9414 23.5 17.25C23.5 12.418 19.582 8.5 14.75 8.5C14.0586 8.5 13.5 7.94141 13.5 7.25ZM8.36719 14.6172L12.4336 18.6836L13.543 17.5742C13.5156 17.4727 13.5 17.3633 13.5 17.25C13.5 16.5586 14.0586 16 14.75 16C15.4414 16 16 16.5586 16 17.25C16 17.9414 15.4414 18.5 14.75 18.5C14.6367 18.5 14.5312 18.4844 14.4258 18.457L13.3164 19.5664L17.3828 23.6328C17.9492 24.1992 17.8438 25.1484 17.0977 25.4414C16.1758 25.8008 15.1758 26 14.125 26C9.63672 26 6 22.3633 6 17.875C6 16.8242 6.19922 15.8242 6.5625 14.9023C6.85547 14.1602 7.80469 14.0508 8.37109 14.6172H8.36719ZM14.75 9.75C18.8906 9.75 22.25 13.1094 22.25 17.25C22.25 17.9414 21.6914 18.5 21 18.5C20.3086 18.5 19.75 17.9414 19.75 17.25C19.75 14.4883 17.5117 12.25 14.75 12.25C14.0586 12.25 13.5 11.6914 13.5 11C13.5 10.3086 14.0586 9.75 14.75 9.75Z"
           fill={accentForeground(t, t.palette.primary_500)}
@@ -159,8 +177,10 @@ let DefaultAvatar = ({
         fill="none"
         stroke="none"
         style={aviStyle}>
-        <Path
-          d="M28 0H4C1.79086 0 0 1.79086 0 4V28C0 30.2091 1.79086 32 4 32H28C30.2091 32 32 30.2091 32 28V4C32 1.79086 30.2091 0 28 0Z"
+        <Rect
+          width="32"
+          height="32"
+          rx={finalShape === 'sharp' ? 0 : 4}
           fill={t.palette.primary_500}
         />
         <Path
@@ -184,13 +204,13 @@ let DefaultAvatar = ({
         fill="none"
         stroke="none"
         style={aviStyle}>
-        {finalShape === 'square' ? (
+        {finalShape !== 'circle' ? (
           <Rect
             x="0"
             y="0"
             width="32"
             height="32"
-            rx="3"
+            rx={finalShape === 'sharp' ? 0 : 3}
             fill={tokens.color.temp_purple}
           />
         ) : (
@@ -215,13 +235,13 @@ let DefaultAvatar = ({
       fill="none"
       stroke="none"
       style={aviStyle}>
-      {finalShape === 'square' ? (
+      {finalShape !== 'circle' ? (
         <Rect
           x="0"
           y="0"
           width="24"
           height="24"
-          rx="3"
+          rx={finalShape === 'sharp' ? 0 : 3}
           fill={t.palette.primary_500}
         />
       ) : (
@@ -262,18 +282,28 @@ let UserAvatar = ({
   const t = useTheme()
 
   const enableSquareAvatars = useEnableSquareAvatars()
-  const avishapeforce = enableSquareAvatars ? 'square' : 'circle'
+  const avishapeforce =
+    enableSquareAvatars === 'sharp'
+      ? 'sharp'
+      : enableSquareAvatars
+        ? 'square'
+        : 'circle'
 
   const finalShape =
-    overrideShape ?? (type === 'user' ? avishapeforce : 'square')
+    enableSquareAvatars === 'sharp'
+      ? 'sharp'
+      : (overrideShape ?? (type === 'user' ? avishapeforce : 'square'))
   const thumbnailFormat = useThumbnailFormat()
   const imageCdnHost = useImageCdnHost()
 
   const aviStyle = useMemo(() => {
     let borderRadius
 
-    if (finalShape === 'square') {
-      borderRadius = getSquareAvatarRadius(size)
+    if (finalShape !== 'circle') {
+      borderRadius = getSquareAvatarRadius(
+        size,
+        finalShape === 'sharp' ? 'sharp' : true,
+      )
     } else {
       borderRadius = Math.floor(size / 2)
     }
@@ -284,19 +314,21 @@ let UserAvatar = ({
       borderRadius,
       backgroundColor: t.palette.contrast_25,
       ...extraAviStyle,
+      ...(finalShape === 'sharp' && SHARP_CORNERS),
     }
   }, [finalShape, size, t, extraAviStyle])
 
   const borderStyle = useMemo(() => {
     return [
       {borderRadius: aviStyle.borderRadius},
+      finalShape === 'sharp' && SHARP_CORNERS,
       live && {
         borderColor: t.palette.negative_500,
         borderWidth: size > 16 ? 2 : 1,
         opacity: 1,
       },
     ]
-  }, [aviStyle.borderRadius, live, t, size])
+  }, [aviStyle.borderRadius, finalShape, live, t, size])
 
   const alert = useMemo(() => {
     if (!moderation?.alert) {
@@ -341,8 +373,9 @@ let UserAvatar = ({
         height: size,
       },
       style,
+      finalShape === 'sharp' && SHARP_CORNERS,
     ]
-  }, [size, style])
+  }, [size, style, finalShape])
 
   return avatar &&
     !(moderation?.blur && IS_ANDROID /* android crashes with blur */) ? (
@@ -422,7 +455,7 @@ let EditableUserAvatar = ({
       return {
         width: size,
         height: size,
-        borderRadius: getSquareAvatarRadius(size),
+        borderRadius: getSquareAvatarRadius(size, enableSquareAvatars),
       }
     }
     return {
@@ -430,7 +463,7 @@ let EditableUserAvatar = ({
       height: size,
       borderRadius: Math.floor(size / 2),
     }
-  }, [circular, size])
+  }, [circular, size, enableSquareAvatars])
 
   const onOpenCamera = useCallback(async () => {
     if (!(await requestCameraAccessIfNeeded())) {
@@ -604,6 +637,7 @@ let PreviewableUserAvatar = ({
   const ax = useAnalytics()
   const {_} = useLingui()
   const queryClient = useQueryClient()
+  const enableSquareAvatars = useEnableSquareAvatars()
   const status = useActorStatus(profile)
   const liveControl = useDialogControl()
   const playHaptic = useHaptics()
@@ -629,10 +663,22 @@ let PreviewableUserAvatar = ({
     />
   )
 
-  const linkStyle =
-    props.type !== 'algo' && props.type !== 'list'
-      ? a.rounded_full
-      : {borderRadius: getSquareAvatarRadius(props.size)}
+  const linkStyle = {
+    borderRadius:
+      enableSquareAvatars === 'sharp' || props.shape === 'sharp'
+        ? 0
+        : props.shape === 'circle'
+          ? Math.floor(props.size / 2)
+          : props.shape === 'square' ||
+              props.type === 'algo' ||
+              props.type === 'list'
+            ? getSquareAvatarRadius(props.size, enableSquareAvatars)
+            : getShapeRadius(
+                enableSquareAvatars,
+                getSquareAvatarRadius(props.size),
+                Math.floor(props.size / 2),
+              ),
+  }
 
   return (
     <ProfileHoverCard did={profile.did} disable={disableHoverCard}>

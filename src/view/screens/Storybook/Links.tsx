@@ -1,5 +1,6 @@
 import {View} from 'react-native'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
 import {ButtonText} from '#/components/Button'
@@ -57,7 +58,11 @@ export function Links() {
             <View
               style={[
                 {width: 32, height: 32},
-                enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                getShapeStyle(
+                  enableSquareButtons,
+                  a.rounded_sm,
+                  a.rounded_full,
+                ),
                 t.atoms.bg_contrast_200,
               ]}
             />

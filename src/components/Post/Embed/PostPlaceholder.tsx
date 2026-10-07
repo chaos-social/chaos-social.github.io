@@ -3,6 +3,8 @@ import {StyleSheet, View} from 'react-native'
 
 import {usePalette} from '#/lib/hooks/usePalette'
 import {InfoCircleIcon} from '#/lib/icons'
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {Text} from '#/view/com/util/text/Text'
 import {atoms as a, useTheme} from '#/alf'
 import {useIsWithinMessage} from '#/components/dms/MessageContext'
@@ -26,6 +28,8 @@ export function PostPlaceholder({
   children: React.ReactNode
   directFetchEnabled?: boolean
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   const pal = usePalette('default')
   const isWithinMessage = useIsWithinMessage()
@@ -41,6 +45,7 @@ export function PostPlaceholder({
         styles.errorContainer,
         isWithinMessage && styles.errorContainerInMessage,
         !isWithinMessage && [a.border, t.atoms.border_contrast_low],
+        shapePreference === 'sharp' && SHARP_CORNERS,
       ]}>
       {showLoader ? (
         <Loader size={'md'} style={pal.text} />

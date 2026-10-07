@@ -53,6 +53,7 @@ import {
   type CommonNavigatorParams,
   type NavigationProp,
 } from '#/lib/routes/types'
+import {getShapeStyle} from '#/lib/shapes'
 import {getAuthorPrimaryName} from '#/lib/strings/display-names'
 import {cleanError} from '#/lib/strings/errors'
 import {sanitizeHandle} from '#/lib/strings/handles'
@@ -1392,7 +1393,7 @@ function EndMessage() {
       <View
         style={[
           {height: 100, width: 100},
-          enableSquareButtons ? a.rounded_sm : a.rounded_full,
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
           t.atoms.bg_contrast_700,
           a.align_center,
           a.justify_center,

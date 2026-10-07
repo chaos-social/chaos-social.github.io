@@ -23,6 +23,7 @@ import {
 import {getTabState, TabState} from '#/lib/routes/helpers'
 import {type SharedNavTab, TAB_TO_NAV_ITEM} from '#/lib/routes/tab-to-nav-item'
 import {type NavigationProp} from '#/lib/routes/types'
+import {getShapeStyle} from '#/lib/shapes'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {emitSoftReset} from '#/state/events'
 import {badgeText, useBadgePreference} from '#/state/preferences/badge-text'
@@ -776,7 +777,11 @@ function MenuItem({icon, label, count, hasNew, bold, onPress}: MenuItemProps) {
                 ]}>
                 <View
                   style={[
-                    enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                    getShapeStyle(
+                      enableSquareButtons,
+                      a.rounded_sm,
+                      a.rounded_full,
+                    ),
                     {
                       right: count.length === 1 ? 6 : 0,
                       paddingHorizontal: 4,

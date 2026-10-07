@@ -11,6 +11,7 @@ import {
   MAX_DISPLAY_NAME,
   urls,
 } from '#/lib/constants'
+import {getShapeStyle} from '#/lib/shapes'
 import {cleanError} from '#/lib/strings/errors'
 import {isOverMaxGraphemeCount} from '#/lib/strings/helpers'
 import {isValidWebsiteFormat} from '#/lib/strings/website'
@@ -269,7 +270,9 @@ function DialogInner({
         size="small"
         color="primary"
         variant="ghost"
-        style={[enableSquareButtons ? a.rounded_sm : a.rounded_full]}
+        style={[
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
+        ]}
         testID="editProfileCancelBtn">
         <ButtonText style={[a.text_md]}>
           <Trans>Cancel</Trans>
@@ -283,7 +286,9 @@ function DialogInner({
           disabled={!userAvatar || isUpdatingProfile}
           size="tiny"
           color="secondary"
-          style={[enableSquareButtons ? a.rounded_sm : a.rounded_full]}
+          style={[
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
+          ]}
           testID="editProfileWitchHatBtn">
           <ButtonText>+</ButtonText>
           <Logo allowVariants={false} width={18} height={18} />
@@ -308,7 +313,9 @@ function DialogInner({
         size="small"
         color="primary"
         variant="ghost"
-        style={[enableSquareButtons ? a.rounded_sm : a.rounded_full]}
+        style={[
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
+        ]}
         testID="editProfileSaveBtn">
         <ButtonText style={[a.text_md, !dirty && t.atoms.text_contrast_low]}>
           <Trans>Save</Trans>
@@ -356,7 +363,8 @@ function DialogInner({
               height: 84,
               borderWidth: 2,
               borderRadius: enableSquareAvatars
-                ? getSquareAvatarRadius(80) + 2
+                ? getSquareAvatarRadius(80, enableSquareAvatars) +
+                  (enableSquareAvatars === 'sharp' ? 0 : 2)
                 : 42,
               borderColor: t.atoms.bg.backgroundColor,
             },

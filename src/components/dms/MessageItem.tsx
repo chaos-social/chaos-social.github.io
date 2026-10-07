@@ -30,6 +30,7 @@ import {useQueryClient} from '@tanstack/react-query'
 
 import {isBlockedOrBlocking} from '#/lib/moderation/blocked-and-muted'
 import {createSanitizedDisplayName} from '#/lib/moderation/create-sanitized-display-name'
+import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useMaybeProfileShadow} from '#/state/cache/profile-shadow'
 import {type Shadow} from '#/state/cache/types'
@@ -250,7 +251,7 @@ let MessageItem = ({
     (isInMiddleOfCluster || isLastInCluster)
 
   const pendingColor = t.palette.primary_300
-  const borderRadius = enableSquareButtons ? 4 : 18
+  const borderRadius = getShapeRadius(enableSquareButtons, 4, 18)
 
   const displayNameInset = enableSquareButtons
     ? a.ml_sm.marginLeft
@@ -575,7 +576,11 @@ let MessageItem = ({
                       style={[
                         !isFromSelf && isGroupChat && a.ml_sm,
                         !isEmojiOnly && [
-                          enableSquareButtons ? a.rounded_sm : a.rounded_xl,
+                          getShapeStyle(
+                            enableSquareButtons,
+                            a.rounded_sm,
+                            a.rounded_xl,
+                          ),
                           a.py_sm,
                           a.px_md,
                           a.max_w_full,
@@ -976,7 +981,7 @@ function ReplyQuote({
       onPress={onPress}
       style={[
         a.mb_xs,
-        enableSquareButtons ? a.rounded_sm : a.rounded_md,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_md),
         a.p_sm,
         // The padding above is a little loose, so we tighten it up here.
         {paddingTop: tokens.space.sm - 2},

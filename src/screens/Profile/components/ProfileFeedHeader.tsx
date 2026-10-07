@@ -6,6 +6,7 @@ import {Plural, Trans, useLingui} from '@lingui/react/macro'
 import {TRENDING_HANDLE} from '#/lib/constants'
 import {useHaptics} from '#/lib/haptics'
 import {makeCustomFeedLink, makeProfileLink} from '#/lib/routes/links'
+import {getShapeStyle} from '#/lib/shapes'
 import {shareUrl} from '#/lib/sharing'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {toShareUrl} from '#/lib/strings/url-helpers'
@@ -70,7 +71,7 @@ export function ProfileFeedHeaderSkeleton() {
           style={[
             a.justify_center,
             a.align_center,
-            enableSquareButtons ? a.rounded_sm : a.rounded_full,
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
             t.atoms.bg_contrast_25,
             {
               height: 34,

@@ -5,6 +5,7 @@ import {plural} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react/macro'
 
 import {EMOJI_REACTION_LIMIT} from '#/lib/constants'
+import {getShapeStyle} from '#/lib/shapes'
 import {useMaybeProfileShadow} from '#/state/cache/profile-shadow'
 import {useConvoActive} from '#/state/messages/convo'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
@@ -132,7 +133,11 @@ export function ActionsWrapper({
                   style={[
                     {opacity: showMenuTrigger},
                     a.p_xs,
-                    enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                    getShapeStyle(
+                      enableSquareButtons,
+                      a.rounded_sm,
+                      a.rounded_full,
+                    ),
                     (state.hovered || state.pressed) && t.atoms.bg_contrast_25,
                   ]}>
                   <EmojiSmileIcon
@@ -158,7 +163,11 @@ export function ActionsWrapper({
                 style={[
                   {opacity: showMenuTrigger},
                   a.p_xs,
-                  enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                  getShapeStyle(
+                    enableSquareButtons,
+                    a.rounded_sm,
+                    a.rounded_full,
+                  ),
                   (state.hovered || state.pressed) && t.atoms.bg_contrast_25,
                 ]}>
                 <DotsHorizontalIcon

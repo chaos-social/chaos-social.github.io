@@ -1,5 +1,6 @@
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
@@ -73,7 +74,7 @@ export function DraftsButton({
         shape="default"
         size="small"
         style={[
-          enableSquareButtons ? a.rounded_sm : a.rounded_full,
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
           a.py_sm,
           a.px_md,
           a.mx_xs,

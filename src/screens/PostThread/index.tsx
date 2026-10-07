@@ -16,6 +16,7 @@ import {useInitialNumToRender} from '#/lib/hooks/useInitialNumToRender'
 import {useNonReactiveCallback} from '#/lib/hooks/useNonReactiveCallback'
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {usePostViewTracking} from '#/lib/hooks/usePostViewTracking'
+import {getShapeStyle} from '#/lib/shapes'
 import {usePostViewAuthorShadowFilter} from '#/state/cache/profile-shadow'
 import {
   type StateContext as FeedFeedbackStateContext,
@@ -1022,7 +1023,7 @@ function ReaderHideRepliesButton({onPress}: {onPress: () => void}) {
               a.gap_xs,
               a.px_lg,
               a.py_sm,
-              enableSquareButtons ? a.rounded_sm : a.rounded_full,
+              getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
               a.border,
               t.atoms.shadow_sm,
               t.atoms.border_contrast_low,

@@ -2,6 +2,7 @@ import {Fragment} from 'react'
 import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {getShapeRadius} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, native, useTheme, web} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
@@ -71,7 +72,10 @@ function DialogInner({
       accessibilityDescribedBy="dialog-description"
       accessibilityLabelledBy="dialog-title"
       style={web([
-        {maxWidth: 400, borderRadius: enableSquareButtons ? 18 : 36},
+        {
+          maxWidth: 400,
+          borderRadius: getShapeRadius(enableSquareButtons, 18, 36),
+        },
       ])}>
       <View style={[a.relative, a.gap_md, a.w_full]}>
         <Text

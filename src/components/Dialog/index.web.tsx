@@ -22,6 +22,7 @@ import {useLingui} from '@lingui/react'
 import {DismissableLayer, FocusGuards, FocusScope} from 'radix-ui/internal'
 import {RemoveScrollBar} from 'react-remove-scroll-bar'
 
+import {SHARP_CORNERS} from '#/lib/shapes'
 import {userStyle} from '#/lib/userstyles'
 import {logger} from '#/logger'
 import {useA11y} from '#/state/a11y'
@@ -189,6 +190,7 @@ export function Inner({
   contentContainerStyle,
 }: DialogInnerProps) {
   const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
   const {close} = useContext(Context)
   const {gtMobile} = useBreakpoints()
   const {reduceMotionEnabled} = useA11y()
@@ -221,6 +223,7 @@ export function Inner({
           },
           !reduceMotionEnabled && a.zoom_fade_in,
           style,
+          enableSquareButtons === 'sharp' && SHARP_CORNERS,
         ])}>
         <DismissableLayer.DismissableLayer
           className="wsky-dialog"

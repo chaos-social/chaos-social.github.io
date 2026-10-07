@@ -1,6 +1,8 @@
 import {Pressable, type StyleProp, View, type ViewStyle} from 'react-native'
 import {Plural} from '@lingui/react/macro'
 
+import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a} from '#/alf'
 import {Check_Stroke2_Corner0_Rounded as CheckIcon} from '#/components/icons/Check'
 import {Sparkle_Stroke2_Corner0_Rounded as SparkleIcon} from '#/components/icons/Sparkle'
@@ -36,6 +38,7 @@ export function ThemePreview({
   onPress?: () => void
   style?: StyleProp<ViewStyle>
 }) {
+  const enableSquareButtons = useEnableSquareButtons()
   const c = colorSet.colors
   const previewSets = [
     colorSet,
@@ -59,7 +62,7 @@ export function ThemePreview({
       style={[{minWidth: 126, flexGrow: 1, flexShrink: 1}, style]}>
       <View
         style={[
-          a.rounded_md,
+          getShapeStyle(enableSquareButtons, a.rounded_md, a.rounded_md),
           a.overflow_hidden,
           a.border,
           {
@@ -135,7 +138,11 @@ export function ThemePreview({
           <View
             style={[
               a.absolute,
-              a.rounded_full,
+              getShapeStyle(
+                enableSquareButtons,
+                a.rounded_full,
+                a.rounded_full,
+              ),
               a.align_center,
               a.justify_center,
               {
@@ -162,6 +169,7 @@ export function ThemePreview({
 }
 
 function MiniApp({colors: c}: {colors: ThemeColorSet['colors']}) {
+  const enableSquareButtons = useEnableSquareButtons()
   return (
     <View style={[a.flex_1, a.flex_row, {backgroundColor: c.canvas}]}>
       <View style={{width: '27%', backgroundColor: c.surface}}>
@@ -169,7 +177,7 @@ function MiniApp({colors: c}: {colors: ThemeColorSet['colors']}) {
           style={{
             height: 8,
             margin: 8,
-            borderRadius: 4,
+            borderRadius: getShapeRadius(enableSquareButtons, 4, 4),
             backgroundColor: c.accent,
           }}
         />
@@ -180,7 +188,7 @@ function MiniApp({colors: c}: {colors: ThemeColorSet['colors']}) {
               height: 4,
               marginHorizontal: 8,
               marginTop: 6,
-              borderRadius: 2,
+              borderRadius: getShapeRadius(enableSquareButtons, 2, 2),
               backgroundColor: c.textMuted,
             }}
           />
@@ -191,7 +199,7 @@ function MiniApp({colors: c}: {colors: ThemeColorSet['colors']}) {
           style={{
             height: 7,
             width: '46%',
-            borderRadius: 4,
+            borderRadius: getShapeRadius(enableSquareButtons, 4, 4),
             backgroundColor: c.text,
           }}
         />
@@ -199,7 +207,7 @@ function MiniApp({colors: c}: {colors: ThemeColorSet['colors']}) {
           style={{
             height: 25,
             marginTop: 7,
-            borderRadius: 5,
+            borderRadius: getShapeRadius(enableSquareButtons, 5, 5),
             backgroundColor: c.surfaceRaised,
             borderWidth: 1,
             borderColor: c.border,
@@ -210,7 +218,7 @@ function MiniApp({colors: c}: {colors: ThemeColorSet['colors']}) {
             style={{
               height: 12,
               flex: 1,
-              borderRadius: 6,
+              borderRadius: getShapeRadius(enableSquareButtons, 6, 6),
               backgroundColor: c.accent,
             }}
           />
@@ -218,7 +226,7 @@ function MiniApp({colors: c}: {colors: ThemeColorSet['colors']}) {
             style={{
               height: 12,
               width: 22,
-              borderRadius: 6,
+              borderRadius: getShapeRadius(enableSquareButtons, 6, 6),
               backgroundColor: c.accentSoft,
             }}
           />

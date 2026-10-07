@@ -4,6 +4,7 @@ import {useLingui} from '@lingui/react/macro'
 
 import {shareImageModal} from '#/lib/media/manip'
 import {useSaveImageToMediaLibrary} from '#/lib/media/save-image'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useFullsizeFormat} from '#/state/preferences/fullsize-format'
 import {
   applyImageTransforms,
@@ -43,6 +44,8 @@ export function ImageContextMenu({
   style?: StyleProp<ViewStyle>
   children: ReactNode
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const {t: l} = useLingui()
   const saveImage = useSaveImageToMediaLibrary()
   const imageCdnHost = useImageCdnHost()
@@ -77,7 +80,7 @@ export function ImageContextMenu({
             : undefined,
           aspectRatio: aspectRatio && aspectRatio > 0 ? aspectRatio : 1,
         }}
-        borderRadius={borderRadius}
+        borderRadius={shapePreference === 'sharp' ? 0 : borderRadius}
         onPreviewPress={onPreviewPress}>
         {children}
       </PeekMenu.Trigger>

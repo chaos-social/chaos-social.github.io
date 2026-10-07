@@ -14,6 +14,7 @@ import {wait} from '#/lib/async/wait'
 import {formatTime} from '#/lib/media/video/formatTime'
 import {getLabelingServiceTitle} from '#/lib/moderation'
 import {useCallOnce} from '#/lib/once'
+import {getShapeStyle} from '#/lib/shapes'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useMyLabelersQuery} from '#/state/queries/preferences'
@@ -760,7 +761,7 @@ function StepTitle({
         style={[
           a.justify_center,
           a.align_center,
-          enableSquareButtons ? a.rounded_sm : a.rounded_full,
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
           a.border,
           {
             width: 24,

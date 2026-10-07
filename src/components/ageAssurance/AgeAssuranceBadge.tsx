@@ -1,6 +1,7 @@
 import {View} from 'react-native'
 import {Trans} from '@lingui/react/macro'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, select, useTheme} from '#/alf'
 import {ShieldCheck_Stroke2_Corner0_Rounded as Shield} from '#/components/icons/Shield'
@@ -19,7 +20,7 @@ export function AgeAssuranceBadge() {
         a.px_sm,
         a.py_xs,
         a.pr_sm,
-        enableSquareButtons ? a.rounded_sm : a.rounded_full,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
         {
           backgroundColor: select(t.name, {
             light: t.palette.primary_100,

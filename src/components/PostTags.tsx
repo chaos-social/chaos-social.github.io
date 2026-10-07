@@ -2,6 +2,7 @@ import {useState} from 'react'
 import {Pressable, type StyleProp, View, type ViewStyle} from 'react-native'
 import {type AppBskyFeedDefs, AppBskyFeedPost} from '@atproto/api'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useShowPostTags} from '#/state/preferences/show-post-tags'
 import {atoms as a, tokens, useTheme} from '#/alf'
@@ -51,7 +52,7 @@ function PostTag({tag, authorHandle}: {tag: string; authorHandle: string}) {
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
       style={({pressed}) => [
-        square ? a.rounded_xs : a.rounded_full,
+        getShapeStyle(square, a.rounded_xs, a.rounded_full),
         hovered || pressed ? t.atoms.bg_contrast_50 : t.atoms.bg_contrast_25,
         {paddingHorizontal: 6, paddingVertical: 3},
       ]}>

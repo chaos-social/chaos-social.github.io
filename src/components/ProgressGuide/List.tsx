@@ -7,6 +7,7 @@ import {
 } from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {getShapeRadius} from '#/lib/shapes'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {useProfileFollowsQuery} from '#/state/queries/profile-follows'
 import {useSession} from '#/state/session'
@@ -142,7 +143,11 @@ function StackedAvatars({follows}: {follows?: bsky.profile.AnyProfileView[]}) {
   const avatarSize = containerWidth > 0 ? containerWidth / visiblePortions : 0
   const overlap = avatarSize * overlapRatio
   const iconSize = avatarSize * 0.5
-  const borderRadius = enableSquareAvatars ? (avatarSize > 32 ? 8 : 3) : 999
+  const borderRadius = getShapeRadius(
+    enableSquareAvatars,
+    avatarSize > 32 ? 8 : 3,
+    999,
+  )
 
   const followedAvatars = follows?.slice(0, TOTAL_AVATARS) ?? []
   const remainingSlots = TOTAL_AVATARS - followedAvatars.length

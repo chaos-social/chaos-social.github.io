@@ -256,8 +256,15 @@ export function BottomBarWeb() {
                           ],
                           (enableSquareAvatars || isLabeler) && {
                             borderRadius:
-                              getSquareAvatarRadius(iconWidth - 3) +
-                              (isActive ? 2 : 1),
+                              getSquareAvatarRadius(
+                                iconWidth - 3,
+                                enableSquareAvatars,
+                              ) +
+                              (enableSquareAvatars === 'sharp'
+                                ? 0
+                                : isActive
+                                  ? 2
+                                  : 1),
                           },
                         ]}>
                         <UserAvatar

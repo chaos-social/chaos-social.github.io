@@ -3,6 +3,7 @@ import {useWindowDimensions, View} from 'react-native'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useSession} from '#/state/session'
 import {atoms as a, tokens, useTheme} from '#/alf'
@@ -58,7 +59,7 @@ export function EmojiReactionPicker({
       onLayout={evt => setLayout(evt.nativeEvent.layout)}
       style={[
         bgColor,
-        enableSquareButtons ? a.rounded_sm : a.rounded_full,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
         a.absolute,
         {bottom: '100%'},
         isFromSelf ? a.right_0 : a.left_0,
@@ -88,7 +89,11 @@ export function EmojiReactionPicker({
             {hovered => (
               <View
                 style={[
-                  enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                  getShapeStyle(
+                    enableSquareButtons,
+                    a.rounded_sm,
+                    a.rounded_full,
+                  ),
                   hovered
                     ? {
                         backgroundColor: alreadyReacted
@@ -117,7 +122,7 @@ export function EmojiReactionPicker({
         }}>
         <View
           style={[
-            enableSquareButtons ? a.rounded_sm : a.rounded_full,
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
             t.atoms.bg_contrast_50,
             {height: 40, width: 40},
             a.justify_center,

@@ -1,5 +1,7 @@
 import {StyleSheet} from 'react-native'
 
+import {getShapeRadius} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, platform, useTheme, type ViewStyleProp} from '#/alf'
 import {Fill} from '#/components/Fill'
 import {IS_HIGH_DPI} from '#/env'
@@ -21,11 +23,18 @@ export function MediaInsetBorder({
   opaque?: boolean
 } & ViewStyleProp) {
   const t = useTheme()
+  const shapePreference = useEnableSquareButtons()
   const isLight = t.name === 'light'
   return (
     <Fill
       style={[
-        a.rounded_md,
+        {
+          borderRadius: getShapeRadius(
+            shapePreference,
+            a.rounded_md.borderRadius,
+            a.rounded_md.borderRadius,
+          ),
+        },
         {
           borderWidth: platform({
             native: StyleSheet.hairlineWidth,

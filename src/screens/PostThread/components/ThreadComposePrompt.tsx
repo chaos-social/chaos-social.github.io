@@ -7,6 +7,7 @@ import {Trans} from '@lingui/react/macro'
 import {PressableScale} from '#/lib/custom-animations/PressableScale'
 import {useHaptics} from '#/lib/haptics'
 import {useHideBottomBarBorderForScreen} from '#/lib/hooks/useHideBottomBarBorder'
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useProfileQuery} from '#/state/queries/profile'
 import {useSession} from '#/state/session'
@@ -93,7 +94,7 @@ export function ThreadComposePromptPill({onPress}: {onPress: () => void}) {
         a.align_center,
         a.p_sm,
         a.gap_sm,
-        enableSquareButtons ? a.rounded_sm : a.rounded_full,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
         (!gtMobile || hovered) && t.atoms.bg_contrast_25,
         native([a.border, t.atoms.border_contrast_low]),
         a.transition_color,

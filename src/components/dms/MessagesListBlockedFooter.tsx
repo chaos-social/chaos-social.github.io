@@ -3,6 +3,7 @@ import {View} from 'react-native'
 import {type ModerationDecision} from '@bsky/sdk/moderation'
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {getShapeRadius} from '#/lib/shapes'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useProfileBlockMutationQueue} from '#/state/queries/profile'
@@ -68,7 +69,7 @@ export function MessagesListBlockedFooter({
           a.justify_center,
           a.p_lg,
           t.atoms.bg_contrast_50,
-          {borderRadius: enableSquareButtons ? 20 : 40},
+          {borderRadius: getShapeRadius(enableSquareButtons, 20, 40)},
         ]}>
         <PersonXIcon fill={t.atoms.text.color} size="lg" style={[a.mb_xs]} />
         <Text

@@ -2,6 +2,7 @@ import {createContext, useCallback, useContext, useId, useMemo} from 'react'
 import {type GestureResponderEvent, View} from 'react-native'
 import {useLingui} from '@lingui/react/macro'
 
+import {getShapeRadius} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, type TextStyleProp, useTheme, web} from '#/alf'
 import {
@@ -74,7 +75,10 @@ export function Outer({
           accessibilityLabelledBy={titleId}
           accessibilityDescribedBy={descriptionId}
           style={web([
-            {maxWidth: 320, borderRadius: enableSquareButtons ? 18 : 36},
+            {
+              maxWidth: 320,
+              borderRadius: getShapeRadius(enableSquareButtons, 18, 36),
+            },
           ])}>
           {children}
         </Dialog.ScrollableInner>

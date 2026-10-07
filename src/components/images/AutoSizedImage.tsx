@@ -11,6 +11,8 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
 import {type Dimensions} from '#/lib/media/types'
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {
   applyImageTransforms,
   useImageCdnHost,
@@ -35,6 +37,8 @@ export function ConstrainedImage({
   minMobileAspectRatio?: number
   children: React.ReactNode
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   /**
    * Computed as a % value to apply as `paddingTop`, this basically controls
@@ -58,6 +62,7 @@ export function ConstrainedImage({
               a.overflow_hidden,
               t.atoms.bg_contrast_25,
               fullBleed ? a.w_full : {aspectRatio},
+              shapePreference === 'sharp' && SHARP_CORNERS,
             ]}>
             {children}
           </View>
@@ -90,6 +95,8 @@ export function AutoSizedImage({
   /** Fires when the underlying image reports its natural dimensions. */
   onDimsChange?: (dims: Dimensions) => void
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   const {_} = useLingui()
   const largeAlt = useLargeAltBadgeEnabled()
@@ -187,6 +194,7 @@ export function AutoSizedImage({
                     padding: 5,
                   },
                 ],
+                shapePreference === 'sharp' && SHARP_CORNERS,
               ]}>
               <Fullscreen
                 fill={t.atoms.text_contrast_high.color}
@@ -210,6 +218,7 @@ export function AutoSizedImage({
                     padding: 6,
                   },
                 ],
+                shapePreference === 'sharp' && SHARP_CORNERS,
               ]}>
               <Text style={[a.font_bold, largeAlt ? a.text_xs : {fontSize: 8}]}>
                 <Trans>ALT</Trans>
@@ -246,6 +255,7 @@ export function AutoSizedImage({
             {transitionDuration: '200ms'},
             pressed && {transform: [{scale: 0.99}]},
           ]),
+          shapePreference === 'sharp' && SHARP_CORNERS,
         ]}>
         {contents}
       </Pressable>
@@ -276,6 +286,7 @@ export function AutoSizedImage({
               {transitionDuration: '200ms'},
               pressed && {transform: [{scale: 0.99}]},
             ]),
+            shapePreference === 'sharp' && SHARP_CORNERS,
           ]}>
           {contents}
         </Pressable>

@@ -12,6 +12,8 @@ import type * as HlsTypes from 'hls.js'
 
 import {useNonReactiveCallback} from '#/lib/hooks/useNonReactiveCallback'
 import {hasPlaybackStarted} from '#/lib/media/video/analytics'
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a} from '#/alf'
 import {AltBadgeWithDialog} from '#/components/AltBadgeWithDialog'
 import {useFullscreen} from '#/components/hooks/useFullscreen'
@@ -40,6 +42,8 @@ export function VideoEmbedInnerWeb({
   lastKnownTime,
   onPlaybackStart,
 }: VideoEmbedInnerWebProps) {
+  const shapePreference = useEnableSquareButtons()
+
   const containerRef = useRef<HTMLDivElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [focused, setFocused] = useState(false)
@@ -74,7 +78,12 @@ export function VideoEmbedInnerWeb({
 
   return (
     <View
-      style={[a.flex_1, a.rounded_md, a.overflow_hidden]}
+      style={[
+        a.flex_1,
+        a.rounded_md,
+        a.overflow_hidden,
+        shapePreference === 'sharp' && SHARP_CORNERS,
+      ]}
       accessibilityLabel={l`Embedded video player`}
       accessibilityHint="">
       <div ref={containerRef} style={{height: '100%', width: '100%'}}>

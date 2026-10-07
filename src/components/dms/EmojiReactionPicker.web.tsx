@@ -3,6 +3,7 @@ import {Pressable, View} from 'react-native'
 import {useLingui} from '@lingui/react/macro'
 import {DropdownMenu} from 'radix-ui'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useSession} from '#/state/session'
 import {atoms as a, flatten, useTheme} from '#/alf'
@@ -72,7 +73,7 @@ function MenuInner({
     <EmojiPicker.Picker keepOpenWhenShiftHeld={false} />
   ) : (
     <Menu.Outer
-      style={[enableSquareButtons ? a.rounded_sm : a.rounded_full]}
+      style={[getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full)]}
       onCloseAutoFocus={evt => {
         // If something has already taken focus (e.g. emoji-mart's search
         // input when swapping to the full picker), don't let Radix restore
@@ -105,7 +106,11 @@ function MenuInner({
               style={flatten([
                 a.flex,
                 a.flex_col,
-                enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                getShapeStyle(
+                  enableSquareButtons,
+                  a.rounded_sm,
+                  a.rounded_full,
+                ),
                 a.justify_center,
                 a.align_center,
                 a.transition_transform,
@@ -131,7 +136,7 @@ function MenuInner({
             role="button"
             onPress={() => setExpanded(true)}
             style={flatten([
-              enableSquareButtons ? a.rounded_sm : a.rounded_full,
+              getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
               {height: 34, width: 34},
               t.atoms.bg_contrast_50,
               a.justify_center,

@@ -20,6 +20,7 @@ import {
   type CommonNavigatorParams,
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {
   moderationOptsOverrideContext,
@@ -667,7 +668,11 @@ export const DebugModScreen = ({}: NativeStackScreenProps<
                       <View
                         style={[
                           a.border,
-                          enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                          getShapeStyle(
+                            enableSquareButtons,
+                            a.rounded_sm,
+                            a.rounded_full,
+                          ),
                           a.px_md,
                           a.py_sm,
                           t.atoms.border_contrast_medium,
@@ -862,7 +867,7 @@ function CustomLabelForm({
         <View
           style={[
             a.border,
-            enableSquareButtons ? a.rounded_sm : a.rounded_full,
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
             a.px_md,
             a.py_sm,
             t.atoms.border_contrast_medium,
@@ -898,7 +903,7 @@ function CustomLabelForm({
         <View
           style={[
             a.border,
-            enableSquareButtons ? a.rounded_sm : a.rounded_full,
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
             a.px_md,
             a.py_sm,
             t.atoms.border_contrast_medium,

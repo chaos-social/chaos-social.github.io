@@ -13,6 +13,7 @@ import {GestureActionView} from '#/lib/custom-animations/GestureActionView'
 import {useHaptics} from '#/lib/haptics'
 import {createSanitizedDisplayName} from '#/lib/moderation/create-sanitized-display-name'
 import {decrementBadgeCount} from '#/lib/notifications/notifications'
+import {getShapeStyle} from '#/lib/shapes'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {
   type Shadow,
@@ -604,7 +605,11 @@ function BaseChatItem({
                     {hasUnread && (
                       <View
                         style={[
-                          enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                          getShapeStyle(
+                            enableSquareButtons,
+                            a.rounded_sm,
+                            a.rounded_full,
+                          ),
                           {
                             backgroundColor: isDimStyle
                               ? t.palette.contrast_200

@@ -10,6 +10,8 @@ import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
 import {isLabelerSubscribed, lookupLabelValueDefinition} from '#/lib/moderation'
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {List, type ListRef} from '#/view/com/util/List'
 import {findListNativeTag} from '#/view/com/util/listNativeTag'
 import {atoms as a, ios, tokens, useTheme} from '#/alf'
@@ -47,6 +49,8 @@ export function ProfileLabelsSection({
   isFocused,
   setScrollViewTag,
 }: LabelsSectionProps) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
 
   const onScrollToTop = useCallback(() => {
@@ -105,6 +109,7 @@ export function ProfileLabelsSection({
                 borderBottomRightRadius: tokens.borderRadius.md,
               },
             ],
+            shapePreference === 'sharp' && SHARP_CORNERS,
           ]}>
           {index !== 0 && <Divider />}
           <LabelerLabelPreference

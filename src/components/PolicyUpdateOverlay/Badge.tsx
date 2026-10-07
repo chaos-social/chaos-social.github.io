@@ -1,6 +1,7 @@
 import {View} from 'react-native'
 import {Trans} from '@lingui/react/macro'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {Logo} from '#/view/icons/Logo'
 import {atoms as a, useTheme} from '#/alf'
@@ -16,7 +17,7 @@ export function Badge() {
           a.pl_md,
           a.pr_lg,
           a.py_sm,
-          enableSquareButtons ? a.rounded_sm : a.rounded_full,
+          getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
           a.flex_row,
           a.align_center,
           a.gap_xs,

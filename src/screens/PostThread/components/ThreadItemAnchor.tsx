@@ -13,6 +13,7 @@ import {
   shouldShowThreadExpandedMetric,
 } from '#/lib/metrics-display'
 import {makeProfileLink} from '#/lib/routes/links'
+import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
 import {getAuthorPrimaryName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {niceDate} from '#/lib/strings/time'
@@ -788,7 +789,7 @@ function BackdatedPostIndicator({post}: {post: app.bsky.feed.defs.PostView}) {
             style={[
               a.flex_row,
               a.align_center,
-              enableSquareButtons ? a.rounded_sm : a.rounded_full,
+              getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
               t.atoms.bg_contrast_25,
               (hovered || pressed) && t.atoms.bg_contrast_50,
               {
@@ -902,7 +903,7 @@ export function ThreadItemAnchorSkeleton() {
       <Skele.Row style={[a.align_center, a.gap_md]}>
         <Skele.Circle
           size={42}
-          style={enableSquareAvatars && {borderRadius: 8}}
+          style={{borderRadius: getShapeRadius(enableSquareAvatars, 8, 999)}}
         />
 
         <Skele.Col>

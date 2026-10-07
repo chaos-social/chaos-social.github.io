@@ -17,6 +17,7 @@ import {useNavigationTabState} from '#/lib/hooks/useNavigationTabState'
 import {clamp} from '#/lib/numbers'
 import {getTabState, TabState} from '#/lib/routes/helpers'
 import {type SharedNavTab, TAB_TO_NAV_ITEM} from '#/lib/routes/tab-to-nav-item'
+import {getShapeStyle} from '#/lib/shapes'
 import {emitSoftReset} from '#/state/events'
 import {badgeText, useBadgePreference} from '#/state/preferences/badge-text'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
@@ -344,9 +345,11 @@ export function BottomBar({navigation}: BottomTabBarProps) {
                       isAtMyProfile && [
                         isLabeler
                           ? styles.onProfileSquare
-                          : enableSquareAvatars
-                            ? styles.onProfileSquare
-                            : styles.onProfile,
+                          : getShapeStyle(
+                              enableSquareAvatars,
+                              styles.onProfileSquare,
+                              styles.onProfile,
+                            ),
                         {
                           borderColor: t.atoms.text.color,
                           borderWidth: live ? 0 : enableSquareAvatars ? 1.5 : 1,
@@ -356,14 +359,17 @@ export function BottomBar({navigation}: BottomTabBarProps) {
                         borderRadius:
                           getSquareAvatarRadius(
                             iconWidth - (isAtMyProfile ? 3 : 2),
+                            enableSquareAvatars,
                           ) +
-                          (isAtMyProfile
-                            ? live
-                              ? 0
-                              : enableSquareAvatars
-                                ? 1.5
-                                : 1
-                            : 1),
+                          (enableSquareAvatars === 'sharp'
+                            ? 0
+                            : isAtMyProfile
+                              ? live
+                                ? 0
+                                : enableSquareAvatars
+                                  ? 1.5
+                                  : 1
+                              : 1),
                       },
                     ]}>
                     <UserAvatar
@@ -481,7 +487,7 @@ function Btn({
         <View
           style={[
             styles.notificationCount,
-            enableSquareButtons ? a.rounded_sm : a.rounded_full,
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
             {backgroundColor: t.palette.primary_500},
           ]}>
           <Text
@@ -497,7 +503,7 @@ function Btn({
         <View
           style={[
             styles.hasNewBadge,
-            enableSquareButtons ? a.rounded_sm : a.rounded_full,
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
             {backgroundColor: t.palette.primary_500},
           ]}
         />

@@ -3,6 +3,7 @@ import {View} from 'react-native'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {Nux, useNux, useSaveNux} from '#/state/queries/nuxs'
 import {atoms as a, select, useTheme} from '#/alf'
@@ -77,7 +78,7 @@ export function AgeAssuranceDismissibleFeedBanner() {
           style={[
             a.align_center,
             a.justify_center,
-            enableSquareButtons ? a.rounded_sm : a.rounded_full,
+            getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
             {
               width: 42,
               height: 42,

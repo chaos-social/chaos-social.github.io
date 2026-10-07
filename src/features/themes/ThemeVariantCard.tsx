@@ -1,5 +1,7 @@
 import {Pressable, View} from 'react-native'
 
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useBreakpoints, web} from '#/alf'
 import {Heart2_Filled_Stroke2_Corner0_Rounded as HeartIcon} from '#/components/icons/Heart2'
 import {Text} from '#/components/Typography'
@@ -14,6 +16,7 @@ export function ThemeVariantCard({
   selected: boolean
   onPress: () => void
 }) {
+  const enableSquareButtons = useEnableSquareButtons()
   const {gtMobile} = useBreakpoints()
   const colors = colorSet.colors
   return (
@@ -29,7 +32,7 @@ export function ThemeVariantCard({
         a.gap_sm,
         a.p_sm,
         a.pl_md,
-        a.rounded_md,
+        getShapeStyle(enableSquareButtons, a.rounded_md, a.rounded_md),
         {
           flexBasis: gtMobile ? '30%' : '46%',
           flexGrow: gtMobile ? 0 : 1,
@@ -65,7 +68,7 @@ export function ThemeVariantCard({
           style={[
             a.absolute,
             a.inset_0,
-            a.rounded_md,
+            getShapeStyle(enableSquareButtons, a.rounded_md, a.rounded_md),
             {borderColor: colors.accent, borderWidth: 2},
           ]}
         />

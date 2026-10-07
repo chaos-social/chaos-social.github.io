@@ -8,8 +8,10 @@ import {Image} from 'expo-image'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
+import {SHARP_CORNERS} from '#/lib/shapes'
 import {type EmbedPlayerParams} from '#/lib/strings/embed-player'
 import {useExternalEmbedsPrefs} from '#/state/preferences'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
 import {useDialogControl} from '#/components/Dialog'
 import {EmbedConsentDialog} from '#/components/dialogs/EmbedConsent'
@@ -25,6 +27,8 @@ export function ExternalGif({
   link: app.bsky.embed.external.ViewExternal
   params: EmbedPlayerParams
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   const t = useTheme()
   const externalEmbedsPrefs = useExternalEmbedsPrefs()
   const {_} = useLingui()
@@ -104,6 +108,7 @@ export function ExternalGif({
             borderBottomLeftRadius: 0,
             borderBottomRightRadius: 0,
           },
+          shapePreference === 'sharp' && SHARP_CORNERS,
         ]}
         onPress={onPlayPress}
         accessibilityRole="button"

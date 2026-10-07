@@ -3,6 +3,7 @@ import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {useInterestsDisplayNames} from '#/lib/interests'
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {Nux, useSaveNux} from '#/state/queries/nuxs'
 import {usePreferencesQuery} from '#/state/queries/preferences'
@@ -75,7 +76,11 @@ export function ExploreInterestsCard() {
                   style={[
                     a.justify_center,
                     a.align_center,
-                    enableSquareButtons ? a.rounded_sm : a.rounded_full,
+                    getShapeStyle(
+                      enableSquareButtons,
+                      a.rounded_sm,
+                      a.rounded_full,
+                    ),
                     t.atoms.bg_contrast_25,
                     a.px_lg,
                     {height: 32},

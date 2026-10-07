@@ -9,6 +9,7 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
 import {useNonReactiveCallback} from '#/lib/hooks/useNonReactiveCallback'
+import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {DraggableScrollView} from '#/view/com/pager/DraggableScrollView'
 import {BlockDrawerGesture} from '#/view/shell/BlockDrawerGesture'
@@ -269,7 +270,7 @@ export function InterestTabs({
               t.atoms.bg,
               a.h_full,
               a.aspect_square,
-              enableSquareButtons ? a.rounded_sm : a.rounded_full,
+              getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
             ]}>
             <ButtonIcon icon={ArrowLeft} />
           </Button>
@@ -303,7 +304,7 @@ export function InterestTabs({
               t.atoms.bg,
               a.h_full,
               a.aspect_square,
-              enableSquareButtons ? a.rounded_sm : a.rounded_full,
+              getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
             ]}>
             <ButtonIcon icon={ArrowRight} />
           </Button>
@@ -361,7 +362,7 @@ function Tab({
         {({hovered, pressed, focused}) => (
           <View
             style={[
-              enableSquareButtons ? a.rounded_sm : a.rounded_full,
+              getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
               a.px_lg,
               a.py_sm,
               a.border,
