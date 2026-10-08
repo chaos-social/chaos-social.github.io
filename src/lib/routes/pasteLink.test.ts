@@ -39,6 +39,9 @@ afterEach(() => {
 
 it.each([
   'https://witchsky.app/profile/alice.bsky.social/post/3abc',
+  'https://mu.social/profile/alice.bsky.social/post/3abc',
+  'https://blacksky.community/profile/alice.bsky.social/post/3abc',
+  'https://northsky.app/profile/alice.bsky.social/post/3abc',
   'at://alice.bsky.social/app.bsky.feed.post/3abc',
 ])('opens a pasted content link: %s', text => {
   expect(paste(text).defaultPrevented).toBe(true)

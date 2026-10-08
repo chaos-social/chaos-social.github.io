@@ -1,7 +1,14 @@
 import {describe, expect, it} from '@jest/globals'
 
 import {
+  convertBskyAppUrlIfNeeded,
   getChatInviteCodeFromUrl,
+  isBskyAppUrl,
+  isBskyCustomFeedUrl,
+  isBskyListUrl,
+  isBskyPostUrl,
+  isBskyStarterPackUrl,
+  isBskyStartUrl,
   isExternalUrl,
   isHttpUrl,
   isPossiblyAUrl,
@@ -9,6 +16,71 @@ import {
   linkRequiresWarning,
   splitApexDomain,
 } from '#/lib/strings/url-helpers'
+
+describe.each(['mu.social', 'blacksky.community', 'northsky.app'])(
+  '%s content links',
+  host => {
+    const origin = `https://${host}`
+
+    it.each([
+      '/profile/example.test',
+      '/profile/example.test/post/3abc',
+      '/profile/example.test/feed/3abc',
+      '/profile/example.test/lists/3abc',
+      '/starter-pack/example.test/3abc',
+      '/profile/example.test/theme/3abc',
+      '/search?q=witchsky',
+    ])('keeps %s in app navigation', path => {
+      const url = `${origin}${path}`
+      expect(isBskyAppUrl(url)).toBe(true)
+      expect(isExternalUrl(url)).toBe(false)
+      expect(convertBskyAppUrlIfNeeded(url)).toBe(path)
+      expect(linkRequiresWarning(url, 'View content')).toBe(false)
+      expect(linkRequiresWarning(url, 'example.com')).toBe(true)
+    })
+
+    it('recognizes records, starter packs, and chat invites', () => {
+      expect(isBskyPostUrl(`${origin}/profile/example.test/post/3abc`)).toBe(
+        true,
+      )
+      expect(
+        isBskyCustomFeedUrl(`${origin}/profile/example.test/feed/3abc`),
+      ).toBe(true)
+      expect(isBskyListUrl(`${origin}/profile/example.test/lists/3abc`)).toBe(
+        true,
+      )
+      expect(isBskyStartUrl(`${origin}/start/example.test/3abc`)).toBe(true)
+      expect(
+        isBskyStarterPackUrl(`${origin}/starter-pack/example.test/3abc`),
+      ).toBe(true)
+      expect(
+        convertBskyAppUrlIfNeeded(`${origin}/start/example.test/3abc`),
+      ).toBe('/starter-pack/example.test/3abc')
+      expect(getChatInviteCodeFromUrl(`${origin}/chat/abcdefg`)).toBe('abcdefg')
+    })
+
+    it('preserves query parameters and keeps RSS and about pages external', () => {
+      expect(
+        convertBskyAppUrlIfNeeded(`${origin}/search?q=witchsky&sort=latest`),
+      ).toBe('/search?q=witchsky&sort=latest')
+      expect(isExternalUrl(`${origin}/profile/example.test/rss`)).toBe(true)
+      expect(isExternalUrl(`${origin}/about/privacy`)).toBe(true)
+      expect(convertBskyAppUrlIfNeeded(`${origin}/about/privacy`)).toBe(
+        `${origin}/about/privacy`,
+      )
+    })
+
+    it.each([
+      `https://${host}.example.com/profile/example.test`,
+      `https://${host}@example.com/profile/example.test`,
+    ])('keeps lookalike host %s external and untrusted', url => {
+      expect(isBskyAppUrl(url)).toBe(false)
+      expect(isExternalUrl(url)).toBe(true)
+      expect(isTrustedUrl(url)).toBe(false)
+      expect(convertBskyAppUrlIfNeeded(url)).toBe(url)
+    })
+  },
+)
 
 describe('URL schemes', () => {
   it.each<[string, boolean, boolean]>([

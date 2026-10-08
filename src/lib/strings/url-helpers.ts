@@ -13,6 +13,9 @@ const BSKY_TRUSTED_HOSTS = [
   'witchsky\\.app',
   'witchsky\\.social',
   'deer\\.social',
+  'mu\\.social',
+  'blacksky\\.community',
+  'northsky\\.app',
   'bsky\\.app',
   'bsky\\.social',
   'blueskyweb\\.xyz',
@@ -27,7 +30,7 @@ const BSKY_TRUSTED_HOSTS = [
 const TRUSTED_REGEX = new RegExp(
   `^(http(s)?://(([\\w-]+\\.)?${BSKY_TRUSTED_HOSTS.join(
     '|([\\w-]+\\.)?',
-  )})|/|#)`,
+  )})(?=[:/?#]|$)|/|#)`,
 )
 const TLD_SET = new Set(TLDs)
 
@@ -150,7 +153,13 @@ export function isBskyAppUrl(url: string): boolean {
       !url.startsWith('https://witchsky.app/about')) ||
     url.startsWith('https://bsky.app/') ||
     (url.startsWith('https://deer.social/') &&
-      !url.startsWith('https://deer.social/about'))
+      !url.startsWith('https://deer.social/about')) ||
+    (url.startsWith('https://mu.social/') &&
+      !url.startsWith('https://mu.social/about')) ||
+    (url.startsWith('https://blacksky.community/') &&
+      !url.startsWith('https://blacksky.community/about')) ||
+    (url.startsWith('https://northsky.app/') &&
+      !url.startsWith('https://northsky.app/about'))
   )
 }
 

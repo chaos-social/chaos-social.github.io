@@ -23,6 +23,21 @@ describe('getLinkMeta', () => {
     global.fetch = originalFetch
   })
 
+  it.each(['mu.social', 'blacksky.community', 'northsky.app'])(
+    'treats %s post links as AT Protocol content',
+    async host => {
+      const fetchMock = jest.fn()
+      global.fetch = fetchMock
+      const url = `https://${host}/profile/example.test/post/3abc`
+
+      expect(await getLinkMeta(url)).toEqual({
+        likelyType: LikelyType.AtpData,
+        url,
+      })
+      expect(fetchMock).not.toHaveBeenCalled()
+    },
+  )
+
   it('fetches metadata for stream.place routes that look like files', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       json: () =>

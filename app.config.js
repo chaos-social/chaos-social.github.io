@@ -27,6 +27,9 @@ module.exports = function (_config) {
     'applinks:witchsky.app',
     'applinks:deer.social',
     'applinks:bsky.app',
+    'applinks:mu.social',
+    'applinks:blacksky.community',
+    'applinks:northsky.app',
     // When testing local services, enter an ngrok (et al) domain here. It must use a standard HTTP/HTTPS port.
     ...(IS_DEV || IS_TESTFLIGHT ? [] : []),
   ]
@@ -228,6 +231,18 @@ module.exports = function (_config) {
               {
                 scheme: 'https',
                 host: 'bsky.app',
+              },
+              {
+                scheme: 'https',
+                host: 'mu.social',
+              },
+              {
+                scheme: 'https',
+                host: 'blacksky.community',
+              },
+              {
+                scheme: 'https',
+                host: 'northsky.app',
               },
               ...(IS_DEV
                 ? [

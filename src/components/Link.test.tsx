@@ -1,6 +1,7 @@
 import {render, renderHook} from '@testing-library/react-native'
 
-import {Link, useLink} from './Link'
+import {Link, useLink} from '#/components/Link'
+import * as env from '#/env'
 
 const mockOpenLink = jest.fn()
 const mockDispatch = jest.fn()
@@ -24,7 +25,10 @@ jest.mock('#/lib/hooks/useIntentHandler', () => ({
   useGroupChatJoinIntent: () => jest.fn(),
 }))
 jest.mock('#/lib/hooks/useNavigationDeduped', () => ({
-  useNavigationDeduped: () => ({dispatch: mockDispatch}),
+  useNavigationDeduped: () => ({
+    dispatch: mockDispatch,
+    getState: () => ({routeNames: ['Profile']}),
+  }),
 }))
 jest.mock('#/lib/hooks/useOpenLink', () => ({
   useOpenLink: () => mockOpenLink,
@@ -46,6 +50,7 @@ jest.mock('#/components/dialogs/Context', () => ({
 
 beforeEach(() => {
   jest.clearAllMocks()
+  jest.restoreAllMocks()
 })
 
 it('preserves navigation markers on notification and list links', () => {
@@ -96,13 +101,24 @@ it('warns when an app link is disguised as a different destination', () => {
   expect(mockDispatch).not.toHaveBeenCalled()
 })
 
-it('keeps profile links in app navigation', () => {
+it.each(
+  ['witchsky.app', 'mu.social', 'blacksky.community', 'northsky.app'].flatMap(
+    host => [[host, false] as const, [host, true] as const],
+  ),
+)('keeps %s profile links in app navigation (native=%s)', (host, native) => {
+  jest.replaceProperty(env, 'IS_NATIVE', native)
+  jest.replaceProperty(env, 'IS_WEB', !native)
   const {result} = renderHook(() =>
-    useLink({to: 'https://witchsky.app/profile/example.test', displayText: ''}),
+    useLink({to: `https://${host}/profile/example.test`, displayText: ''}),
   )
 
+  expect(result.current.href).toBe('/profile/example.test')
   result.current.onPress({button: 0, preventDefault: jest.fn()} as never)
 
-  expect(mockDispatch).toHaveBeenCalled()
+  expect(mockDispatch).toHaveBeenCalledWith({
+    type: 'PUSH',
+    payload: {name: 'Profile', params: {name: 'example.test'}},
+  })
   expect(mockOpenLink).not.toHaveBeenCalled()
+  expect(mockLinkWarningOpen).not.toHaveBeenCalled()
 })

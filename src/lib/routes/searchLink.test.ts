@@ -6,7 +6,9 @@ const rkey = '3abcdef'
 it.each([
   'bsky.app',
   'witchsky.app',
+  'mu.social',
   'blacksky.community',
+  'northsky.app',
   'reddwarf.app',
   'other.example',
 ])('opens content from %s', host => {

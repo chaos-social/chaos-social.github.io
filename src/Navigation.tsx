@@ -1157,6 +1157,9 @@ const LINKING = {
     'https://bsky.app',
     'https://witchsky.app',
     'https://deer.social',
+    'https://mu.social',
+    'https://blacksky.community',
+    'https://northsky.app',
   ],
 
   getPathFromState(state: State) {
