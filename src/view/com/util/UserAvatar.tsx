@@ -46,6 +46,7 @@ import {
 import {useThumbnailFormat} from '#/state/preferences/thumbnail-format'
 import {unstableCacheProfileView} from '#/state/queries/unstable-profile-cache'
 import {EditImageDialog} from '#/view/com/composer/photos/EditImageDialog'
+import {LOGO_PATH} from '#/view/icons/Logo'
 import {atoms as a, tokens, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
 import {useDialogControl} from '#/components/Dialog'
@@ -249,15 +250,27 @@ let DefaultAvatar = ({
       )}
       <Circle
         cx="12"
-        cy="9.5"
-        r="3.5"
+        cy="12.5"
+        r="3.25"
         fill={accentForeground(t, t.palette.primary_500)}
+      />
+      <Path
+        d={LOGO_PATH}
+        transform="rotate(8 12.3 10) translate(7.18 1.3) scale(0.02)"
+        fill={accentForeground(t, t.palette.primary_500)}
+        stroke={t.palette.primary_500}
+        strokeWidth="24"
+        strokeLinejoin="round"
       />
       <Path
         strokeLinecap="round"
         strokeLinejoin="round"
         fill={accentForeground(t, t.palette.primary_500)}
-        d="M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z"
+        d={
+          finalShape === 'circle'
+            ? 'M 12.058 22.784 C 9.422 22.784 7.007 21.836 5.137 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 C 17.01 21.874 14.64 22.784 12.058 22.784 Z'
+            : 'M 5.137 22.784 V 20.262 C 5.667 17.988 8.534 16.25 11.99 16.25 C 15.494 16.25 18.391 18.036 18.864 20.357 V 22.784 Z'
+        }
       />
     </Svg>
   )
