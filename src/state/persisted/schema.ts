@@ -476,7 +476,7 @@ export const defaults: Schema = {
   goLinksEnabled: true,
   pasteToLinkEnabled: false,
   constellationEnabled: true,
-  directFetchRecords: true,
+  directFetchRecords: false,
   ignoredAppLabelers: [],
   noDiscoverFallback: false,
   repostCarouselEnabled: false,
