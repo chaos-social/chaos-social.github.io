@@ -79,6 +79,10 @@ function KeyboardShortcutsDialogInner() {
             shortcut=", / ."
             label={l`Step backward or forward one frame`}
           />
+          <ShortcutRow
+            shortcut="< / >"
+            label={l`Decrease or increase video playback speed`}
+          />
         </ShortcutGroup>
 
         <ShortcutGroup title={l`Composer`}>

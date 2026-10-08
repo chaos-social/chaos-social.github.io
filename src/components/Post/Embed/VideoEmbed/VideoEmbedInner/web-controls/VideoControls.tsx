@@ -79,7 +79,7 @@ export function Controls({
   const isPictureInPicture =
     pictureInPictureElement !== null &&
     pictureInPictureElement === videoRef.current
-  const [playbackSpeed] = useVideoPlaybackSpeed()
+  const [playbackSpeed, setPlaybackSpeed] = useVideoPlaybackSpeed()
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
@@ -284,6 +284,7 @@ export function Controls({
       const key = event.key.toLowerCase()
       const isFrameStep = key === ',' || key === '.'
       const isSeek = key === 'arrowleft' || key === 'arrowright' || isFrameStep
+      const isSpeedChange = key === '<' || key === '>'
       const container = fullscreenRef.current
       const target = event.target
       if (
@@ -291,11 +292,11 @@ export function Controls({
         event.defaultPrevented ||
         (event.repeat && (key === 'f' || key === 'm')) ||
         event.isComposing ||
-        event.shiftKey ||
+        (event.shiftKey && !isSpeedChange) ||
         event.ctrlKey ||
         event.metaKey ||
         event.altKey ||
-        (key !== 'f' && key !== 'm' && !isSeek) ||
+        (key !== 'f' && key !== 'm' && !isSeek && !isSpeedChange) ||
         settingsOpen ||
         (target instanceof Element &&
           target.closest(
@@ -311,6 +312,7 @@ export function Controls({
           (active && focused && document.activeElement === document.body)
       if (!ownsKeyboard) return
       const video = videoRef.current
+      if (isSpeedChange && !video) return
       if (isSeek && (!video || !Number.isFinite(video.duration))) return
       event.preventDefault()
       event.stopPropagation()
@@ -319,6 +321,12 @@ export function Controls({
       } else if (key === 'm') {
         drawFocus()
         changeMuted(value => !value)
+      } else if (isSpeedChange && video) {
+        drawFocus()
+        const direction = key === '<' ? -1 : 1
+        const speed = clamp(video.playbackRate + direction * 0.25, 0.25, 2)
+        video.playbackRate = speed
+        setPlaybackSpeed(speed)
       } else if (video) {
         drawFocus()
         if (isFrameStep) pause()
@@ -344,6 +352,7 @@ export function Controls({
     videoRef,
     drawFocus,
     pause,
+    setPlaybackSpeed,
   ])
 
   const onSeek = useCallback(
