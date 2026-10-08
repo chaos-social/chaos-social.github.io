@@ -163,9 +163,13 @@ export function isBskyRSSUrl(url: string): boolean {
 }
 
 export function isExternalUrl(url: string): boolean {
-  const external = !isBskyAppUrl(url) && url.startsWith('http')
+  const external = !isBskyAppUrl(url) && /^[a-z][a-z0-9+.-]*:/i.test(url)
   const rss = isBskyRSSUrl(url)
   return external || rss
+}
+
+export function isHttpUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url)
 }
 
 export function isTrustedUrl(url: string): boolean {
@@ -340,6 +344,9 @@ export function linkRequiresWarning(uri: string, label: string) {
   }
 
   const host = urip.hostname.toLowerCase()
+  if (!host) {
+    return uri !== label
+  }
   if (isTrustedUrl(uri)) {
     // if this is a link to internal content, warn if it represents itself as a URL to another app
     return !!labelDomain && labelDomain !== host && isPossiblyAUrl(labelDomain)

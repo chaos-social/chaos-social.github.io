@@ -1,6 +1,10 @@
-import {render} from '@testing-library/react-native'
+import {render, renderHook} from '@testing-library/react-native'
 
-import {Link} from './Link'
+import {Link, useLink} from './Link'
+
+const mockOpenLink = jest.fn()
+const mockDispatch = jest.fn()
+const mockLinkWarningOpen = jest.fn()
 
 jest.mock('#/env', () => ({IS_WEB: true, IS_NATIVE: false, IS_IOS: false}))
 jest.mock('#/alf', () => ({
@@ -20,22 +24,29 @@ jest.mock('#/lib/hooks/useIntentHandler', () => ({
   useGroupChatJoinIntent: () => jest.fn(),
 }))
 jest.mock('#/lib/hooks/useNavigationDeduped', () => ({
-  useNavigationDeduped: () => ({}),
+  useNavigationDeduped: () => ({dispatch: mockDispatch}),
 }))
 jest.mock('#/lib/hooks/useOpenLink', () => ({
-  useOpenLink: () => jest.fn(),
+  useOpenLink: () => mockOpenLink,
 }))
 jest.mock('#/lib/sharing', () => ({}))
 jest.mock('#/lib/strings/url-helpers', () => ({
-  convertBskyAppUrlIfNeeded: (url: string) => url,
-  isExternalUrl: () => false,
+  ...jest.requireActual('#/lib/strings/url-helpers'),
 }))
 jest.mock('#/state/preferences', () => ({useGoLinksEnabled: () => false}))
 jest.mock('#/state/preferences/in-app-browser', () => ({}))
-jest.mock('#/routes', () => ({}))
-jest.mock('#/components/dialogs/Context', () => ({
-  useGlobalDialogsControlContext: () => ({}),
+jest.mock('#/routes', () => ({
+  router: {matchPath: () => ['Profile', {name: 'example.test'}]},
 }))
+jest.mock('#/components/dialogs/Context', () => ({
+  useGlobalDialogsControlContext: () => ({
+    linkWarningDialogControl: {open: mockLinkWarningOpen},
+  }),
+}))
+
+beforeEach(() => {
+  jest.clearAllMocks()
+})
 
 it('preserves navigation markers on notification and list links', () => {
   const {getByTestId} = render(
@@ -52,4 +63,46 @@ it('preserves navigation markers on notification and list links', () => {
     keyboardNavigationItem: 'true',
     noUnderline: '1',
   })
+})
+
+it.each([
+  'spotify://track/123',
+  'custom+app.v2-test://open/item',
+  'tel:+15551234567',
+])('opens %s externally without dispatching navigation', to => {
+  const {result} = renderHook(() => useLink({to, displayText: to}))
+  const preventDefault = jest.fn()
+
+  result.current.onPress({button: 0, preventDefault} as never)
+
+  expect(preventDefault).toHaveBeenCalled()
+  expect(mockOpenLink).toHaveBeenCalledWith(to, undefined, false)
+  expect(mockDispatch).not.toHaveBeenCalled()
+  expect(mockLinkWarningOpen).not.toHaveBeenCalled()
+})
+
+it('warns when an app link is disguised as a different destination', () => {
+  const {result} = renderHook(() =>
+    useLink({to: 'spotify://track/123', displayText: 'example.com'}),
+  )
+
+  result.current.onPress({button: 0, preventDefault: jest.fn()} as never)
+
+  expect(mockLinkWarningOpen).toHaveBeenCalledWith({
+    displayText: 'example.com',
+    href: 'spotify://track/123',
+  })
+  expect(mockOpenLink).not.toHaveBeenCalled()
+  expect(mockDispatch).not.toHaveBeenCalled()
+})
+
+it('keeps profile links in app navigation', () => {
+  const {result} = renderHook(() =>
+    useLink({to: 'https://witchsky.app/profile/example.test', displayText: ''}),
+  )
+
+  result.current.onPress({button: 0, preventDefault: jest.fn()} as never)
+
+  expect(mockDispatch).toHaveBeenCalled()
+  expect(mockOpenLink).not.toHaveBeenCalled()
 })

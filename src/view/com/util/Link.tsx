@@ -417,8 +417,7 @@ function onPressInner(
     }
     if (
       newTab ||
-      href.startsWith('http') ||
-      href.startsWith('mailto') ||
+      isExternalUrl(href) ||
       EXEMPT_PATHS.some(path => href.startsWith(path))
     ) {
       openLink(href)

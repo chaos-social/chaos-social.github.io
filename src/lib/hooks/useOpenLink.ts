@@ -7,6 +7,7 @@ import {
   createProxiedUrl,
   isBskyAppUrl,
   isBskyRSSUrl,
+  isHttpUrl,
   isRelativeUrl,
   toNiceDomain,
 } from '#/lib/strings/url-helpers'
@@ -42,7 +43,7 @@ export function useOpenLink() {
         }
       }
 
-      if (IS_NATIVE && !url.startsWith('mailto:')) {
+      if (IS_NATIVE && isHttpUrl(url)) {
         if (override === undefined && enabled === undefined) {
           // consent dialog is a global dialog, and while it's possible to nest dialogs,
           // the actual components need to be nested. sibling dialogs on iOS are not supported.

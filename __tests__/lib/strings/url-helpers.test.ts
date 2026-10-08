@@ -2,16 +2,48 @@ import {describe, expect, it} from '@jest/globals'
 
 import {
   getChatInviteCodeFromUrl,
+  isExternalUrl,
+  isHttpUrl,
   isPossiblyAUrl,
   isTrustedUrl,
   linkRequiresWarning,
   splitApexDomain,
-} from '../../../src/lib/strings/url-helpers'
+} from '#/lib/strings/url-helpers'
+
+describe('URL schemes', () => {
+  it.each<[string, boolean, boolean]>([
+    ['https://example.com', true, true],
+    ['http://example.com', true, true],
+    ['HTTPS://example.com', true, true],
+    ['https://witchsky.app/profile/example.test', false, true],
+    ['https://bsky.app/profile/example.test', false, true],
+    ['https://deer.social/profile/example.test', false, true],
+    ['/profile/example.test', false, false],
+    ['/profile/example.test/rss', true, false],
+    ['#', false, false],
+    ['example.com', false, false],
+    ['https-page', false, false],
+    ['spotify://track/123', true, false],
+    ['SPOTIFY://track/123', true, false],
+    ['custom+app.v2-test://open/item', true, false],
+    ['mailto:hello@example.com', true, false],
+    ['tel:+15551234567', true, false],
+  ])('%s: external=%s, http=%s', (url, external, http) => {
+    expect(isExternalUrl(url)).toBe(external)
+    expect(isHttpUrl(url)).toBe(http)
+  })
+})
 
 describe('linkRequiresWarning', () => {
   type Case = [string, string, boolean]
 
   const cases: Case[] = [
+    ['spotify://track/123', 'spotify://track/123', false],
+    ['spotify://track/123', 'example.com', true],
+    ['tel:+15551234567', 'tel:+15551234567', false],
+    ['tel:+15551234567', 'example.com', true],
+    ['mailto:hello@example.com', 'mailto:hello@example.com', false],
+    ['mailto:hello@example.com', 'example.com', true],
     ['http://example.com', 'http://example.com', false],
     ['http://example.com', 'example.com', false],
     ['http://example.com', 'example.com/page', false],

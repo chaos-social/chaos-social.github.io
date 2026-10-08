@@ -24,6 +24,7 @@ import {
   getChatInviteCodeFromUrl,
   isBskyDownloadUrl,
   isExternalUrl,
+  isHttpUrl,
   linkRequiresWarning,
 } from '#/lib/strings/url-helpers'
 import {useGoLinksEnabled} from '#/state/preferences'
@@ -352,7 +353,7 @@ export function Link({
   })
 
   // Peek is iOS-only and only makes sense for external web links.
-  const peekEnabled = Boolean(peek && IS_IOS && isExternal)
+  const peekEnabled = Boolean(peek && IS_IOS && isExternal && isHttpUrl(href))
 
   const button = (
     <Button
