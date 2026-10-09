@@ -1,3 +1,9 @@
+jest.mock('#/state/queries/resolve-identity', () => ({
+  resolvePdsServiceUrl: jest
+    .fn()
+    .mockResolvedValue('https://owner.pds.example'),
+}))
+
 import {saveImageToMediaLibrary} from './manip.web'
 
 const image =
@@ -64,7 +70,7 @@ it('keeps original blobs on the fetch path and surfaces errors', async () => {
     saveImageToMediaLibrary({uri: image, format: 'original'}),
   ).rejects.toThrow('CORS blocked')
   expect(fetch).toHaveBeenCalledWith(
-    expect.stringContaining('/xrpc/com.atproto.sync.getBlob?'),
+    'https://owner.pds.example/xrpc/com.atproto.sync.getBlob?did=did%3Aplc%3Aexample&cid=bafyexample',
   )
   expect(anchor.click).not.toHaveBeenCalled()
 })

@@ -6,6 +6,7 @@ import {useLingui} from '@lingui/react'
 
 import {parseAltFromGIFDescription} from '#/lib/gif-alt-text'
 import {useHaptics} from '#/lib/haptics'
+import {getRecordImageMimeType} from '#/lib/media/recordImageMimeType'
 import {SHARP_CORNERS} from '#/lib/shapes'
 import {shareUrl} from '#/lib/sharing'
 import {
@@ -65,6 +66,7 @@ export const ExternalEmbed = ({
       : applyImageTransforms(link.thumb, {
           imageCdnHost,
           format: thumbnailFormat,
+          originalMimeType: getRecordImageMimeType(link.thumb, post?.record),
         })
     : undefined
   const embedPlayerParams = useMemo(() => {

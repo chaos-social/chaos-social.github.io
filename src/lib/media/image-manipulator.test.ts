@@ -1,3 +1,9 @@
+jest.mock('#/state/queries/resolve-identity', () => ({
+  resolvePdsServiceUrl: jest
+    .fn()
+    .mockResolvedValue('https://owner.pds.example'),
+}))
+
 import {ImageManipulator} from 'expo-image-manipulator'
 
 import {renderImage} from './image-manipulator'
@@ -29,7 +35,7 @@ it('uses an origin-clean blob and releases it when cropping fails', async () => 
       ),
     ).rejects.toThrow('crop failed')
     expect(global.fetch).toHaveBeenCalledWith(
-      'https://bsky.social/xrpc/com.atproto.sync.getBlob?did=did%3Aplc%3Atest&cid=bafkreitest',
+      'https://owner.pds.example/xrpc/com.atproto.sync.getBlob?did=did%3Aplc%3Atest&cid=bafkreitest',
     )
     expect(ImageManipulator.manipulate).toHaveBeenCalledWith('blob:local-image')
     expect(release).toHaveBeenCalled()

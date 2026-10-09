@@ -1,12 +1,8 @@
 import {formatToFileExt, imageMimeToExtension} from '#/lib/media/image-formats'
+import {getDownloadImageUri} from '#/lib/media/original-image'
 import {type PickerImage} from './picker.shared'
 import {type Dimensions} from './types'
-import {
-  blobToDataUri,
-  getDataUriSize,
-  getDownloadImageUri,
-  getResizedDimensions,
-} from './util'
+import {blobToDataUri, getDataUriSize, getResizedDimensions} from './util'
 import {mimeToExt} from './video/util'
 
 export async function compressIfNeeded(
@@ -60,7 +56,7 @@ export async function saveImageToMediaLibrary({
   uri: string
   format?: string
 }) {
-  const downloadUri = getDownloadImageUri(uri, format)
+  const downloadUri = await getDownloadImageUri(uri, format)
   const url = new URL(downloadUri, window.location.href)
   if (
     url.origin === 'https://cdn.bsky.app' &&

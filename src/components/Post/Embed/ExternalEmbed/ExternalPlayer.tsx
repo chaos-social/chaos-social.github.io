@@ -19,6 +19,7 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {useNavigation} from '@react-navigation/native'
 
+import {getRecordImageMimeType} from '#/lib/media/recordImageMimeType'
 import {type NavigationProp} from '#/lib/routes/types'
 import {
   type EmbedPlayerParams,
@@ -268,6 +269,10 @@ export function ExternalPlayer({
                   : applyImageTransforms(link.thumb, {
                       imageCdnHost,
                       format: thumbnailFormat,
+                      originalMimeType: getRecordImageMimeType(
+                        link.thumb,
+                        post?.record,
+                      ),
                     }),
               }}
               accessibilityIgnoresInvertColors

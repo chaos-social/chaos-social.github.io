@@ -4,6 +4,7 @@ import {type AnimatedRef} from 'react-native-reanimated'
 import {Image} from 'expo-image'
 
 import {resolveEmbedImageUris} from '#/lib/media/embed-image-formats'
+import {getRecordImageMimeType} from '#/lib/media/recordImageMimeType'
 import {getShapeRadius} from '#/lib/shapes'
 import {userStyle} from '#/lib/userstyles'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
@@ -47,7 +48,7 @@ export function ImageEmbed({
   const thumbnailFormat = useThumbnailFormat()
   const loadAsPngs = useLoadAsPngs()
   const imageCdnHost = useImageCdnHost()
-  const images: app.bsky.embed.images.ViewImage[] =
+  const rawImages: app.bsky.embed.images.ViewImage[] =
     embed.type === 'gallery'
       ? embed.view.items
           .filter(item => bsky.isType(app.bsky.embed.gallery.viewImage, item))
@@ -58,6 +59,24 @@ export function ImageEmbed({
             aspectRatio: item.aspectRatio,
           }))
       : embed.view.images
+  const images = rawImages.map(img => {
+    const uris = resolveEmbedImageUris(
+      {
+        ...img,
+        mimeType: getRecordImageMimeType(img.fullsize, rest.post?.record),
+      },
+      {
+        thumbnailFormat,
+        fullsizeFormat: fullsizeFormat ?? 'default',
+        loadAsPngs: loadAsPngs ?? true,
+      },
+    )
+    return {
+      ...img,
+      fullsize: uris.fullsize as typeof img.fullsize,
+      thumb: uris.thumb as typeof img.thumb,
+    }
+  })
   const useExpandedLayout =
     embed.type === 'gallery'
       ? images.length > MAX_GRID_IMAGES
@@ -84,14 +103,9 @@ export function ImageEmbed({
 
   if (images.length > 0) {
     const items = images.map(img => {
-      const {fullsize, thumb} = resolveEmbedImageUris(img, {
-        thumbnailFormat,
-        fullsizeFormat: fullsizeFormat ?? 'default',
-        loadAsPngs: loadAsPngs ?? true,
-      })
       return {
-        uri: applyImageTransforms(fullsize, {imageCdnHost}),
-        thumbUri: applyImageTransforms(thumb, {imageCdnHost}),
+        uri: applyImageTransforms(img.fullsize, {imageCdnHost}),
+        thumbUri: applyImageTransforms(img.thumb, {imageCdnHost}),
         alt: img.alt,
         dimensions: img.aspectRatio ?? null,
       }

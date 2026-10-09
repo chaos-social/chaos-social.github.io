@@ -17,12 +17,13 @@ import * as MediaLibrary from 'expo-media-library/legacy'
 import * as Sharing from 'expo-sharing'
 
 import {formatToFileExt, imageMimeToExtension} from '#/lib/media/image-formats'
+import {getDownloadImageUri} from '#/lib/media/original-image'
 import {logger} from '#/logger'
 import {IS_ANDROID, IS_IOS} from '#/env'
 import {renderImage} from './image-manipulator'
 import {type PickerImage} from './picker.shared'
 import {type Dimensions} from './types'
-import {getDownloadImageUri, getResizedDimensions} from './util'
+import {getResizedDimensions} from './util'
 import {mimeToExt} from './video/util'
 
 export async function compressIfNeeded(
@@ -105,9 +106,8 @@ export async function shareImageModal({uri}: {uri: string}) {
 const ALBUM_NAME = 'Bluesky'
 
 /**
- * Saves an image to the user's device. Uses the CDN's `download` preset with the
- * chosen format suffix. On native this saves to the media library; on web it
- * triggers a browser download.
+ * Saves original bytes from the image owner's PDS, or the CDN's `download`
+ * preset for converted formats, to the user's media library.
  */
 export async function saveImageToMediaLibrary({
   uri,
@@ -116,7 +116,7 @@ export async function saveImageToMediaLibrary({
   uri: string
   format?: string
 }) {
-  const downloadUri = getDownloadImageUri(uri, format)
+  const downloadUri = await getDownloadImageUri(uri, format)
   const downloadedPath = await downloadImage(
     downloadUri,
     String(uuid.v4()),

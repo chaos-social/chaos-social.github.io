@@ -145,10 +145,11 @@ export function applyImageTransforms(
   options: {
     imageCdnHost?: string
     format?: string
+    originalMimeType?: string
   },
 ) {
   const withFormat = options.format
-    ? modifyImageFormat(src, options.format)
+    ? modifyImageFormat(src, options.format, options.originalMimeType)
     : src
   return maybeModifyImageCdnHost(withFormat, options.imageCdnHost)
 }

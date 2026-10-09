@@ -5,6 +5,7 @@ export function resolveEmbedImageUris(
   img: {
     thumb: string
     fullsize: string
+    mimeType?: string
     aspectRatio?: {width: number; height: number} | null
   },
   {
@@ -25,9 +26,13 @@ export function resolveEmbedImageUris(
 
   const resolvedFullsizeFormat =
     pngSized && fullsizeFormat === 'webp' ? 'png' : fullsizeFormat
-  const fullsize = modifyImageFormat(img.fullsize, resolvedFullsizeFormat)
+  const fullsize = modifyImageFormat(
+    img.fullsize,
+    resolvedFullsizeFormat,
+    img.mimeType,
+  )
   const thumb = thumbnailFormat
-    ? modifyImageFormat(img.thumb, thumbnailFormat)
+    ? modifyImageFormat(img.thumb, thumbnailFormat, img.mimeType)
     : img.thumb
 
   return {fullsize, thumb}

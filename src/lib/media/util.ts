@@ -1,3 +1,5 @@
+import {imageMimeToExtension} from '#/lib/media/image-formats'
+
 export function extractDataUriMime(uri: string): string {
   return uri.substring(uri.indexOf(':') + 1, uri.indexOf(';'))
 }
@@ -73,32 +75,37 @@ export function convertCdnPreset(uri: string, preset: ImgproxyPreset): string {
   return uri.replace(IMGPROXY_PRESET_RE, `$1${preset}$3`)
 }
 
-/** Preserve non-CDN URLs, including blobs and already-resolved originals. */
-export function modifyImageFormat(uri: string, format: string) {
-  if (format === 'default') return uri
-
-  let url: URL
+/** Extracts the blob identity from an imgproxy URL on any configured CDN. */
+export function getImageBlobRef(uri: string) {
   try {
-    url = new URL(uri)
-  } catch {
-    return uri
-  }
-  const match = url.pathname.match(
-    /^\/img\/[^/]+\/plain\/(did:[^/]+)\/([^/@]+)(?:@[^/]+)?$/,
-  )
-  if (!match) return uri
-  if (format === 'original') {
-    const original = new URL(
-      'https://bsky.social/xrpc/com.atproto.sync.getBlob',
+    const url = new URL(uri)
+    const match = url.pathname.match(
+      /^\/img\/[^/]+\/plain\/(did:[^/]+)\/([^/@]+)(?:@[^/]+)?$/,
     )
-    original.searchParams.set('did', decodeURIComponent(match[1]))
-    original.searchParams.set('cid', match[2])
-    return original.toString()
+    if (!match) return undefined
+    return {did: decodeURIComponent(match[1]), cid: match[2]}
+  } catch {
+    return undefined
   }
-  url.pathname = url.pathname.replace(/(?:@[^/]*)?$/, `@${format}`)
-  return url.toString()
 }
 
-export function getDownloadImageUri(uri: string, format: string) {
-  return modifyImageFormat(convertCdnPreset(uri, 'download'), format)
+/** Preserve non-CDN URLs, including blobs and already-resolved originals. */
+export function modifyImageFormat(
+  uri: string,
+  format: string,
+  originalMimeType?: string,
+) {
+  if (format === 'default') return uri
+
+  const ref = getImageBlobRef(uri)
+  if (!ref) return uri
+  if (format === 'original') {
+    const extension = imageMimeToExtension(originalMimeType)
+    // A server URL's existing suffix describes its conversion, not its source.
+    if (!extension) return uri
+    format = extension === 'jpg' ? 'jpeg' : extension
+  }
+  const url = new URL(uri)
+  url.pathname = url.pathname.replace(/(?:@[^/]*)?$/, `@${format}`)
+  return url.toString()
 }
