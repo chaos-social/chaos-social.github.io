@@ -16,6 +16,7 @@ import {SaveFormat} from 'expo-image-manipulator'
 import * as MediaLibrary from 'expo-media-library/legacy'
 import * as Sharing from 'expo-sharing'
 
+import {getMediaDownloadFilename} from '#/lib/media/downloadFilename'
 import {formatToFileExt, imageMimeToExtension} from '#/lib/media/image-formats'
 import {getDownloadImageUri} from '#/lib/media/original-image'
 import {logger} from '#/logger'
@@ -112,9 +113,11 @@ const ALBUM_NAME = 'Bluesky'
 export async function saveImageToMediaLibrary({
   uri,
   format = 'original',
+  downloadName,
 }: {
   uri: string
   format?: string
+  downloadName?: string
 }) {
   const downloadUri = await getDownloadImageUri(uri, format)
   const downloadedPath = await downloadImage(
@@ -127,7 +130,16 @@ export async function saveImageToMediaLibrary({
     dotIndex >= 0
       ? downloadedPath.slice(dotIndex)
       : `.${formatToFileExt(format)}`
-  const imagePath = await moveToPermanentPath(downloadedPath, ext)
+  const imagePath = await moveToPermanentPath(
+    downloadedPath,
+    ext,
+    getMediaDownloadFilename({
+      downloadName,
+      uri,
+      extension: ext.slice(1),
+      kind: 'image',
+    }),
+  )
 
   // save
   try {
@@ -188,11 +200,17 @@ export async function saveImageToMediaLibrary({
     })
     throw err
   } finally {
-    void safeDeleteAsync(imagePath)
+    void safeDeleteAsync(imagePath.slice(0, imagePath.lastIndexOf('/')))
   }
 }
 
-export async function saveVideoToMediaLibrary({uri}: {uri: string}) {
+export async function saveVideoToMediaLibrary({
+  uri,
+  downloadName,
+}: {
+  uri: string
+  downloadName?: string
+}) {
   // download the file to cache
   const tempPath = `${cacheDirectory ?? ''}/${String(uuid.v4())}.bin`
   const dlResumable = createDownloadResumable(uri, tempPath, {cache: true})
@@ -214,7 +232,11 @@ export async function saveVideoToMediaLibrary({uri}: {uri: string}) {
     return false
   }
 
-  const videoPath = await moveToPermanentPath(dlRes.uri, '.' + extension)
+  const videoPath = await moveToPermanentPath(
+    dlRes.uri,
+    '.' + extension,
+    getMediaDownloadFilename({downloadName, uri, extension, kind: 'video'}),
+  )
 
   // save
   try {
@@ -234,7 +256,7 @@ export async function saveVideoToMediaLibrary({uri}: {uri: string}) {
     })
     throw err
   } finally {
-    void safeDeleteAsync(videoPath)
+    void safeDeleteAsync(videoPath.slice(0, videoPath.lastIndexOf('/')))
   }
   return true
 }
@@ -339,7 +361,11 @@ async function doResize(
   }
 }
 
-async function moveToPermanentPath(path: string, ext: string): Promise<string> {
+async function moveToPermanentPath(
+  path: string,
+  ext: string,
+  downloadFilename?: string,
+): Promise<string> {
   /*
   Since this package stores images in a temp directory, we need to move the file to a permanent location.
   Relevant: IOS bug when trying to open a second time:
@@ -349,11 +375,24 @@ async function moveToPermanentPath(path: string, ext: string): Promise<string> {
 
   // cacheDirectory will not ever be null on native, but it could be on web. This function only ever gets called on
   // native so we assert as a string.
-  const destinationPath = joinPath(cacheDirectory as string, filename + ext)
-  await copyAsync({
-    from: normalizePath(path),
-    to: normalizePath(destinationPath),
-  })
+  const directory = downloadFilename
+    ? joinPath(cacheDirectory as string, String(filename))
+    : (cacheDirectory as string)
+  if (downloadFilename)
+    await makeDirectoryAsync(directory, {intermediates: true})
+  const destinationPath = joinPath(
+    directory,
+    downloadFilename ?? filename + ext,
+  )
+  try {
+    await copyAsync({
+      from: normalizePath(path),
+      to: normalizePath(destinationPath),
+    })
+  } catch (error) {
+    if (downloadFilename) await safeDeleteAsync(directory)
+    throw error
+  }
   void safeDeleteAsync(path)
   return normalizePath(destinationPath)
 }

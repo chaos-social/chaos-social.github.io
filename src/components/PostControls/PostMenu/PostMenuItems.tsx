@@ -24,6 +24,7 @@ import {useQueryClient} from '@tanstack/react-query'
 import {DISCOVER_DEBUG_DIDS} from '#/lib/constants'
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {useOpenLink} from '#/lib/hooks/useOpenLink'
+import {getPostMediaDownloadName} from '#/lib/media/downloadFilename'
 import {saveVideoToDevice} from '#/lib/media/saveVideoToDevice'
 import {getRedraftImages} from '#/lib/redraft'
 import {getCurrentRoute} from '#/lib/routes/helpers'
@@ -667,7 +668,10 @@ let PostMenuItems = ({
 
     Toast.show(l({message: 'Downloading video...', context: 'toast'}))
 
-    const success = await saveVideoToDevice({uri})
+    const success = await saveVideoToDevice({
+      uri,
+      downloadName: getPostMediaDownloadName(post),
+    })
 
     Toast.show(
       success
@@ -683,7 +687,10 @@ let PostMenuItems = ({
     Toast.show(l({message: 'Downloading GIF...', context: 'toast'}))
 
     let success
-    success = await saveVideoToDevice({uri: gifEmbed.external.uri})
+    success = await saveVideoToDevice({
+      uri: gifEmbed.external.uri,
+      downloadName: getPostMediaDownloadName(post),
+    })
 
     if (success)
       Toast.show(l({message: 'GIF downloaded', context: 'toast'}), {

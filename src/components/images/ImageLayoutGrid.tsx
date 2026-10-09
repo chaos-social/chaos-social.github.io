@@ -2,16 +2,16 @@ import {useRef} from 'react'
 import {type StyleProp, View, type ViewStyle} from 'react-native'
 import {type AnimatedRef, useAnimatedRef} from 'react-native-reanimated'
 
+import {type DownloadableImage} from '#/lib/media/downloadFilename'
 import {SHARP_CORNERS} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useBreakpoints} from '#/alf'
 import {type Dimensions} from '#/components/Lightbox/types'
 import {type PostEmbedViewContext} from '#/components/Post/Embed/types'
-import {type app} from '#/lexicons'
 import {GalleryItem} from './ImageLayoutGridItem'
 
 interface ImageLayoutGridProps {
-  images: app.bsky.embed.images.ViewImage[]
+  images: DownloadableImage[]
   onPress?: (
     index: number,
     containerRefs: AnimatedRef<any>[],
@@ -56,7 +56,7 @@ export function ImageLayoutGrid({
 }
 
 interface ImageLayoutGridInnerProps {
-  images: app.bsky.embed.images.ViewImage[]
+  images: DownloadableImage[]
   onPress?: (
     index: number,
     containerRefs: AnimatedRef<any>[],

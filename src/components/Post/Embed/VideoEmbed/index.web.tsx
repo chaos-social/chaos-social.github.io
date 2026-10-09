@@ -41,7 +41,11 @@ export function VideoEmbed({
   post?: app.bsky.feed.defs.PostView
 }) {
   const t = useTheme()
-  const onDownload = useVideoDownload({did: post?.author.did, cid: embed.cid})
+  const onDownload = useVideoDownload({
+    did: post?.author.did,
+    cid: embed.cid,
+    post,
+  })
   const ref = useRef<HTMLDivElement>(null)
   const {
     active: activeFromContext,

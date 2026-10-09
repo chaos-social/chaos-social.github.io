@@ -2,6 +2,7 @@ import {type StyleProp, StyleSheet, View, type ViewStyle} from 'react-native'
 import {Image} from 'expo-image'
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {getPostMediaDownloadName} from '#/lib/media/downloadFilename'
 import {shareImageModal} from '#/lib/media/manip'
 import {useSaveImageToMediaLibrary} from '#/lib/media/save-image'
 import {isGifEmbed} from '#/lib/strings/embed-player'
@@ -27,9 +28,11 @@ export function Embed({
   embed,
   style,
   peekable = false,
+  post,
 }: {
   embed: app.bsky.feed.defs.PostView['embed']
   style?: StyleProp<ViewStyle>
+  post?: {uri: string; author: {handle: string}}
   peekable?: boolean
 }) {
   const e = bsky.post.parseEmbed(embed)
@@ -39,9 +42,16 @@ export function Embed({
   if (e.type === 'images') {
     return (
       <Outer style={style}>
-        {e.view.images.map(image =>
+        {e.view.images.map((image, index) =>
           peekable ? (
-            <PeekableImageItem key={image.thumb} image={image} />
+            <PeekableImageItem
+              key={image.thumb}
+              image={image}
+              downloadName={getPostMediaDownloadName(
+                post,
+                e.view.images.length > 1 ? index : undefined,
+              )}
+            />
           ) : (
             <ImageItem
               key={image.thumb}
@@ -68,7 +78,16 @@ export function Embed({
           alt: item.alt,
           aspectRatio: item.aspectRatio,
         }
-        tiles.push(<PeekableImageItem key={item.thumbnail} image={image} />)
+        tiles.push(
+          <PeekableImageItem
+            key={item.thumbnail}
+            image={image}
+            downloadName={getPostMediaDownloadName(
+              post,
+              e.view.items.length > 1 ? tiles.length : undefined,
+            )}
+          />,
+        )
       } else {
         tiles.push(
           <ImageItem
@@ -123,6 +142,8 @@ export function Embed({
     return (
       <Embed
         embed={e.media.view as app.bsky.feed.defs.PostView['embed']}
+        peekable={peekable}
+        post={post}
         style={style}
       />
     )
@@ -241,7 +262,13 @@ export function VideoItem({
   )
 }
 
-function PeekableImageItem({image}: {image: app.bsky.embed.images.ViewImage}) {
+function PeekableImageItem({
+  image,
+  downloadName,
+}: {
+  image: app.bsky.embed.images.ViewImage
+  downloadName?: string
+}) {
   const {t: l} = useLingui()
   const saveImage = useSaveImageToMediaLibrary()
 
@@ -265,7 +292,9 @@ function PeekableImageItem({image}: {image: app.bsky.embed.images.ViewImage}) {
       <PeekMenu.Menu>
         <PeekMenu.MenuItem
           id="save"
-          onSelect={() => void saveImage(image.fullsize)}>
+          onSelect={() =>
+            void saveImage(image.fullsize, undefined, downloadName)
+          }>
           <PeekMenu.MenuItemIcon icon={DownloadIcon} />
           <PeekMenu.MenuItemText>{l`Save image`}</PeekMenu.MenuItemText>
         </PeekMenu.MenuItem>

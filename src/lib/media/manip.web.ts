@@ -1,3 +1,4 @@
+import {getMediaDownloadFilename} from '#/lib/media/downloadFilename'
 import {formatToFileExt, imageMimeToExtension} from '#/lib/media/image-formats'
 import {getDownloadImageUri} from '#/lib/media/original-image'
 import {type PickerImage} from './picker.shared'
@@ -52,9 +53,11 @@ export function shareImageModal(_opts: {uri: string}) {
 export async function saveImageToMediaLibrary({
   uri,
   format = 'original',
+  downloadName,
 }: {
   uri: string
   format?: string
+  downloadName?: string
 }) {
   const downloadUri = await getDownloadImageUri(uri, format)
   const url = new URL(downloadUri, window.location.href)
@@ -62,7 +65,16 @@ export async function saveImageToMediaLibrary({
     url.origin === 'https://cdn.bsky.app' &&
     url.pathname.startsWith('/img/download/')
   ) {
-    downloadUrl(downloadUri, `witchsky-image.${formatToFileExt(format)}`, true)
+    downloadUrl(
+      downloadUri,
+      getMediaDownloadFilename({
+        downloadName,
+        uri,
+        extension: formatToFileExt(format),
+        kind: 'image',
+      }),
+      true,
+    )
     return
   }
   const response = await fetch(downloadUri)
@@ -73,13 +85,22 @@ export async function saveImageToMediaLibrary({
     (format === 'original' ? 'bin' : formatToFileExt(format))
   const localUrl = URL.createObjectURL(blob)
   try {
-    downloadUrl(localUrl, `witchsky-image.${extension}`)
+    downloadUrl(
+      localUrl,
+      getMediaDownloadFilename({downloadName, uri, extension, kind: 'image'}),
+    )
   } finally {
     setTimeout(() => URL.revokeObjectURL(localUrl), 1000)
   }
 }
 
-export async function downloadVideoWeb({uri}: {uri: string}) {
+export async function downloadVideoWeb({
+  uri,
+  downloadName,
+}: {
+  uri: string
+  downloadName?: string
+}) {
   // download the file to cache
   const downloadResponse = await fetch(uri)
     .then(res => res.blob())
@@ -88,10 +109,14 @@ export async function downloadVideoWeb({uri}: {uri: string}) {
   const extension = mimeToExt(downloadResponse.type)
 
   const blobUrl = URL.createObjectURL(downloadResponse)
-  const link = document.createElement('a')
-  link.setAttribute('download', uri.slice(-10) + '.' + extension)
-  link.setAttribute('href', blobUrl)
-  link.click()
+  try {
+    downloadUrl(
+      blobUrl,
+      getMediaDownloadFilename({downloadName, uri, extension, kind: 'video'}),
+    )
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+  }
   return true
 }
 

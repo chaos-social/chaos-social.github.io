@@ -18,6 +18,7 @@ import {utils} from '@bsky.app/alf'
 import {Trans, useLingui} from '@lingui/react/macro'
 import debounce from 'lodash.debounce'
 
+import {type DownloadableImage} from '#/lib/media/downloadFilename'
 import {type Dimensions} from '#/lib/media/types'
 import {mergeRefs} from '#/lib/merge-refs'
 import {getShapeRadius, SHARP_CORNERS} from '#/lib/shapes'
@@ -48,13 +49,12 @@ import {PostEmbedViewContext} from '#/components/Post/Embed/types'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {IS_ANDROID, IS_WEB} from '#/env'
-import {type app} from '#/lexicons'
 
 export * from './const'
 export * from './maybeApplyGalleryOffsetStyles'
 
 interface GalleryProps {
-  images: app.bsky.embed.images.ViewImage[]
+  images: DownloadableImage[]
   onPress?: (
     index: number,
     containerRefs: AnimatedRef<any>[],
@@ -416,7 +416,7 @@ function GalleryImage({
   onPreviewPress,
 }: {
   contentHeight: number
-  image: app.bsky.embed.images.ViewImage
+  image: DownloadableImage
   index: number
   imageCount: number
   onWidthChange: (index: number, width: number) => void
@@ -458,6 +458,7 @@ function GalleryImage({
       aria-label={image.alt || l`Image ${index + 1} of ${imageCount}`}>
       <ImageContextMenu
         fullsizeUri={image.fullsize}
+        downloadName={image.downloadName}
         thumbUri={image.thumb}
         aspectRatio={aspectRatio}
         borderRadius={getShapeRadius(

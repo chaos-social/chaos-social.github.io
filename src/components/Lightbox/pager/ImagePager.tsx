@@ -85,7 +85,7 @@ export default function ImageViewRoot({
 }: {
   lightbox: Lightbox | null
   onRequestClose: () => void
-  onPressSave: (uri: string, format: string) => void
+  onPressSave: (uri: string, format: string, downloadName?: string) => void
   onPressShare: (uri: string) => void
 }) {
   'use no memo'
@@ -228,7 +228,7 @@ function ImageView({
   setImageIndex: React.Dispatch<React.SetStateAction<number>>
   orientation: 'portrait' | 'landscape'
   onRequestClose: () => void
-  onPressSave: (uri: string, format: string) => void
+  onPressSave: (uri: string, format: string, downloadName?: string) => void
   onPressShare: (uri: string) => void
   onFlyAway: () => void
   safeAreaRef: AnimatedRef<View>
@@ -438,7 +438,13 @@ function ImageView({
           <Header
             onRequestClose={handleRequestClose}
             onPressShare={() => onPressShare(images[imageIndex].uri)}
-            onPressSave={format => onPressSave(images[imageIndex].uri, format)}
+            onPressSave={format =>
+              onPressSave(
+                images[imageIndex].uri,
+                format,
+                images[imageIndex].downloadName,
+              )
+            }
             imageCount={images.length}
             activeIndex={imageIndex}
           />

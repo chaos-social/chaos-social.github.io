@@ -1461,6 +1461,7 @@ function AdditionalPostText({post}: {post?: app.bsky.feed.defs.PostView}) {
           embed={post.embed}
           style={styles.additionalPostImages}
           peekable
+          post={post}
         />
       </>
     )

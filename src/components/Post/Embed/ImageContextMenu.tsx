@@ -26,6 +26,7 @@ import {IS_IOS} from '#/env'
  */
 export function ImageContextMenu({
   fullsizeUri,
+  downloadName,
   thumbUri,
   aspectRatio,
   borderRadius,
@@ -33,6 +34,7 @@ export function ImageContextMenu({
   style,
   children,
 }: {
+  downloadName?: string
   fullsizeUri: string
   /** Thumbnail URL. Used as an instant placeholder in the native preview
    *  while the fullsize loads, so there's no black flash on first peek. */
@@ -57,7 +59,7 @@ export function ImageContextMenu({
   }
 
   const handleSave = () => {
-    void saveImage(fullsizeUri)
+    void saveImage(fullsizeUri, undefined, downloadName)
   }
   const handleShare = () => {
     void shareImageModal({uri: fullsizeUri})

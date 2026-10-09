@@ -23,6 +23,7 @@ export type Position = {
 }
 
 export type ImageSource = {
+  downloadName?: string
   uri: string
   dimensions: Dimensions | null
   thumbUri: string

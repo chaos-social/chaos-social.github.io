@@ -4,6 +4,7 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 
+import {getPostMediaDownloadName} from '#/lib/media/downloadFilename'
 import {useSaveImageToMediaLibrary} from '#/lib/media/save-image'
 import {shareUrl} from '#/lib/sharing'
 import {getStarterPackOgCard} from '#/lib/strings/starter-pack'
@@ -67,7 +68,14 @@ function ShareDialogInner({
   const saveImageToAlbum = useSaveImageToMediaLibrary()
 
   const onSave = async () => {
-    await saveImageToAlbum(imageUrl)
+    await saveImageToAlbum(
+      imageUrl,
+      undefined,
+      getPostMediaDownloadName({
+        uri: starterPack.uri,
+        author: starterPack.creator,
+      }),
+    )
   }
 
   return (

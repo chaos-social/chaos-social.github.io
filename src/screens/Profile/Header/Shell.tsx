@@ -95,6 +95,7 @@ let ProfileHeaderShell = ({
       openLightbox({
         images: [
           {
+            downloadName: `${profile.handle}-${type === 'image' ? 'banner' : 'avatar'}`,
             uri: applyImageTransforms(uri, {
               imageCdnHost,
               format: fullsizeFormat,
@@ -131,6 +132,7 @@ let ProfileHeaderShell = ({
     },
     [
       openLightbox,
+      profile.handle,
       imageCdnHost,
       fullsizeFormat,
       thumbnailFormat,

@@ -3,6 +3,7 @@ import {View} from 'react-native'
 import {type AnimatedRef} from 'react-native-reanimated'
 import {Image} from 'expo-image'
 
+import {getPostMediaDownloadName} from '#/lib/media/downloadFilename'
 import {resolveEmbedImageUris} from '#/lib/media/embed-image-formats'
 import {getRecordImageMimeType} from '#/lib/media/recordImageMimeType'
 import {getShapeRadius} from '#/lib/shapes'
@@ -59,7 +60,7 @@ export function ImageEmbed({
             aspectRatio: item.aspectRatio,
           }))
       : embed.view.images
-  const images = rawImages.map(img => {
+  const images = rawImages.map((img, index) => {
     const uris = resolveEmbedImageUris(
       {
         ...img,
@@ -73,6 +74,10 @@ export function ImageEmbed({
     )
     return {
       ...img,
+      downloadName: getPostMediaDownloadName(
+        rest.post,
+        rawImages.length > 1 ? index : undefined,
+      ),
       fullsize: uris.fullsize as typeof img.fullsize,
       thumb: uris.thumb as typeof img.thumb,
     }
@@ -106,6 +111,7 @@ export function ImageEmbed({
       return {
         uri: applyImageTransforms(img.fullsize, {imageCdnHost}),
         thumbUri: applyImageTransforms(img.thumb, {imageCdnHost}),
+        downloadName: img.downloadName,
         alt: img.alt,
         dimensions: img.aspectRatio ?? null,
       }
@@ -162,6 +168,7 @@ export function ImageEmbed({
         <View style={[a.mt_sm, rest.style, userStyle('wsky-post__media')]}>
           <ImageContextMenu
             fullsizeUri={image.fullsize}
+            downloadName={image.downloadName}
             thumbUri={image.thumb}
             aspectRatio={aspect}
             borderRadius={getShapeRadius(

@@ -318,6 +318,7 @@ function LightboxGallery({
               onPress={() => {
                 saveImageToMediaLibrary({
                   uri: img.uri,
+                  downloadName: img.downloadName,
                   format: downloadFormat,
                 }).then(
                   () => Toast.show(l`Download started`),
@@ -350,6 +351,7 @@ function LightboxGallery({
                     onPress={() => {
                       saveImageToMediaLibrary({
                         uri: img.uri,
+                        downloadName: img.downloadName,
                         format: value,
                       }).then(
                         () => Toast.show(l`Download started`),

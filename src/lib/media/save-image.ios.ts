@@ -17,7 +17,7 @@ export function useSaveImageToMediaLibrary() {
   const {_} = useLingui()
   const downloadFormat = useDownloadFormat()
   return useCallback(
-    async (uri: string, format?: string) => {
+    async (uri: string, format?: string, downloadName?: string) => {
       if (!IS_NATIVE) {
         throw new Error('useSaveImageToMediaLibrary is native only')
       }
@@ -25,6 +25,7 @@ export function useSaveImageToMediaLibrary() {
       try {
         await saveImageToMediaLibrary({
           uri,
+          downloadName,
           format: format ?? downloadFormat ?? 'original',
         })
         Toast.show(_(msg`Image saved`))
