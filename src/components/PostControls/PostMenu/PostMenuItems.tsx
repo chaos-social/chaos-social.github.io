@@ -255,7 +255,20 @@ let PostMenuItems = ({
 
   const onConfirmRedraft = async () => {
     const recordEmbed = record.embed
-    const imageUris = getRedraftImages(recordEmbed, post.embed)
+    let imageUris: ComposerOpts['imageUris']
+    try {
+      imageUris = await getRedraftImages(
+        recordEmbed,
+        post.embed,
+        post.author.did,
+      )
+    } catch (error) {
+      logger.error('Failed to restore redraft images', {safeMessage: error})
+      Toast.show(l`Could not load images. Please try redrafting again.`, {
+        type: 'error',
+      })
+      return
+    }
 
     let quotePost: app.bsky.feed.defs.PostView | undefined
 

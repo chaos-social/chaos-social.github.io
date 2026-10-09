@@ -4,6 +4,7 @@
  */
 import {Directory, File, Paths} from 'expo-file-system'
 
+import {resolveOriginalImageUri} from '#/lib/media/original-image'
 import {logger} from './logger'
 
 const MEDIA_DIR = 'bsky-draft-media'
@@ -49,8 +50,15 @@ export async function saveMediaToLocal(
   }
 
   try {
-    const sourceFile = new File(normalizedSource)
-    await sourceFile.copy(destFile)
+    normalizedSource = await resolveOriginalImageUri(normalizedSource)
+    if (/^https?:\/\//i.test(normalizedSource)) {
+      await File.downloadFileAsync(normalizedSource, destFile, {
+        idempotent: true,
+      })
+    } else {
+      const sourceFile = new File(normalizedSource)
+      await sourceFile.copy(destFile)
+    }
     // Update cache after successful save
     mediaExistsCache.set(localRefPath, true)
   } catch (error) {
@@ -68,9 +76,7 @@ export async function saveMediaToLocal(
  * Load a media file path from local storage
  * @returns The file URI for the saved media
  */
-export function loadMediaFromLocal(
-  localRefPath: string,
-): string {
+export function loadMediaFromLocal(localRefPath: string): string {
   const file = getMediaFile(localRefPath)
 
   if (!file.exists) {
@@ -83,9 +89,7 @@ export function loadMediaFromLocal(
 /**
  * Delete a media file from local storage
  */
-export function deleteMediaFromLocal(
-  localRefPath: string,
-): void {
+export function deleteMediaFromLocal(localRefPath: string): void {
   const file = getMediaFile(localRefPath)
   // Idempotent: only delete if file exists
   if (file.exists) {

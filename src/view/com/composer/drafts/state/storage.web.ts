@@ -4,6 +4,7 @@
  */
 import {createStore, del, get, keys, set} from 'idb-keyval'
 
+import {resolveOriginalImageUri} from '#/lib/media/original-image'
 import {logger} from './logger'
 
 const DB_NAME = 'bsky-draft-media'
@@ -40,8 +41,8 @@ async function toBlob(sourcePath: string): Promise<Blob> {
     }
   }
 
-  // Handle regular URLs
-  const response = await fetch(sourcePath)
+  // CDN previews can render in the composer but do not allow CORS reads.
+  const response = await fetch(await resolveOriginalImageUri(sourcePath))
   if (!response.ok) {
     throw new Error(`Failed to fetch media: ${response.status}`)
   }
