@@ -41,6 +41,7 @@ it.each([true, false, undefined])(
     const {result} = renderHook(useOpenLink)
 
     for (const url of [
+      'steam://launch/3817250',
       'spotify://track/123',
       'SPOTIFY://track/123',
       'custom+app.v2-test://open/item',

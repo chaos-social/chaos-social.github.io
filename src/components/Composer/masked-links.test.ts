@@ -30,6 +30,25 @@ function createTapper() {
 }
 
 describe('composer masked link facets', () => {
+  it.each([
+    'steam://launch/3817250',
+    'STEAM://launch/3817250',
+    'custom+app.v2-test://open/item',
+    'mailto:hello@example.com',
+    'tel:+15551234567',
+  ])('commits a masked app URI without adding HTTPS: %s', uri => {
+    const tapper = createTapper()
+    const committed = jest.fn()
+    tapper.on('facetCommitted', facet =>
+      committed(normalizeComposerLink(facet)),
+    )
+    tapper.handleTextChange(`[here](${uri}) `)
+
+    expect(committed).toHaveBeenLastCalledWith(
+      expect.objectContaining({type: 'url', value: uri}),
+    )
+  })
+
   it.each(['!', '?', '?!', '.)*', '!)*', ', next'])(
     'leaves punctuation after a masked link plain: %s',
     suffix => {

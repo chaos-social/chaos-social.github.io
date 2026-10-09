@@ -1,4 +1,9 @@
-import {formatMarkdownLinkDestination} from '#/lib/strings/markdown-links'
+import {sanitizeUrl} from '@braintree/sanitize-url'
+
+import {
+  formatMarkdownLinkDestination,
+  normalizeMarkdownLinkDestination,
+} from '#/lib/strings/markdown-links'
 
 /** Recognize a URL replacing selected text, including pastes shorter than the label. */
 export function maskPastedLink(
@@ -15,11 +20,11 @@ export function maskPastedLink(
   if (!inserted || /[\s<>\\]/.test(inserted) || /[\]\n]/.test(label))
     return next
   try {
-    const url = new URL(
-      inserted.includes('://') ? inserted : `https://${inserted}`,
-    )
+    const uri = normalizeMarkdownLinkDestination(inserted)
+    if (sanitizeUrl(uri) === 'about:blank') return next
+    const url = new URL(uri)
     if (
-      !['http:', 'https:'].includes(url.protocol) ||
+      ['http:', 'https:'].includes(url.protocol) &&
       !url.hostname.includes('.')
     )
       return next

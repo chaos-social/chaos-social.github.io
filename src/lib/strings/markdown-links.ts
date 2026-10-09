@@ -23,7 +23,12 @@ export function normalizeMarkdownLinkDestination(destination: string): string {
   const uri = (
     destination.startsWith('<') ? destination.slice(1, -1).trim() : destination
   ).replace(MARKDOWN_ESCAPE_PATTERN, '$1')
-  return /^(https?:\/\/|mailto:)/.test(uri) ? uri : `https://${uri}`
+  // A bare hostname with a numeric port is still a web destination.
+  const isHostWithPort =
+    /^(?:localhost|[^/:?#]+\.[^/:?#]+):\d+(?:[/?#]|$)/i.test(uri)
+  return !isHostWithPort && /^[a-z][a-z0-9+.-]*:/i.test(uri)
+    ? uri
+    : `https://${uri}`
 }
 
 /** Keep parentheses in a URL from closing a generated masked link. */

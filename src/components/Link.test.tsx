@@ -71,6 +71,7 @@ it('preserves navigation markers on notification and list links', () => {
 })
 
 it.each([
+  'steam://launch/3817250',
   'spotify://track/123',
   'custom+app.v2-test://open/item',
   'tel:+15551234567',
@@ -85,6 +86,15 @@ it.each([
   expect(mockDispatch).not.toHaveBeenCalled()
   expect(mockLinkWarningOpen).not.toHaveBeenCalled()
 })
+
+it.each(['javascript:alert(1)', 'data:text/html,test', 'vbscript:msgbox(1)'])(
+  'sanitizes unsafe URI schemes: %s',
+  to => {
+    const {result} = renderHook(() => useLink({to, displayText: ''}))
+
+    expect(result.current.href).toBe('about:blank')
+  },
+)
 
 it('warns when an app link is disguised as a different destination', () => {
   const {result} = renderHook(() =>

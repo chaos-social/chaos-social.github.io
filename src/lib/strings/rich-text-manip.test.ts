@@ -36,6 +36,54 @@ function facetTexts(rt: RichText) {
 }
 
 describe('facet syntax', () => {
+  it.each(['example.com', 'example.com:8080/path', 'localhost:3000/path'])(
+    'continues to add HTTPS to a bare web destination: %s',
+    destination => {
+      expect(
+        parseMarkdownLinks(`[here](${destination})`).facets[0].features[0],
+      ).toEqual({
+        $type: 'app.bsky.richtext.facet#link',
+        uri: `https://${destination}`,
+      })
+    },
+  )
+
+  it.each([
+    'steam://launch/3817250',
+    'STEAM://launch/3817250',
+    'spotify://track/123',
+    'custom+app.v2-test://open/item',
+    'mailto:hello@example.com',
+    'tel:+15551234567',
+    'HTTPS://example.com/path',
+  ])(
+    'preserves an explicit masked URI in editor and posted facets: %s',
+    uri => {
+      for (const destination of [uri, `<${uri}>`]) {
+        const text = `🌟 [here](${destination})`
+        const editor = new RichText({text})
+        editor.detectFacetsWithoutResolution()
+        applyMarkdownLinkFacets(editor)
+        applyFacetSyntax(editor)
+
+        expect(editor.facets?.flatMap(facet => facet.features)).toEqual(
+          Array.from({length: destination.startsWith('<') ? 3 : 1}, () => ({
+            $type: 'app.bsky.richtext.facet#link',
+            uri,
+          })),
+        )
+        const posted = prepare(text)
+        expect(posted.text).toBe('🌟 here')
+        expect(posted.facets).toEqual([
+          {
+            index: {byteStart: 5, byteEnd: 9},
+            features: [{$type: 'app.bsky.richtext.facet#link', uri}],
+          },
+        ])
+      }
+    },
+  )
+
   it.each(['!', '?', '?!', '.)*', '!)*', ', next'])(
     'keeps punctuation outside masked editor and posted facets: %s',
     suffix => {

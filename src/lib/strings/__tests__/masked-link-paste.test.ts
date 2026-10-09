@@ -18,9 +18,24 @@ describe('maskPastedLink', () => {
   })
 
   it.each([
+    'steam://launch/3817250',
+    'STEAM://launch/3817250',
+    'custom+app.v2-test://open/item',
+    'mailto:hello@example.com',
+    'tel:+15551234567',
+  ])('keeps a selected label when replaced by an app URI: %s', uri => {
+    expect(maskPastedLink('here', uri, {start: 0, end: 4})).toBe(
+      `[here](${uri})`,
+    )
+  })
+
+  it.each([
     'replacement text',
     '',
     'javascript://example.com',
+    'JaVaScRiPt:alert(1)',
+    'data:text/html,test',
+    'vbscript:msgbox(1)',
     '<https://example.com>',
   ])('leaves ordinary or unsupported replacements alone: %s', next => {
     expect(maskPastedLink('label', next, {start: 0, end: 5})).toBe(next)
