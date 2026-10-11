@@ -243,8 +243,8 @@ function Option({
       accessibilityRole="radio"
       accessibilityState={{checked: selected}}
       onPress={() => onSelect(value)}>
-      <Menu.ItemText>{label}</Menu.ItemText>
       <Menu.ItemRadio selected={selected} />
+      <Menu.ItemText>{label}</Menu.ItemText>
     </Menu.Item>
   )
 }

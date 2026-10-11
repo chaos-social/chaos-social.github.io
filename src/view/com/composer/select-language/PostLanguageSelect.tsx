@@ -112,10 +112,10 @@ export function PostLanguageSelect({
                     setLangPrefs.setPostLanguage(historyItem)
                     onSelectLanguage?.(historyItem)
                   }}>
-                  <Menu.ItemText>{langName}</Menu.ItemText>
                   <Menu.ItemRadio
                     selected={currentLanguages.includes(historyItem)}
                   />
+                  <Menu.ItemText>{langName}</Menu.ItemText>
                 </Menu.Item>
               )
             })}

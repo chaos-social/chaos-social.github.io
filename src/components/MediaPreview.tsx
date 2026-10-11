@@ -5,7 +5,9 @@ import {Trans, useLingui} from '@lingui/react/macro'
 import {getPostMediaDownloadName} from '#/lib/media/downloadFilename'
 import {shareImageModal} from '#/lib/media/manip'
 import {useSaveImageToMediaLibrary} from '#/lib/media/save-image'
+import {getShapeRadius, SHARP_CORNERS} from '#/lib/shapes'
 import {isGifEmbed} from '#/lib/strings/embed-player'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {
   applyImageTransforms,
   useImageCdnHost,
@@ -176,6 +178,7 @@ export function ImageItem({
   skipTransforms?: boolean
 }) {
   const t = useTheme()
+  const shapePreference = useEnableSquareButtons()
   const thumbnailFormat = useThumbnailFormat()
   const imageCdnHost = useImageCdnHost()
 
@@ -197,6 +200,7 @@ export function ImageItem({
           a.aspect_square,
           {maxWidth},
           a.rounded_xs,
+          shapePreference === 'sharp' && SHARP_CORNERS,
         ]}
         accessibilityLabel={alt}
         accessibilityHint="">
@@ -211,13 +215,20 @@ export function ImageItem({
         key={displayThumbnail}
         source={{uri: displayThumbnail}}
         alt={alt}
-        style={[a.flex_1, a.rounded_xs, t.atoms.bg_contrast_25]}
+        style={[
+          a.flex_1,
+          a.rounded_xs,
+          t.atoms.bg_contrast_25,
+          shapePreference === 'sharp' && SHARP_CORNERS,
+        ]}
         contentFit="cover"
         accessible={true}
         accessibilityIgnoresInvertColors
         useAppleWebpCodec
       />
-      <MediaInsetBorder style={[a.rounded_xs]} />
+      <MediaInsetBorder
+        style={[a.rounded_xs, shapePreference === 'sharp' && SHARP_CORNERS]}
+      />
       {children}
     </View>
   )
@@ -232,12 +243,18 @@ export function GifItem({
   alt?: string
   skipTransforms?: boolean
 }) {
+  const shapePreference = useEnableSquareButtons()
+
   return (
     <ImageItem thumbnail={thumbnail} alt={alt} skipTransforms={skipTransforms}>
       <View style={[a.absolute, a.inset_0, a.justify_center, a.align_center]}>
         <PlayButtonIcon size={24} />
       </View>
-      <View style={styles.altContainer}>
+      <View
+        style={[
+          styles.altContainer,
+          shapePreference === 'sharp' && SHARP_CORNERS,
+        ]}>
         <Text style={styles.alt}>
           <Trans>GIF</Trans>
         </Text>
@@ -271,6 +288,7 @@ function PeekableImageItem({
 }) {
   const {t: l} = useLingui()
   const saveImage = useSaveImageToMediaLibrary()
+  const shapePreference = useEnableSquareButtons()
 
   const aspect =
     image.aspectRatio && image.aspectRatio.height > 0
@@ -286,7 +304,11 @@ function PeekableImageItem({
           thumbUri: image.thumb,
           aspectRatio: aspect && aspect > 0 ? aspect : 1,
         }}
-        borderRadius={tokens.borderRadius.xs}>
+        borderRadius={getShapeRadius(
+          shapePreference,
+          tokens.borderRadius.xs,
+          tokens.borderRadius.xs,
+        )}>
         <ImageItem thumbnail={image.thumb} alt={image.alt} />
       </PeekMenu.Trigger>
       <PeekMenu.Menu>

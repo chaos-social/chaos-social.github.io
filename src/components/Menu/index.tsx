@@ -293,7 +293,7 @@ export function Item({
       ]}>
       <ItemContext.Provider
         value={{disabled: Boolean(rest.disabled), destructive}}>
-        {leadingIcons(children, ItemIcon)}
+        {leadingIcons(children, ItemIcon, ItemRadio)}
       </ItemContext.Provider>
     </Pressable>
   )

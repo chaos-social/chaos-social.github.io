@@ -55,8 +55,8 @@ export function FilterMenu({
               key={option.value}
               label={option.label}
               onPress={() => setFilter(option.value)}>
-              <Menu.ItemText>{option.label}</Menu.ItemText>
               <Menu.ItemRadio selected={filter === option.value} />
+              <Menu.ItemText>{option.label}</Menu.ItemText>
             </Menu.Item>
           ))}
         </Menu.Group>

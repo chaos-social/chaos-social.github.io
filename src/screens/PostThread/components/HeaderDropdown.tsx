@@ -55,20 +55,20 @@ export function HeaderDropdown({
             onPress={() => {
               setView('linear')
             }}>
+            <Menu.ItemRadio selected={view === 'linear'} />
             <Menu.ItemText>
               <Trans>Linear</Trans>
             </Menu.ItemText>
-            <Menu.ItemRadio selected={view === 'linear'} />
           </Menu.Item>
           <Menu.Item
             label={_(msg`Threaded`)}
             onPress={() => {
               setView('tree')
             }}>
+            <Menu.ItemRadio selected={view === 'tree'} />
             <Menu.ItemText>
               <Trans>Threaded</Trans>
             </Menu.ItemText>
-            <Menu.ItemRadio selected={view === 'tree'} />
           </Menu.Item>
           {showReader && (
             <Menu.Item
@@ -80,10 +80,10 @@ export function HeaderDropdown({
                 })
                 setView('reader')
               }}>
+              <Menu.ItemRadio selected={view === 'reader'} />
               <Menu.ItemText>
                 <Trans>Reader</Trans>
               </Menu.ItemText>
-              <Menu.ItemRadio selected={view === 'reader'} />
             </Menu.Item>
           )}
         </Menu.Group>
@@ -97,30 +97,30 @@ export function HeaderDropdown({
             onPress={() => {
               setSort('top')
             }}>
+            <Menu.ItemRadio selected={sort === 'top'} />
             <Menu.ItemText>
               <Trans>Top replies first</Trans>
             </Menu.ItemText>
-            <Menu.ItemRadio selected={sort === 'top'} />
           </Menu.Item>
           <Menu.Item
             label={_(msg`Oldest replies first`)}
             onPress={() => {
               setSort('oldest')
             }}>
+            <Menu.ItemRadio selected={sort === 'oldest'} />
             <Menu.ItemText>
               <Trans>Oldest replies first</Trans>
             </Menu.ItemText>
-            <Menu.ItemRadio selected={sort === 'oldest'} />
           </Menu.Item>
           <Menu.Item
             label={_(msg`Newest replies first`)}
             onPress={() => {
               setSort('newest')
             }}>
+            <Menu.ItemRadio selected={sort === 'newest'} />
             <Menu.ItemText>
               <Trans>Newest replies first</Trans>
             </Menu.ItemText>
-            <Menu.ItemRadio selected={sort === 'newest'} />
           </Menu.Item>
         </Menu.Group>
       </Menu.Outer>

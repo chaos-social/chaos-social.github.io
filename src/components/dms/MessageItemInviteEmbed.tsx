@@ -38,6 +38,11 @@ let MessageItemInviteEmbed = ({
   const t = useTheme()
   const screen = useWindowDimensions()
   const convo = useConvoActive()
+  const squaredBorderRadius = getShapeRadius(
+    enableSquareButtons,
+    SQUARED_BORDER_RADIUS,
+    SQUARED_BORDER_RADIUS,
+  )
   const borderRadius = getShapeRadius(enableSquareButtons, 4, BORDER_RADIUS)
 
   const restingColor = isFromSelf ? t.palette.primary_50 : t.palette.contrast_50
@@ -81,20 +86,20 @@ let MessageItemInviteEmbed = ({
             isFromSelf
               ? {
                   borderBottomRightRadius: squaredBottomCorner
-                    ? SQUARED_BORDER_RADIUS
+                    ? squaredBorderRadius
                     : borderRadius,
                   borderTopRightRadius: squaredTopCorner
-                    ? SQUARED_BORDER_RADIUS
+                    ? squaredBorderRadius
                     : borderRadius,
                   borderBottomLeftRadius: borderRadius,
                   borderTopLeftRadius: borderRadius,
                 }
               : {
                   borderBottomLeftRadius: squaredBottomCorner
-                    ? SQUARED_BORDER_RADIUS
+                    ? squaredBorderRadius
                     : borderRadius,
                   borderTopLeftRadius: squaredTopCorner
-                    ? SQUARED_BORDER_RADIUS
+                    ? squaredBorderRadius
                     : borderRadius,
                   borderBottomRightRadius: borderRadius,
                   borderTopRightRadius: borderRadius,

@@ -89,10 +89,10 @@ export function SearchLanguageDropdown({
       </Menu.Trigger>
       <Menu.Outer>
         <Menu.Item label={l`No language filter`} onPress={() => onChange('')}>
+          <Menu.ItemRadio selected={value === ''} />
           <Menu.ItemText>
             <Trans>No language filter</Trans>
           </Menu.ItemText>
-          <Menu.ItemRadio selected={value === ''} />
         </Menu.Item>
         <Menu.Divider />
         <Menu.Group>
@@ -101,8 +101,8 @@ export function SearchLanguageDropdown({
               key={lang.key}
               label={lang.label}
               onPress={() => onChange(lang.value)}>
-              <Menu.ItemText>{lang.label}</Menu.ItemText>
               <Menu.ItemRadio selected={value === lang.value} />
+              <Menu.ItemText>{lang.label}</Menu.ItemText>
             </Menu.Item>
           ))}
         </Menu.Group>

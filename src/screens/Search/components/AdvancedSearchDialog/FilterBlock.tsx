@@ -77,10 +77,10 @@ export function FilterBlock({
                   comment: 'Advanced search filter',
                 })}
                 onPress={() => onChange({mode: 'include'})}>
+                <Menu.ItemRadio selected={filter.mode === 'include'} />
                 <Menu.ItemText>
                   <Trans>Include</Trans>
                 </Menu.ItemText>
-                <Menu.ItemRadio selected={filter.mode === 'include'} />
               </Menu.Item>
               <Menu.Item
                 label={l({
@@ -88,10 +88,10 @@ export function FilterBlock({
                   comment: 'Advanced search filter',
                 })}
                 onPress={() => onChange({mode: 'exclude'})}>
+                <Menu.ItemRadio selected={filter.mode === 'exclude'} />
                 <Menu.ItemText>
                   <Trans>Exclude</Trans>
                 </Menu.ItemText>
-                <Menu.ItemRadio selected={filter.mode === 'exclude'} />
               </Menu.Item>
             </Menu.Group>
           </Menu.Outer>
@@ -129,8 +129,8 @@ export function FilterBlock({
                    * mode leaves the text intact - it's the same field.
                    */
                   onPress={() => onChange({field, value: ''})}>
-                  <Menu.ItemText>{labels[field].title}</Menu.ItemText>
                   <Menu.ItemRadio selected={filter.field === field} />
+                  <Menu.ItemText>{labels[field].title}</Menu.ItemText>
                 </Menu.Item>
               ))}
             </Menu.Group>

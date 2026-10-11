@@ -251,6 +251,11 @@ let MessageItem = ({
     (isInMiddleOfCluster || isLastInCluster)
 
   const pendingColor = t.palette.primary_300
+  const squaredBorderRadius = getShapeRadius(
+    enableSquareButtons,
+    SQUARED_BORDER_RADIUS,
+    SQUARED_BORDER_RADIUS,
+  )
   const borderRadius = getShapeRadius(enableSquareButtons, 4, 18)
 
   const displayNameInset = enableSquareButtons
@@ -279,10 +284,10 @@ let MessageItem = ({
   const hasEmbedAndText = hasEmbed && rt.text.length > 0
 
   const targetBottomRadius = squaredBottomCorner
-    ? SQUARED_BORDER_RADIUS
+    ? squaredBorderRadius
     : borderRadius
   const targetTopRadius =
-    squaredTopCorner || hasEmbedAndText ? SQUARED_BORDER_RADIUS : borderRadius
+    squaredTopCorner || hasEmbedAndText ? squaredBorderRadius : borderRadius
 
   const bottomRadiusSV = useSharedValue(targetBottomRadius)
   const topRadiusSV = useSharedValue(targetTopRadius)

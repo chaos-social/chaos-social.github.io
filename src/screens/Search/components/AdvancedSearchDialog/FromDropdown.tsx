@@ -52,8 +52,8 @@ export function FromDropdown({
         <Menu.Item
           label={options[0].label}
           onPress={() => onChange(options[0].value)}>
-          <Menu.ItemText>{options[0].label}</Menu.ItemText>
           <Menu.ItemRadio selected={value === options[0].value} />
+          <Menu.ItemText>{options[0].label}</Menu.ItemText>
         </Menu.Item>
         <Menu.Divider />
         <Menu.Group>
@@ -63,8 +63,8 @@ export function FromDropdown({
                 key={option.value}
                 label={option.label}
                 onPress={() => onChange(option.value)}>
-                <Menu.ItemText>{option.label}</Menu.ItemText>
                 <Menu.ItemRadio selected={value === option.value} />
+                <Menu.ItemText>{option.label}</Menu.ItemText>
               </Menu.Item>
             ),
           )}

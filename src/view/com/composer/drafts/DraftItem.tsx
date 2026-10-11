@@ -5,6 +5,8 @@ import {plural} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react/macro'
 
 import * as device from '#/lib/deviceName'
+import {SHARP_CORNERS} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {logger} from '#/view/com/composer/drafts/state/logger'
 import {TimeElapsed} from '#/view/com/util/TimeElapsed'
 import {atoms as a, select, useTheme} from '#/alf'
@@ -35,6 +37,7 @@ export function DraftItem({
 }) {
   const {t: l} = useLingui()
   const t = useTheme()
+  const shapePreference = useEnableSquareButtons()
   const discardPromptControl = Prompt.usePromptControl()
   const post = draft.posts[0]
   const isReply =
@@ -76,6 +79,7 @@ export function DraftItem({
           onPress={() => onSelect(draft)}
           style={({pressed, hovered}) => [
             a.rounded_md,
+            shapePreference === 'sharp' && SHARP_CORNERS,
             a.border,
             t.atoms.shadow_sm,
             pressed || hovered
@@ -92,6 +96,7 @@ export function DraftItem({
           <View
             style={[
               a.rounded_md,
+              shapePreference === 'sharp' && SHARP_CORNERS,
               a.overflow_hidden,
               a.p_lg,
               a.pb_md,
@@ -125,7 +130,14 @@ export function DraftItem({
             {!mediaExistsOnOtherDevice && <DraftMediaPreview post={post} />}
 
             {hasMetadata && (
-              <View style={[a.gap_xs]}>
+              <View
+                style={[
+                  a.flex_row,
+                  a.flex_wrap,
+                  a.align_center,
+                  a.gap_md,
+                  {rowGap: a.gap_xs.gap},
+                ]}>
                 {mediaExistsOnOtherDevice && (
                   <DraftMetadataTag
                     icon={WarningIcon}
@@ -220,6 +232,7 @@ export function DraftItem({
             style={[
               a.pointer,
               a.rounded_full,
+              shapePreference === 'sharp' && SHARP_CORNERS,
               {
                 height: 20,
                 width: 20,
@@ -231,6 +244,7 @@ export function DraftItem({
                   style={[
                     a.absolute,
                     a.rounded_full,
+                    shapePreference === 'sharp' && SHARP_CORNERS,
                     {
                       top: -4,
                       bottom: -4,

@@ -12,6 +12,7 @@ import {
   type CommonNavigatorParams,
   type NavigationProp,
 } from '#/lib/routes/types'
+import {SHARP_CORNERS} from '#/lib/shapes'
 import {applyFacetSyntax} from '#/lib/strings/rich-text-manip'
 import {
   convertBskyAppUrlIfNeeded,
@@ -20,6 +21,7 @@ import {
   isBskyPostUrl,
   makeRecordUri,
 } from '#/lib/strings/url-helpers'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {usePostQuery} from '#/state/queries/post'
 import {PostMeta} from '#/view/com/util/PostMeta'
@@ -157,6 +159,7 @@ function MessageInputPostEmbed({
   onRemove: () => void
 }) {
   const t = useTheme()
+  const shapePreference = useEnableSquareButtons()
   const {t: l} = useLingui()
 
   const {data: post, status} = usePostQuery(uri)
@@ -213,6 +216,7 @@ function MessageInputPostEmbed({
             a.flex_1,
             t.atoms.border_contrast_high,
             a.rounded_md,
+            shapePreference === 'sharp' && SHARP_CORNERS,
             a.border,
             a.p_sm,
             a.mt_sm,
@@ -267,6 +271,7 @@ function MessageInputInviteEmbed({
   onRemove: () => void
 }) {
   const t = useTheme()
+  const shapePreference = useEnableSquareButtons()
   const {t: l} = useLingui()
 
   return (
@@ -276,6 +281,7 @@ function MessageInputInviteEmbed({
           a.flex_1,
           t.atoms.border_contrast_high,
           a.rounded_md,
+          shapePreference === 'sharp' && SHARP_CORNERS,
           a.border,
           a.p_sm,
           a.mt_sm,
@@ -321,6 +327,7 @@ function SimpleContainer({
   onRemove?: () => void
 }) {
   const t = useTheme()
+  const shapePreference = useEnableSquareButtons()
   const {t: l} = useLingui()
   return (
     <View
@@ -331,6 +338,7 @@ function SimpleContainer({
         a.align_center,
         t.atoms.border_contrast_high,
         a.rounded_md,
+        shapePreference === 'sharp' && SHARP_CORNERS,
         a.border,
         a.mt_sm,
         a.mx_sm,

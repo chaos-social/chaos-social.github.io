@@ -86,13 +86,13 @@ export function ThemePicker({
                 key={key}
                 label={labels[key]}
                 onPress={() => onChange(key)}>
+                <Menu.ItemRadio selected={key === value} />
                 <GradientSwatch
                   from={theme.light.gradientFrom}
                   to={theme.light.gradientTo}
                   size={MENU_ITEM_SWATCH}
                 />
                 <Menu.ItemText>{labels[key]}</Menu.ItemText>
-                <Menu.ItemRadio selected={key === value} />
               </Menu.Item>
             )
           })}
