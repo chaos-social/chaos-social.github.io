@@ -453,11 +453,6 @@
       "count": 1
     }
   },
-  "src/lib/media/manip.web.ts": {
-    "typescript/prefer-promise-reject-errors": {
-      "count": 1
-    }
-  },
   "src/lib/media/save-image.ios.ts": {
     "typescript/no-explicit-any": {
       "count": 1

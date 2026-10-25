@@ -6,7 +6,6 @@ import {
   createDownloadResumable,
   deleteAsync,
   EncodingType,
-  getInfoAsync,
   makeDirectoryAsync,
   moveAsync,
   StorageAccessFramework,
@@ -17,6 +16,7 @@ import * as MediaLibrary from 'expo-media-library/legacy'
 import * as Sharing from 'expo-sharing'
 
 import {getMediaDownloadFilename} from '#/lib/media/downloadFilename'
+import {compressImageSource} from '#/lib/media/image/compress'
 import {formatToFileExt, imageMimeToExtension} from '#/lib/media/image-formats'
 import {getDownloadImageUri} from '#/lib/media/original-image'
 import {logger} from '#/logger'
@@ -24,23 +24,30 @@ import {IS_ANDROID, IS_IOS} from '#/env'
 import {renderImage} from './image-manipulator'
 import {type PickerImage} from './picker.shared'
 import {type Dimensions} from './types'
-import {getResizedDimensions} from './util'
 import {mimeToExt} from './video/util'
 
 export async function compressIfNeeded(
   img: PickerImage,
   {maxDimension, maxSize}: {maxDimension: number; maxSize: number},
 ): Promise<PickerImage> {
-  if (img.size < maxSize) {
+  if (
+    img.size <= maxSize &&
+    img.width <= maxDimension &&
+    img.height <= maxDimension
+  ) {
     return img
   }
-  const resizedImage = await doResize(normalizePath(img.path), {
-    maxDimension,
-    maxSize,
-  })
+  const resizedImage = await doResize(
+    normalizePath(img.path),
+    {
+      maxDimension,
+      maxSize,
+    },
+    img.mime,
+  )
   const finalImageMovedPath = await moveToPermanentPath(
     resizedImage.path,
-    '.png',
+    `.${imageMimeToExtension(resizedImage.mime) ?? 'jpg'}`,
   )
   const finalImg = {
     ...resizedImage,
@@ -284,80 +291,21 @@ interface DoResizeOpts {
 async function doResize(
   localUri: string,
   opts: DoResizeOpts,
+  mime = /\.png$/i.test(localUri) ? 'image/png' : '',
 ): Promise<PickerImage> {
-  // We need to get the dimensions of the image before we resize it. Previously, the library we used allowed us to enter
-  // a "max size", and it would do the "best possible size" calculation for us.
-  // Now instead, we have to supply the final dimensions to the manipulation function instead.
-  // Performing an "empty" manipulation lets us get the dimensions of the original image. React Native's Image.getSize()
-  // does not work for local files...
   const imageRes = await renderImage(localUri)
-  const newDimensions = getResizedDimensions(
-    {
-      width: imageRes.width,
-      height: imageRes.height,
-    },
-    opts.maxDimension,
-  )
-
-  let minQualityPercentage = 0
-  let maxQualityPercentage = 101 // exclusive
-  let newDataUri: PickerImage | undefined
-  const intermediateUris = []
-
   try {
-    while (maxQualityPercentage - minQualityPercentage > 1) {
-      const qualityPercentage = Math.round(
-        (maxQualityPercentage + minQualityPercentage) / 2,
-      )
-      const resizeRes = await renderImage(
-        localUri,
-        context => context.resize(newDimensions),
-        {
-          format: SaveFormat.PNG,
-          compress: qualityPercentage / 100,
-        },
-      )
-
-      intermediateUris.push(resizeRes.uri)
-
-      const fileInfo = await getInfoAsync(resizeRes.uri)
-      if (!fileInfo.exists) {
-        throw new Error(
-          'The image manipulation library failed to create a new image.',
-        )
-      }
-
-      if (fileInfo.size < opts.maxSize) {
-        minQualityPercentage = qualityPercentage
-        newDataUri = {
-          path: normalizePath(resizeRes.uri),
-          mime: 'image/png',
-          size: fileInfo.size,
-          width: resizeRes.width,
-          height: resizeRes.height,
-        }
-      } else {
-        maxQualityPercentage = qualityPercentage
-      }
-    }
-
-    if (newDataUri) {
-      return newDataUri
-    }
-
-    throw new Error(
-      `This image is too big! We couldn't compress it down to ${opts.maxSize} bytes`,
+    return await compressImageSource(
+      {
+        path: localUri,
+        width: imageRes.width,
+        height: imageRes.height,
+        mime,
+      },
+      opts,
     )
-  } catch (err) {
-    newDataUri = undefined
-    throw err
   } finally {
     await safeDeleteAsync(imageRes.uri)
-    await Promise.all(
-      intermediateUris
-        .filter(uri => newDataUri?.path !== normalizePath(uri))
-        .map(safeDeleteAsync),
-    )
   }
 }
 

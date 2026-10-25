@@ -1,22 +1,24 @@
 import {getMediaDownloadFilename} from '#/lib/media/downloadFilename'
+import {compressImageSource} from '#/lib/media/image/compress'
 import {formatToFileExt, imageMimeToExtension} from '#/lib/media/image-formats'
 import {getDownloadImageUri} from '#/lib/media/original-image'
 import {type PickerImage} from './picker.shared'
 import {type Dimensions} from './types'
-import {blobToDataUri, getDataUriSize, getResizedDimensions} from './util'
+import {blobToDataUri, extractDataUriMime} from './util'
 import {mimeToExt} from './video/util'
 
 export async function compressIfNeeded(
   img: PickerImage,
   {maxDimension, maxSize}: {maxDimension: number; maxSize: number},
 ): Promise<PickerImage> {
-  if (img.size < maxSize) {
+  if (
+    img.size <= maxSize &&
+    img.width <= maxDimension &&
+    img.height <= maxDimension
+  ) {
     return img
   }
-  return await doResize(img.path, {
-    maxDimension,
-    maxSize,
-  })
+  return await doResize(img.path, {maxDimension, maxSize}, img.mime)
 }
 
 export interface DownloadAndResizeOpts {
@@ -142,89 +144,10 @@ interface DoResizeOpts {
 async function doResize(
   dataUri: string,
   opts: DoResizeOpts,
+  mime = extractDataUriMime(dataUri),
 ): Promise<PickerImage> {
-  const sourceDims = await getImageDim(dataUri)
-  const newDimensions = getResizedDimensions(sourceDims, opts.maxDimension)
-
-  let newDataUri
-
-  let minQualityPercentage = 0
-  let maxQualityPercentage = 101 //exclusive
-
-  while (maxQualityPercentage - minQualityPercentage > 1) {
-    const qualityPercentage = Math.round(
-      (maxQualityPercentage + minQualityPercentage) / 2,
-    )
-    const tempDataUri = await createResizedImage(dataUri, {
-      width: newDimensions.width,
-      height: newDimensions.height,
-      quality: qualityPercentage / 100,
-      mode: 'contain',
-    })
-
-    if (getDataUriSize(tempDataUri) < opts.maxSize) {
-      minQualityPercentage = qualityPercentage
-      newDataUri = tempDataUri
-    } else {
-      maxQualityPercentage = qualityPercentage
-    }
-  }
-
-  if (!newDataUri) {
-    throw new Error('Failed to compress image')
-  }
-  return {
-    path: newDataUri,
-    mime: 'image/png',
-    size: getDataUriSize(newDataUri),
-    width: newDimensions.width,
-    height: newDimensions.height,
-  }
-}
-
-function createResizedImage(
-  dataUri: string,
-  {
-    width,
-    height,
-    quality,
-    mode,
-  }: {
-    width: number
-    height: number
-    quality: number
-    mode: 'contain' | 'cover' | 'stretch'
-  },
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = document.createElement('img')
-    img.addEventListener('load', () => {
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-      if (!ctx) {
-        return reject(new Error('Failed to resize image'))
-      }
-
-      let scale = 1
-      if (mode === 'cover') {
-        scale = img.width < img.height ? width / img.width : height / img.height
-      } else if (mode === 'contain') {
-        scale = img.width > img.height ? width / img.width : height / img.height
-      }
-      let w = img.width * scale
-      let h = img.height * scale
-
-      canvas.width = w
-      canvas.height = h
-
-      ctx.drawImage(img, 0, 0, w, h)
-      resolve(canvas.toDataURL('image/png', quality))
-    })
-    img.addEventListener('error', ev => {
-      reject(ev.error)
-    })
-    img.src = dataUri
-  })
+  const {width, height} = await getImageDim(dataUri)
+  return compressImageSource({path: dataUri, width, height, mime}, opts)
 }
 
 export function saveBytesToDisk(
