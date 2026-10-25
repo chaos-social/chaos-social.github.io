@@ -36,6 +36,7 @@ allowBuilds:
   'unrs-resolver': true
   'workerd': true
 patchedDependencies:
+  '@assembless/react-native-material-you@1.0.0-beta.4': patches/@assembless__react-native-material-you@1.0.0-beta.4.patch
   '@atproto/oauth-client-expo@0.1.12': patches/@atproto__oauth-client-expo@0.1.12.patch
   '@atproto/oauth-client@0.8.4': patches/@atproto__oauth-client@0.8.4.patch
   '@expo/cli@58.1.14': patches/@expo__cli@58.1.14.patch

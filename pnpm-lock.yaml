@@ -208,6 +208,7 @@ overrides:
 packageExtensionsChecksum: sha256-KbeCj471Qk3TA758q8nLPkiGCPDA0TX18iO/Coy89lo=
 
 patchedDependencies:
+  '@assembless/react-native-material-you@1.0.0-beta.4': 3fbfde8ec5bbbbc3cd5c61b14f945f7f4fd8b479bf91e4d1be9d019c9b95dc0e
   '@atproto/oauth-client-expo@0.1.12': 75a595e20b2a0749afe47617788bf3128652da2dfceb6e047ecf28e84f703996
   '@atproto/oauth-client@0.8.4': d3a699412dc6da3071499176ce3689d6ed11277329963670f57a21e4bf948998
   '@expo/cli@58.1.14': e1e6ca6311d03c9e5605eb2a37ba850af9cca678b6cd0b504cd4c693375f3ceb
@@ -233,7 +234,7 @@ importers:
     dependencies:
       '@assembless/react-native-material-you':
         specifier: 1.0.0-beta.4
-        version: 1.0.0-beta.4(react-native@0.88.0(patch_hash=dc5394dccd29a3cc7ec7079a8fae133938d92a99a5f7fdd73ed5ef94dd868a96)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
+        version: 1.0.0-beta.4(patch_hash=3fbfde8ec5bbbbc3cd5c61b14f945f7f4fd8b479bf91e4d1be9d019c9b95dc0e)(react-native@0.88.0(patch_hash=dc5394dccd29a3cc7ec7079a8fae133938d92a99a5f7fdd73ed5ef94dd868a96)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
       '@atproto/api':
         specifier: 0.20.37
         version: 0.20.37
@@ -10972,7 +10973,7 @@ snapshots:
       '@csstools/css-tokenizer': 3.0.4
       lru-cache: 10.4.3
 
-  '@assembless/react-native-material-you@1.0.0-beta.4(react-native@0.88.0(patch_hash=dc5394dccd29a3cc7ec7079a8fae133938d92a99a5f7fdd73ed5ef94dd868a96)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)':
+  '@assembless/react-native-material-you@1.0.0-beta.4(patch_hash=3fbfde8ec5bbbbc3cd5c61b14f945f7f4fd8b479bf91e4d1be9d019c9b95dc0e)(react-native@0.88.0(patch_hash=dc5394dccd29a3cc7ec7079a8fae133938d92a99a5f7fdd73ed5ef94dd868a96)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)':
     dependencies:
       react: 19.3.0
       react-native: 0.88.0(patch_hash=dc5394dccd29a3cc7ec7079a8fae133938d92a99a5f7fdd73ed5ef94dd868a96)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2)
