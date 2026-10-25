@@ -43,6 +43,7 @@ export function LinkFavicon({
     <View style={[a.align_center, a.justify_center, style]}>
       <Image
         source={{uri}}
+        contentFit="contain"
         style={{width: size, height: size, borderRadius: size / 6}}
         accessibilityIgnoresInvertColors
         onError={() => setFailed(true)}
@@ -52,12 +53,18 @@ export function LinkFavicon({
 }
 
 /** Fills the slot a `ButtonIcon` would, so favicon and logo pills line up. */
-export function ButtonFavicon({uri}: {uri: string}) {
+export function ButtonFavicon({
+  uri,
+  fallback = <ButtonIcon icon={GlobeIcon} />,
+}: {
+  uri: string
+  fallback?: React.ReactNode
+}) {
   return (
     <LinkFavicon
       uri={uri}
       size={16}
-      fallback={<ButtonIcon icon={GlobeIcon} />}
+      fallback={fallback}
       // ButtonIcon's slot for small buttons
       style={{width: 17, height: 17, marginHorizontal: -2}}
     />

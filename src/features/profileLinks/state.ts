@@ -9,10 +9,12 @@ import {useQuery, useQueryClient} from '@tanstack/react-query'
 
 import {uploadBlob} from '#/lib/api'
 import {LINK_FAVICON_PROXY} from '#/lib/constants'
+import {type PickerImage} from '#/lib/media/picker.shared'
 import {blobToDataUri} from '#/lib/media/util'
 import {isNetworkError} from '#/lib/strings/errors'
 import {isRecordNotFoundError} from '#/lib/xrpc-error'
 import {logger} from '#/logger'
+import {compressImage, createComposerImage} from '#/state/gallery'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
@@ -192,6 +194,19 @@ export function useSetOwnProfileLinksCache() {
 }
 
 const FAVICON_TIMEOUT = 8e3
+
+/** Uploads a small PNG, preserving transparency and meeting the icon's 100 KB limit. */
+export function useUploadCustomLinkIcon() {
+  const pdsClient = usePdsClient()
+  return async (image: PickerImage) => {
+    const compressed = await compressImage(await createComposerImage(image), {
+      maxDimension: 128,
+      maxSize: 100_000,
+    })
+    const {blob} = await uploadBlob(pdsClient, compressed.path, compressed.mime)
+    return {icon: blob, previewUrl: compressed.path}
+  }
+}
 
 /**
  * Fetches a site's favicon through cardyb and uploads it to the user's PDS,

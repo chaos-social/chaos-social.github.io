@@ -4,14 +4,13 @@ export type ProfileLink = {
   url: string
   title?: string
   /**
-   * The site's favicon, fetched through cardyb and uploaded when the link is
-   * saved, so it goes through blob scanning like any other profile image.
-   * Support links don't need one; they use bundled logos.
+   * The site's favicon or an uploaded icon, stored on the user's PDS so it
+   * goes through blob scanning like any other profile image.
    */
   icon?: BlobRef
   /**
    * The icon's image URL, as returned in profile views. For an icon that was
-   * just fetched and isn't saved yet, a data URI of it.
+   * just selected or fetched and isn't saved yet, a local preview URI.
    */
   iconUrl?: string
   /** The `app.bsky.actor.link` record, once the link has been saved. */

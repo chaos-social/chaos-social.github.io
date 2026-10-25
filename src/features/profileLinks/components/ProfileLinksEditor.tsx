@@ -127,6 +127,7 @@ export function ProfileLinksEditor({
       />
       <LinkFormDialog
         control={formControl}
+        did={did}
         link={editing}
         initialUrl={initialUrl}
         existingUrls={links

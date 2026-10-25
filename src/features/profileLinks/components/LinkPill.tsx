@@ -74,7 +74,7 @@ export function ProfileLinkPill({
   const palette = useSupportPalette()
   const provider = getSupportProvider(link.url)
   const color = provider ? palette.fg : t.atoms.text.color
-  const faviconUrl = provider ? undefined : linkFaviconUrl(link, did)
+  const faviconUrl = linkFaviconUrl(link, did)
 
   const trailing = handle ? (
     <DragHandle onGreen={!!provider} />
@@ -107,7 +107,11 @@ export function ProfileLinkPill({
   const content = (
     <>
       {faviconUrl ? (
-        <ButtonFavicon key={faviconUrl} uri={faviconUrl} />
+        <ButtonFavicon
+          key={faviconUrl}
+          uri={faviconUrl}
+          fallback={<ButtonIcon icon={linkIcon(provider)} />}
+        />
       ) : (
         <ButtonIcon icon={linkIcon(provider)} />
       )}

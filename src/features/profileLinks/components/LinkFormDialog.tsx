@@ -2,15 +2,21 @@ import {useEffect, useRef, useState} from 'react'
 import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {usePhotoLibraryPermission} from '#/lib/hooks/usePermissions'
 import {getLinkMeta} from '#/lib/link-meta/link-meta'
+import {openPicker} from '#/lib/media/picker'
+import {isNetworkError} from '#/lib/strings/errors'
+import {logger} from '#/logger'
 import {atoms as a, tokens, useTheme, web} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
+import {useSheetWrapper} from '#/components/Dialog/sheet-wrapper'
 import * as TextField from '#/components/forms/TextField'
 import {ChainLink_Stroke2_Corner0_Rounded as ChainLinkIcon} from '#/components/icons/ChainLink'
 import {TimesLarge_Stroke2_Corner0_Rounded as XIcon} from '#/components/icons/TimesLarge'
 import {createStaticClick, InlineLinkText} from '#/components/Link'
 import {Loader} from '#/components/Loader'
+import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {IS_LIQUID_GLASS} from '#/env'
@@ -22,9 +28,10 @@ import {
   validateLinkInput,
 } from '../providers'
 import {checkSafelink} from '../safelink'
-import {useUploadLinkIcon} from '../state'
+import {useUploadCustomLinkIcon, useUploadLinkIcon} from '../state'
 import {MAX_TITLE_LENGTH, type ProfileLink} from '../types'
-import {ProviderLogo} from './ProviderLogo'
+import {LinkFavicon, linkFaviconUrl} from './LinkFavicon'
+import {linkIcon, ProviderLogo} from './ProviderLogo'
 import {SupportedSitesDialog} from './SupportedSitesDialog'
 
 /** The counter stays out of the way until the title is getting long. */
@@ -51,6 +58,7 @@ function suggestTitle(pageTitle: string | undefined): string {
  */
 export function LinkFormDialog({
   control,
+  did,
   link,
   initialUrl = '',
   existingUrls,
@@ -58,6 +66,7 @@ export function LinkFormDialog({
   onRemove,
 }: {
   control: Dialog.DialogControlProps
+  did: string
   link: ProfileLink | null
   /** URL to prefill when adding a new link. */
   initialUrl?: string
@@ -80,6 +89,7 @@ export function LinkFormDialog({
       nativeOptions={{preventExpansion: true}}>
       <Dialog.Handle />
       <LinkFormInner
+        did={did}
         link={link}
         initialUrl={initialUrl}
         existingUrls={existingUrls}
@@ -91,12 +101,14 @@ export function LinkFormDialog({
 }
 
 function LinkFormInner({
+  did,
   link,
   initialUrl,
   existingUrls,
   onSave,
   onRemove,
 }: {
+  did: string
   link: ProfileLink | null
   initialUrl: string
   existingUrls: string[]
@@ -109,6 +121,9 @@ function LinkFormInner({
   const ax = useAnalytics()
   const palette = useSupportPalette()
   const uploadLinkIcon = useUploadLinkIcon()
+  const uploadCustomLinkIcon = useUploadCustomLinkIcon()
+  const {requestPhotoAccessIfNeeded} = usePhotoLibraryPermission()
+  const sheetWrapper = useSheetWrapper()
   const supportedSitesControl = Dialog.useDialogControl()
 
   const isEditing = !!link
@@ -116,6 +131,13 @@ function LinkFormInner({
   const [input, setInput] = useState(startingInput)
   const [touched, setTouched] = useState(false)
   const [title, setTitle] = useState(link?.title ?? '')
+  const [selectedIcon, setSelectedIcon] = useState(
+    link?.icon
+      ? {icon: link.icon, previewUrl: linkFaviconUrl(link, did)}
+      : null,
+  )
+  const [iconChanged, setIconChanged] = useState(false)
+  const [selectingIcon, setSelectingIcon] = useState(false)
   /*
    * Before saving a new destination we ask the link preview service whether
    * the page exists, and fetch the site's icon. Some sites block scrapers, so
@@ -174,12 +196,37 @@ function LinkFormInner({
 
   const nextTitle = title.trim() || undefined
   const isUnchanged =
-    isEditing && targetUrl === link.url && nextTitle === link.title
+    isEditing &&
+    targetUrl === link.url &&
+    nextTitle === link.title &&
+    !iconChanged
+  const busy = selectingIcon || reachability === 'checking'
   const canSave =
-    !validation.isEmpty &&
-    !validation.isInsecure &&
-    !isUnchanged &&
-    reachability !== 'checking'
+    !validation.isEmpty && !validation.isInsecure && !isUnchanged && !busy
+
+  const selectIcon = async () => {
+    if (busy) return
+    setSelectingIcon(true)
+    try {
+      if (!(await requestPhotoAccessIfNeeded())) return
+      const [image] = await sheetWrapper(openPicker())
+      if (!image) return
+      const uploaded = await uploadCustomLinkIcon(image)
+      setSelectedIcon(uploaded)
+      setIconChanged(true)
+    } catch (e) {
+      if (!isNetworkError(e)) {
+        logger.error('Failed to upload custom profile link icon', {
+          safeMessage: e,
+        })
+      }
+      Toast.show(l`Couldn’t upload this icon. Please try another image.`, {
+        type: 'error',
+      })
+    } finally {
+      setSelectingIcon(false)
+    }
+  }
 
   const save = async () => {
     if (!canSave) return
@@ -207,13 +254,13 @@ function LinkFormInner({
     // a saved link has proven itself; only check new destinations
     const needsCheck = isNewDestination && reachability === 'unchecked'
     /*
-     * Fetch the icon on every save, not just for new links, so editing a link
-     * picks up a favicon the site has changed. If that fails, an edit keeps
-     * the icon it had. Support links use bundled logos instead.
+     * Keep any stored or selected image until the owner restores the default.
+     * Without an image, support links use their bundled logos and other links
+     * fetch the site's favicon.
      */
-    const needsIcon = !provider
-    let icon = isNewDestination ? undefined : link?.icon
-    let iconUrl = isNewDestination ? undefined : link?.iconUrl
+    const needsIcon = !selectedIcon && !provider
+    let icon = selectedIcon?.icon
+    let iconUrl = selectedIcon?.previewUrl
     if (needsCheck || needsIcon || isNewDestination) {
       setReachability('checking')
       const [meta, uploadedIcon, safelinkAction] = await Promise.all([
@@ -264,6 +311,7 @@ function LinkFormInner({
 
   // the close button sits as far from the top as the content is from the sides
   const closeInset = IS_LIQUID_GLASS ? tokens.space._2xl : tokens.space.xl
+  const previewUrl = selectedIcon?.previewUrl
 
   return (
     <Dialog.ScrollableInner
@@ -316,6 +364,7 @@ function LinkFormInner({
                 label={l`Link`}
                 placeholder="yoursite.com"
                 value={input}
+                editable={!busy}
                 onChangeText={value => {
                   setInput(value)
                   setTouched(true)
@@ -372,6 +421,7 @@ function LinkFormInner({
                   provider ? l`Support on ${provider.name}` : l`e.g. Portfolio`
                 }
                 value={title}
+                editable={!busy}
                 onChangeText={setTitle}
                 maxLength={MAX_TITLE_LENGTH}
                 autoCapitalize="words"
@@ -390,6 +440,53 @@ function LinkFormInner({
                 </TextField.SuffixText>
               ) : null}
             </TextField.Root>
+          </View>
+
+          <View>
+            <TextField.LabelText>
+              <Trans>Icon</Trans>
+            </TextField.LabelText>
+            <View style={[a.flex_row, a.flex_wrap, a.align_center, a.gap_md]}>
+              {previewUrl ? (
+                <LinkFavicon
+                  key={previewUrl}
+                  uri={previewUrl}
+                  size={32}
+                  fallback={<ProviderLogo provider={provider} size="lg" />}
+                />
+              ) : (
+                <ProviderLogo provider={provider} size="lg" />
+              )}
+              <Button
+                testID="profileLinkUploadIconBtn"
+                label={l`Upload icon`}
+                onPress={() => void selectIcon()}
+                disabled={busy}
+                size="small"
+                color="secondary">
+                <ButtonText>
+                  <Trans>Upload icon</Trans>
+                </ButtonText>
+                {selectingIcon && <ButtonIcon icon={Loader} />}
+              </Button>
+              {selectedIcon && (
+                <Button
+                  testID="profileLinkResetIconBtn"
+                  label={l`Use default icon`}
+                  onPress={() => {
+                    setSelectedIcon(null)
+                    setIconChanged(true)
+                  }}
+                  disabled={busy}
+                  size="small"
+                  color="secondary">
+                  <ButtonIcon icon={linkIcon(provider)} />
+                  <ButtonText>
+                    <Trans>Use default</Trans>
+                  </ButtonText>
+                </Button>
+              )}
+            </View>
           </View>
         </View>
 
@@ -430,6 +527,7 @@ function LinkFormInner({
               testID="profileLinkRemoveBtn"
               label={l`Remove link`}
               onPress={() => control.close(onRemove)}
+              disabled={busy}
               size="large"
               color="negative_subtle">
               <ButtonText>
