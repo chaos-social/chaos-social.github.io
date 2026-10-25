@@ -4,6 +4,7 @@ import {
   Linking,
   type NativeSyntheticEvent,
   type TargetedEvent,
+  type View,
 } from 'react-native'
 import {sanitizeUrl} from '@braintree/sanitize-url'
 import {useLingui} from '@lingui/react/macro'
@@ -320,6 +321,10 @@ export type LinkProps = Omit<BaseLinkProps, 'disableMismatchWarning'> &
     overridePresentation?: boolean
     /** Web data attributes forwarded to the link element. */
     dataSet?: Record<string, string | number | undefined>
+    /**
+     * Forwarded to the underlying `Button`, e.g. for a roving focus target.
+     */
+    ref?: React.Ref<React.ComponentRef<typeof View>>
   }
 
 /**

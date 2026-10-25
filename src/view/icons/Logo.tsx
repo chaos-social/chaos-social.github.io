@@ -39,17 +39,14 @@ export const Logo = forwardRef(function LogoImpl(props: Props, ref) {
 
   const logoVariant = useLogoVariant(allowVariants)
 
-  if (logoVariant !== 'default') {
-    const isJapanLogo = logoVariant === 'japan'
-    const useLargeKawaiiLogo = !isJapanLogo && size > 100
+  if (logoVariant === 'kawaii') {
+    const useLargeKawaiiLogo = size > 100
     return (
       <Image
         source={
-          isJapanLogo
-            ? require('../../../assets/icons/custom_logo_japan.svg')
-            : useLargeKawaiiLogo
-              ? require('../../../assets/kawaii.avif')
-              : require('../../../assets/kawaii_smol.avif')
+          useLargeKawaiiLogo
+            ? require('../../../assets/kawaii.avif')
+            : require('../../../assets/kawaii_smol.avif')
         }
         accessibilityLabel="Witchsky"
         accessibilityHint=""
@@ -58,11 +55,9 @@ export const Logo = forwardRef(function LogoImpl(props: Props, ref) {
         style={[
           {
             height: size,
-            aspectRatio: isJapanLogo
-              ? 2
-              : useLargeKawaiiLogo
-                ? KAWAII_LOGO_RATIO
-                : KAWAII_SMALL_LOGO_RATIO,
+            aspectRatio: useLargeKawaiiLogo
+              ? KAWAII_LOGO_RATIO
+              : KAWAII_SMALL_LOGO_RATIO,
           },
         ]}
       />

@@ -4,7 +4,6 @@ import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {useHaptics} from '#/lib/haptics'
-import {type CountsMetricsDisplay} from '#/lib/metrics-display'
 import {useRequireAuth} from '#/state/session'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
@@ -16,21 +15,21 @@ import {
 } from '#/components/icons/Repost'
 import {MetricCountLabel} from '#/components/PostControls/MetricCountLabel'
 import {Text} from '#/components/Typography'
+import {IS_IPAD} from '#/env'
 import {PostControlButton, PostControlButtonIcon} from './PostControlButton'
+import {RepostButtonMenu, type RepostButtonProps} from './RepostButtonMenu'
 
-interface Props {
-  isReposted: boolean
-  repostCount?: number
-  metricsDisplay?: CountsMetricsDisplay
-  onRepost: () => void
-  onBumpRepost: () => void
-  onQuote: () => void
-  onLongPress?: () => void
-  big?: boolean
-  embeddingDisabled: boolean
-}
+let RepostButton = (props: RepostButtonProps): React.ReactNode =>
+  IS_IPAD ? (
+    <RepostButtonMenu {...props} longPressToQuote />
+  ) : (
+    <RepostButtonDialog {...props} />
+  )
 
-let RepostButton = ({
+RepostButton = memo(RepostButton)
+export {RepostButton}
+
+function RepostButtonDialog({
   isReposted,
   repostCount,
   metricsDisplay = 'visible',
@@ -40,7 +39,7 @@ let RepostButton = ({
   onLongPress,
   big,
   embeddingDisabled,
-}: Props): React.ReactNode => {
+}: RepostButtonProps): React.ReactNode {
   const t = useTheme()
   const {t: l} = useLingui()
   const requireAuth = useRequireAuth()
@@ -113,8 +112,6 @@ let RepostButton = ({
     </View>
   )
 }
-RepostButton = memo(RepostButton)
-export {RepostButton}
 
 export const RepostButtonDialogInner = memo(function RepostButtonDialogInner({
   isReposted,
@@ -125,29 +122,29 @@ export const RepostButtonDialogInner = memo(function RepostButtonDialogInner({
 }: {
   isReposted: boolean
   onRepost: () => void
-  onBumpRepost: () => void
+  onBumpRepost?: () => void
   onQuote: () => void
   embeddingDisabled: boolean
 }): React.ReactNode {
   const t = useTheme()
   const {t: l} = useLingui()
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const control = Dialog.useDialogContext()
 
   const onPressRepost = useCallback(() => {
-    if (!isReposted) playHaptic()
+    if (!isReposted) haptics.confirm()
 
     control.close(() => {
       onRepost()
     })
-  }, [control, isReposted, onRepost, playHaptic])
+  }, [control, isReposted, onRepost, haptics])
 
   const onPressQuote = useCallback(() => {
-    playHaptic()
+    haptics.confirm()
     control.close(() => {
       onQuote()
     })
-  }, [control, onQuote, playHaptic])
+  }, [control, onQuote, haptics])
 
   const onPressClose = useCallback(() => control.close(), [control])
 
@@ -175,13 +172,13 @@ export const RepostButtonDialogInner = memo(function RepostButtonDialogInner({
               )}
             </Text>
           </Button>
-          {isReposted && (
+          {isReposted && onBumpRepost && (
             <Button
               testID="bumpRepostBtn"
               style={[a.justify_start, a.px_md, a.gap_sm]}
               label={l`Bump repost`}
               onPress={() => {
-                playHaptic()
+                haptics.confirm()
                 control.close(() => onBumpRepost())
               }}
               size="large"

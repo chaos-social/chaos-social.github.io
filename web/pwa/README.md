@@ -1,12 +1,14 @@
 # Progressive web app
 
 `pnpm build-web` generates the manifest, 180/192/512px icons from
-`assets/logo.png`, and a Workbox service worker in `web-build`. It also copies
+`assets/logo.png`, and a Workbox service worker in `dist`. It also copies
 PWA output into `bskyweb/static` for the Go server. Serve the complete build over
 HTTPS (localhost also works). Development builds do not register a worker.
 
-This follows https://docs.expo.dev/guides/progressive-web-apps/ using the
-existing Rspack build instead of Expo's Metro export.
+The default build uses Expo's Metro export. `pnpm build-web:rspack` retains the
+Rspack build and writes to `web-build`. Cloudflare Pages uses `dist` by default.
+Both builds include Witchsky's static pages, OAuth metadata, fonts, and PWA
+assets.
 
 Only build assets and a copy of the app shell are precached. Online navigation
 always reaches the server; failed navigation falls back to the shell. API

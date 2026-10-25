@@ -147,7 +147,7 @@ export function Item({
   onPress: onPressProp,
   ...props
 }: {value: string; children: React.ReactNode} & Omit<ButtonProps, 'children'>) {
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const [position, setPosition] = useState<{x: number; width: number} | null>(
     null,
   )
@@ -180,11 +180,11 @@ export function Item({
 
   const onPress = useCallback(
     (evt: any) => {
-      playHaptic('Light')
+      haptics.selection()
       ctx.onSelectValue(value, position)
       onPressProp?.(evt)
     },
-    [ctx, value, position, onPressProp, playHaptic],
+    [ctx, value, position, onPressProp, haptics],
   )
 
   return (

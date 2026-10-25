@@ -1,0 +1,8 @@
+{
+  "features": [
+    "ArrayToSorted"
+  ],
+  "reasons": {
+    "ArrayToSorted": "False positive in @radix-ui/react-collection 1.1.7: OrderedDict defines its own toSorted method using [...this.entries()].sort(compareFn). Its callers operate on OrderedDict, not Array.prototype.toSorted. Recheck this exception when upgrading Radix."
+  }
+}

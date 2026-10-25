@@ -22,7 +22,10 @@ import {useMaterialYouPalette} from '#/alf/util/materialYou'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {Slider} from '#/components/forms/Slider'
 import {ArrowOutOfBoxModified_Stroke2_Corner2_Rounded as ShareIcon} from '#/components/icons/ArrowOutOfBox'
-import {Bookmark, BookmarkFilled} from '#/components/icons/Bookmark'
+import {
+  Bookmark_Filled_Corner0_Rounded as BookmarkFilled,
+  Bookmark_Stroke2_Corner0_Rounded as Bookmark,
+} from '#/components/icons/Bookmark'
 import {DotGrid3x1_Stroke2_Corner0_Rounded as EllipsisIcon} from '#/components/icons/DotGrid'
 import {Pencil_Stroke2_Corner0_Rounded as PencilIcon} from '#/components/icons/Pencil'
 import * as Layout from '#/components/Layout'

@@ -23,6 +23,7 @@ import {
   useTheme,
   web,
 } from '#/alf'
+import {shouldCenterNativeTabletContent} from '#/alf/breakpoints.shared'
 import {useDialogContext} from '#/components/Dialog'
 import {
   CENTER_COLUMN_OFFSET,
@@ -30,7 +31,7 @@ import {
   SCROLLBAR_OFFSET,
 } from '#/components/Layout/const'
 import {ScrollbarOffsetContext} from '#/components/Layout/context'
-import {IS_WEB} from '#/env'
+import {IS_IPAD, IS_WEB} from '#/env'
 
 export * from '#/components/Layout/const'
 export * as Header from '#/components/Layout/Header'
@@ -39,6 +40,8 @@ export type ScreenProps = React.ComponentProps<typeof View> & {
   style?: StyleProp<ViewStyle>
   noInsetTop?: boolean
   minimalShell?: boolean
+  /** Skip the centered desktop-width borders for immersive content. */
+  fullBleed?: boolean
 }
 
 /**
@@ -48,16 +51,22 @@ export const Screen = memo(function Screen({
   style,
   noInsetTop,
   minimalShell = false,
+  fullBleed = false,
   ...props
 }: ScreenProps) {
   const {top} = useSafeAreaInsets()
   const {isWithinSplitView} = useIsWithinSplitView()
+  const {gtMobile} = useBreakpoints()
 
   useEnableMinimalShellModeForScreen({enabled: minimalShell})
 
   return (
     <>
-      {IS_WEB && !isWithinSplitView && <WebCenterBorders />}
+      {IS_WEB && !fullBleed && !isWithinSplitView ? (
+        <WebCenterBorders />
+      ) : !fullBleed && gtMobile && !isWithinSplitView ? (
+        <NativeCenterBorders />
+      ) : null}
       <View
         style={[
           a.util_screen_outer,
@@ -86,13 +95,29 @@ export const Content = memo(function Content({
   children,
   style,
   contentContainerStyle,
+  centerContent,
   ignoreTabletLayoutOffset,
+  automaticallyAdjustsScrollIndicatorInsets,
   ref,
   ...props
 }: ContentProps) {
   const t = useTheme()
   const {footerHeight} = useShellLayout()
   const {isWithinSplitView} = useIsWithinSplitView()
+  const {gtMobile} = useBreakpoints()
+  const {isWithinDialog} = useDialogContext()
+  const {isWithinOffsetView} = useContext(ScrollbarOffsetContext)
+  const centerOnTablet = shouldCenterNativeTabletContent({
+    gtMobile,
+    isWithinDialog,
+    isWithinSplitView,
+    isWithinOffsetView,
+  })
+  const isWithinContainedTabletSurface =
+    isWithinDialog || isWithinSplitView || isWithinOffsetView
+  const usesSystemScrollIndicatorInsets =
+    gtMobile && !isWithinContainedTabletSurface
+  const offsetContext = useMemo(() => ({isWithinOffsetView: true}), [])
 
   // note - if we ever make the footer transparent in any way,
   // we'll need to change this to use contentInsets/scrollIndicatorInsets
@@ -103,12 +128,20 @@ export const Content = memo(function Content({
     }
   })
 
-  return (
+  const scrollView = (
     <Animated.ScrollView
       ref={ref}
       id="content"
-      automaticallyAdjustsScrollIndicatorInsets={false}
+      centerContent={centerOnTablet ? false : centerContent}
+      automaticallyAdjustsScrollIndicatorInsets={
+        automaticallyAdjustsScrollIndicatorInsets ??
+        (usesSystemScrollIndicatorInsets || isWithinContainedTabletSurface
+          ? undefined
+          : false)
+      }
       indicatorStyle={t.scheme === 'dark' ? 'white' : 'black'}
+      // Header taps scroll to the top on iPadOS 26, see `List`
+      scrollsToTop={IS_IPAD ? false : undefined}
       style={[
         userStyle('wsky-center'),
         a.w_full,
@@ -122,7 +155,16 @@ export const Content = memo(function Content({
           }),
         style,
       ]}
-      contentContainerStyle={[contentContainerStyle]}
+      contentContainerStyle={[
+        centerOnTablet && {
+          width: '100%',
+          maxWidth: CENTER_COLUMN_WIDTH,
+          alignSelf: 'center',
+        },
+        /* UIKit centering would also add horizontal insets to the column. */
+        centerOnTablet && centerContent && [a.flex_grow, a.justify_center],
+        contentContainerStyle,
+      ]}
       {...props}>
       {IS_WEB ? (
         <Center ignoreTabletLayoutOffset={ignoreTabletLayoutOffset}>
@@ -133,6 +175,14 @@ export const Content = memo(function Content({
         children
       )}
     </Animated.ScrollView>
+  )
+
+  return IS_WEB ? (
+    scrollView
+  ) : (
+    <ScrollbarOffsetContext.Provider value={offsetContext}>
+      {scrollView}
+    </ScrollbarOffsetContext.Provider>
   )
 })
 
@@ -211,4 +261,26 @@ const WebCenterBorders = memo(function LayoutWebCenterBorders() {
       ]}
     />
   ) : null
+})
+
+const NativeCenterBorders = memo(function LayoutNativeCenterBorders() {
+  const t = useTheme()
+  return (
+    <View
+      pointerEvents="none"
+      style={[
+        a.absolute,
+        a.top_0,
+        a.bottom_0,
+        a.border_l,
+        a.border_r,
+        t.atoms.border_contrast_low,
+        {
+          alignSelf: 'center',
+          width: CENTER_COLUMN_WIDTH + 2,
+          zIndex: 1,
+        },
+      ]}
+    />
+  )
 })

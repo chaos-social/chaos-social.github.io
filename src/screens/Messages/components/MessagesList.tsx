@@ -75,6 +75,7 @@ import * as bsky from '#/types/bsky'
 import {ChatStatusInfo} from './ChatStatusInfo'
 import {groupSystemMessages, type RenderItem} from './groupSystemMessages'
 import {InviteLinkDialogProvider} from './InviteLinkDialogProvider'
+import {getMessageComposerKeyboardOffsets} from './messageComposerLayout'
 import {
   type MessageEmbedState,
   MessageInputEmbed,
@@ -519,6 +520,8 @@ export function MessagesList({
   // -- Keyboard animation handling
 
   const {bottom: bottomInset} = useSafeAreaInsets()
+  const {stickyViewClosedOffset} =
+    getMessageComposerKeyboardOffsets(bottomInset)
 
   // -- Message sending
   const onSendMessage = useCallback(
@@ -870,7 +873,7 @@ export function MessagesList({
               minimumOffset={IS_WEB ? 0 : bottomInset}
               offset={{
                 closed: platform({
-                  ios: tokens.space.lg, // hide bottom padding when closed
+                  ios: stickyViewClosedOffset,
                   default: 0,
                 }),
                 opened: 0,
@@ -960,15 +963,16 @@ function ChatScrollComponent({
 }) {
   const scrollEdgeRef = useScrollEdgeEffectRef()
   const {bottom: bottomInset} = useSafeAreaInsets()
+  const {chatScrollOffset} = getMessageComposerKeyboardOffsets(bottomInset)
 
   const offset = platform({
-    ios: bottomInset - tokens.space.lg,
+    ios: chatScrollOffset,
     android: bottomInset,
     default: 0,
   })
 
   const inputOffset = platform({
-    ios: bottomInset - tokens.space.lg,
+    ios: chatScrollOffset,
     android: bottomInset,
     default: 0,
   })

@@ -1,5 +1,6 @@
 import {BSKY_LABELER_DID} from '@atproto/api'
 import {isDidString} from '@atproto/lex'
+import {PlatformInfo} from '@bsky.app/expo-bluesky-swiss-army'
 import {z} from 'zod'
 
 import {DEFAULT_ALT_TEXT_AI_MODEL} from '#/lib/constants'
@@ -9,9 +10,8 @@ import {
   notificationDotDisplaySchema,
 } from '#/lib/metrics-display'
 import {deviceLanguageCodes, deviceLocales} from '#/locale/deviceLocales'
-import {findSupportedAppLanguage} from '#/locale/helpers'
+import {findSupportedAppLanguage} from '#/locale/languages'
 import {logger} from '#/logger'
-import {PlatformInfo} from '../../../modules/expo-bluesky-swiss-army'
 
 const externalEmbedOptions = ['show', 'hide'] as const
 
@@ -226,6 +226,7 @@ const schema = z.object({
       bandcamp: z.enum(externalEmbedOptions).optional(),
       streamplace: z.enum(externalEmbedOptions).optional(),
       plyr: z.enum(externalEmbedOptions).optional(),
+      freemix: z.enum(externalEmbedOptions).optional(),
     })
     .optional(),
   invites: z.object({

@@ -1,4 +1,8 @@
-import {getAgeAssuranceRegionConfigForGeolocation} from '#/ageAssurance/util'
+import {AgeAssuranceAccess, AgeAssuranceStatus} from '#/ageAssurance/types'
+import {
+  computeAgeAssuranceFlags,
+  getAgeAssuranceRegionConfigForGeolocation,
+} from '#/ageAssurance/util'
 import {type app} from '#/lexicons'
 
 jest.mock('#/ageAssurance/data')
@@ -44,4 +48,28 @@ describe('getAgeAssuranceRegionConfigForGeolocation', () => {
       ),
     ).toBe(texas)
   })
+})
+
+describe('Witchsky age assurance bypass', () => {
+  it.each([undefined, 12, 18])(
+    'keeps restrictions disabled for declared age %s',
+    declaredAge => {
+      expect(
+        computeAgeAssuranceFlags({
+          state: {
+            status: AgeAssuranceStatus.Blocked,
+            access: AgeAssuranceAccess.None,
+          },
+          regionConfig: {countryCode: 'US', minAccessAge: 18, rules: []},
+          metadata: {declaredAge, birthdate: undefined},
+        }),
+      ).toMatchObject({
+        isAgeRestricted: false,
+        adultContentDisabled: false,
+        chatDisabled: false,
+        groupChatDisabled: false,
+        allowsDeviceVerification: false,
+      })
+    },
+  )
 })

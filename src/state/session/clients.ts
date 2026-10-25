@@ -28,7 +28,10 @@ import {networkAwareFetch} from './network'
  * fetch, which is `networkAwareFetch` wrapped in the disposal kill switch.
  */
 export function buildAppviewClient(agent: Agent): Client {
-  return createLexClient(agent, {service: readAppViewProxy()})
+  return createLexClient(agent, {
+    service: readAppViewProxy(),
+    includeDeviceSessionHeaders: true,
+  })
 }
 
 /**
@@ -62,6 +65,7 @@ export function buildPdsClient(agent: Agent): Client {
 export function buildChatClient(agent: Agent): Client {
   return createLexClient(agent, {
     service: CHAT_PROXY_SERVICE,
+    includeDeviceSessionHeaders: true,
   })
 }
 
@@ -151,7 +155,10 @@ export function getPublicAppviewClient(): Client {
   const service = readCustomAppViewUrl() || PUBLIC_BSKY_SERVICE
   let client = publicLexClients.get(service)
   if (!client) {
-    client = createLexClient({service, fetch: networkAwareFetch})
+    client = createLexClient(
+      {service, fetch: networkAwareFetch},
+      {includeDeviceSessionHeaders: true},
+    )
     publicLexClients.set(service, client)
   }
   return client

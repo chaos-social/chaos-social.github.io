@@ -1,93 +1,276 @@
-const path = require('path')
-const fs = require('fs')
+const path = require('node:path')
+const fs = require('node:fs')
+const {execFileSync} = require('node:child_process')
 
 const projectRoot = path.join(__dirname, '..')
 require('dotenv').config({path: path.join(projectRoot, '.env')})
-const templateFile = path.join(
-  projectRoot,
-  'bskyweb',
-  'templates',
-  'scripts.html',
-)
+const distDir = path.join(projectRoot, 'dist')
+const bskywebStatic = path.join(projectRoot, 'bskyweb', 'static')
+const templatesDir = path.join(projectRoot, 'bskyweb', 'templates')
+const templateFile = path.join(templatesDir, 'scripts.html')
+const fontsTemplateFile = path.join(templatesDir, 'fonts.html')
 
-const manifest = require(
-  path.join(projectRoot, 'web-build/asset-manifest.json'),
-)
-const entrypoints = manifest.entrypoints || []
+// Parse dist/index.html for entrypoint scripts and stylesheets injected by Metro.
+// Metro injects <link rel="preload/stylesheet"> and <script> tags referencing
+// /_expo/static/ paths, optionally prefixed by `experiments.baseUrl` (e.g. /static).
+// We capture from /_expo/static/ onward so the captured path is independent of baseUrl.
+//
+// We preserve the _expo/static/ structure when copying to bskyweb/static, because
+// Metro's runtime chunk loader and source maps embed these paths. Rewriting them
+// would mean rewriting the chunk loader and every .map file's references; not worth it.
+const indexHtml = fs.readFileSync(path.join(distDir, 'index.html'), 'utf8')
 
-console.log(`Found ${entrypoints.length} entrypoints`)
-console.log(`Writing ${templateFile}`)
-
-const outputFile = entrypoints
-  .map(name => {
-    const file = path.basename(name)
-    const ext = path.extname(file)
-
-    if (ext === '.js') {
-      return `<script defer="defer" src="{{ staticCDNHost }}/static/js/${file}"></script>`
-    }
-    if (ext === '.css') {
-      return `<link rel="stylesheet" href="{{ staticCDNHost }}/static/css/${file}">`
-    }
-
-    return ''
-  })
-  .join('\n')
-fs.writeFileSync(templateFile, outputFile)
-
-function copyPath(source, target) {
-  const sourcePath = path.join(projectRoot, source)
-  if (!fs.existsSync(sourcePath)) {
-    console.log(`Skipping ${source} (does not exist)`)
-    return
+// Find all CSS stylesheet links pointing to _expo (skips preload links).
+const cssEntries = []
+const cssRegex = /<link\b[^>]*href="[^"]*?(\/_expo\/static\/css\/[^"]+)"[^>]*>/g
+let match
+while ((match = cssRegex.exec(indexHtml)) !== null) {
+  if (match[0].includes('rel="stylesheet"')) {
+    cssEntries.push(match[1])
   }
-
-  const targetPath = path.join(projectRoot, target)
-  fs.mkdirSync(path.dirname(targetPath), {recursive: true})
-  fs.cpSync(sourcePath, targetPath, {recursive: true})
-  console.log(`Copied ${sourcePath} to ${targetPath}`)
 }
 
-// Ensure static assets resolve from non-root pages.
-const indexFile = path.join(projectRoot, 'web-build', 'index.html')
-const indexHtml = fs.readFileSync(indexFile, 'utf8')
-fs.writeFileSync(
-  indexFile,
-  indexHtml.replace(/(src|href)="static\//g, '$1="/static/'),
-)
+// Find all script src entries pointing to _expo
+const jsEntries = []
+const jsRegex = /<script\b[^>]*src="[^"]*?(\/_expo\/static\/js\/[^"]+)"[^>]*>/g
+while ((match = jsRegex.exec(indexHtml)) !== null) {
+  jsEntries.push(match[1])
+}
 
-// Copy the static files that are not emitted by the web bundler.
-copyPath('bskyweb/static/iframe', 'web-build/iframe')
-copyPath('bskyweb/static/.well-known', 'web-build/.well-known')
-for (const directory of ['web-build', 'bskyweb/static']) {
-  require('./generate-oauth-metadata').generateOAuthMetadata(
-    path.join(projectRoot, directory),
+if (jsEntries.length === 0) {
+  // Fail loudly: an empty scripts.html silently breaks the deployed app.
+  throw new Error(
+    'No JS entrypoints found in dist/index.html. ' +
+      'Metro may have changed its output format; update post-web-build.js.',
   )
 }
-copyPath('witchsky-static-about', 'web-build/about')
-copyPath('src/style.css', 'web-build/style.css')
-copyPath('src/style.css', 'web-build/static/style.css')
-copyPath('assets/favicon.png', 'web-build/favicon.ico')
 
-function copyFiles(sourceDir, targetDir) {
-  const srcPath = path.join(projectRoot, sourceDir)
-  if (!fs.existsSync(srcPath)) {
+console.log(`Found ${jsEntries.length} script entrypoints`)
+console.log(`Found ${cssEntries.length} CSS entrypoints`)
+
+// Generate scripts.html template.
+// Map /_expo/static/... to {{ staticCDNHost }}/static/_expo/static/... so the
+// path matches what we copy into bskyweb/static below.
+const outputLines = []
+
+for (const href of cssEntries) {
+  const cdnPath = href.replace(/^\//, '{{ staticCDNHost }}/static/')
+  outputLines.push(`<link rel="stylesheet" href="${cdnPath}">`)
+}
+
+for (const src of jsEntries) {
+  const cdnPath = src.replace(/^\//, '{{ staticCDNHost }}/static/')
+  outputLines.push(`<script defer="defer" src="${cdnPath}"></script>`)
+}
+
+console.log(`Writing ${templateFile}`)
+fs.writeFileSync(templateFile, outputLines.join('\n'))
+
+// Generate fonts.html — preload + @font-face for the splash, using the same
+// content-hashed paths Metro emits for the bundle. Avoids shipping a duplicate
+// font copy under /static/media/ and ensures the preload is actually used.
+const fontsDir = path.join(distDir, 'assets', 'assets', 'fonts', 'inter')
+/*
+ * Witchsky's web font styles use static URLs, so Metro need not discover the
+ * Inter files through a JS import. Emit them explicitly for the splash too.
+ */
+fs.mkdirSync(fontsDir, {recursive: true})
+for (const name of ['InterVariable', 'InterVariable-Italic']) {
+  const source = path.join(
+    projectRoot,
+    'assets',
+    'fonts',
+    'inter',
+    `${name}.woff2`,
+  )
+  const bytes = fs.readFileSync(source)
+  const hash = require('node:crypto')
+    .createHash('sha256')
+    .update(bytes)
+    .digest('hex')
+    .slice(0, 32)
+  fs.writeFileSync(path.join(fontsDir, `${name}.${hash}.woff2`), bytes)
+}
+function findFontHash(prefix) {
+  if (!fs.existsSync(fontsDir)) return null
+  const match = fs
+    .readdirSync(fontsDir)
+    .find(name => name.startsWith(prefix) && name.endsWith('.woff2'))
+  return match || null
+}
+const interRegular = findFontHash('InterVariable.')
+const interItalic = findFontHash('InterVariable-Italic.')
+if (!interRegular || !interItalic) {
+  throw new Error(
+    `Could not find Inter font files in ${fontsDir}. ` +
+      'Update post-web-build.js if the font emit path changed.',
+  )
+}
+
+const interFontPath = '/assets/assets/fonts/inter/'
+/*
+ * The static index.html references the fonts by their unhashed names, but
+ * Metro emits them content-hashed. Rewrite dist/index.html in place so the
+ * font preload and @font-face URLs resolve when serving dist/ directly.
+ */
+const fixedIndexHtml = indexHtml
+  .replaceAll(
+    '/assets/assets/fonts/inter/InterVariable.woff2',
+    `/static${interFontPath}${interRegular}`,
+  )
+  .replaceAll(
+    '/assets/assets/fonts/inter/InterVariable-Italic.woff2',
+    `/static${interFontPath}${interItalic}`,
+  )
+if (fixedIndexHtml !== indexHtml) {
+  console.log('Rewriting font paths in dist/index.html to hashed filenames')
+  fs.writeFileSync(path.join(distDir, 'index.html'), fixedIndexHtml)
+}
+
+const interRegularPath = `{{ staticCDNHost }}/static${interFontPath}${interRegular}`
+const interItalicPath = `{{ staticCDNHost }}/static${interFontPath}${interItalic}`
+
+const fontsHtml = `<link rel="preload" as="font" type="font/woff2" href="${interRegularPath}" crossorigin>
+<style>
+  @font-face {
+    font-family: 'InterVariable';
+    src: url("${interRegularPath}") format('woff2');
+    font-weight: 300 1000;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'InterVariableItalic';
+    src: url("${interItalicPath}") format('woff2');
+    font-weight: 300 1000;
+    font-style: italic;
+    font-display: swap;
+  }
+</style>
+`
+console.log(`Writing ${fontsTemplateFile}`)
+fs.writeFileSync(fontsTemplateFile, fontsHtml)
+
+// Clean previous build output to avoid stale files
+function cleanDir(dir) {
+  if (fs.existsSync(dir)) {
+    fs.rmSync(dir, {recursive: true})
+    console.log(`Cleaned ${dir}`)
+  }
+}
+
+cleanDir(path.join(bskywebStatic, '_expo'))
+cleanDir(path.join(bskywebStatic, 'assets'))
+
+// Recursively copy a directory.
+function copyDir(sourceDir, targetDir) {
+  if (!fs.existsSync(sourceDir)) {
     console.log(`Skipping ${sourceDir} (does not exist)`)
     return
   }
-  const tgtPath = path.join(projectRoot, targetDir)
-  if (!fs.existsSync(tgtPath)) {
-    fs.mkdirSync(tgtPath, {recursive: true})
+  fs.mkdirSync(targetDir, {recursive: true})
+  const entries = fs.readdirSync(sourceDir, {withFileTypes: true})
+  for (const entry of entries) {
+    const sourcePath = path.join(sourceDir, entry.name)
+    const targetPath = path.join(targetDir, entry.name)
+    if (entry.isDirectory()) {
+      copyDir(sourcePath, targetPath)
+    } else {
+      fs.copyFileSync(sourcePath, targetPath)
+      console.log(`Copied ${sourcePath} to ${targetPath}`)
+    }
   }
-  const files = fs.readdirSync(srcPath)
-  files.forEach(file => {
-    const sourcePath = path.join(srcPath, file)
-    const targetPath = path.join(tgtPath, file)
-    fs.copyFileSync(sourcePath, targetPath)
-    console.log(`Copied ${sourcePath} to ${targetPath}`)
-  })
 }
 
-copyFiles('web-build/static/js', 'bskyweb/static/js')
-copyFiles('web-build/static/css', 'bskyweb/static/css')
-copyFiles('web-build/static/media', 'bskyweb/static/media')
+// Copy Metro's _expo/ tree wholesale so JS chunks (including lazy chunks
+// referenced by hash) and source maps resolve at the same paths the runtime expects.
+copyDir(path.join(distDir, '_expo'), path.join(bskywebStatic, '_expo'))
+
+// Copy assets (fonts, images, icons, etc.) referenced as /static/assets/... by the bundle.
+copyDir(path.join(distDir, 'assets'), path.join(bskywebStatic, 'assets'))
+
+// Upload source maps to Sentry
+if (
+  process.env.SENTRY_AUTH_TOKEN &&
+  process.env.SENTRY_AUTH_TOKEN != 'unknown'
+) {
+  const releasePackage = 'xyz.blueskyweb.app'
+  const release =
+    process.env.SENTRY_RELEASE ||
+    `${releasePackage}@${require(path.join(projectRoot, 'package.json')).version}`
+  /*
+   * The runtime reports `xyz.blueskyweb.app@` + (EXPO_PUBLIC_RELEASE_VERSION
+   * || package.json version) (SENTRY_RELEASE in src/env/common.ts), so maps
+   * uploaded under a bogus release never match incoming events. "null" and
+   * "undefined" catch `jq -r '.version'` stringifying a missing package.json
+   * version field, and the empty case catches an unset
+   * EXPO_PUBLIC_RELEASE_VERSION in the Dockerfile.
+   */
+  const version = release.startsWith(`${releasePackage}@`)
+    ? release.slice(releasePackage.length + 1)
+    : ''
+  if (!version || version === 'null' || version === 'undefined') {
+    throw new Error(
+      `Refusing to upload source maps under invalid Sentry release ${JSON.stringify(release)}. ` +
+        `Set SENTRY_RELEASE to "${releasePackage}@<version>" or restore the "version" field in package.json.`,
+    )
+  }
+  const dist = process.env.SENTRY_DIST || undefined
+  const sourceMapDir = path.join(distDir, '_expo', 'static')
+
+  console.log(`Uploading source maps to Sentry (release: ${release})`)
+  const args = [
+    'sourcemaps',
+    'upload',
+    '--org',
+    'blueskyweb',
+    '--project',
+    'app',
+    '--release',
+    release,
+    ...(dist ? ['--dist', dist] : []),
+    sourceMapDir,
+  ]
+  try {
+    execFileSync('sentry-cli', args, {stdio: 'inherit', cwd: projectRoot})
+    console.log('Sentry source map upload complete')
+  } catch (e) {
+    console.error('Sentry source map upload failed:', e.message)
+    process.exit(1)
+  }
+} else {
+  console.log('Skipping Sentry source map upload (SENTRY_AUTH_TOKEN not set)')
+}
+
+for (const [source, target] of [
+  ['bskyweb/static/iframe', 'iframe'],
+  ['bskyweb/static/.well-known', '.well-known'],
+  ['witchsky-static-about', 'about'],
+  ['web/static/fonts', 'static/fonts'],
+  ['src/style.css', 'style.css'],
+  ['src/style.css', 'static/style.css'],
+  ['assets/favicon.png', 'favicon.ico'],
+  ['assets/favicon.png', 'static/favicon.ico'],
+  ['web/_headers', '_headers'],
+  ['web/_routes.json', '_routes.json'],
+]) {
+  const destination = path.join(distDir, target)
+  fs.mkdirSync(path.dirname(destination), {recursive: true})
+  fs.cpSync(path.join(projectRoot, source), destination, {recursive: true})
+}
+for (const directory of [distDir, bskywebStatic]) {
+  require('./generate-oauth-metadata').generateOAuthMetadata(directory)
+}
+
+copyDir(
+  path.join(projectRoot, 'web', 'static', 'fonts'),
+  path.join(bskywebStatic, 'fonts'),
+)
+
+/* Metro embeds /static in chunk and asset URLs for the Go server. Pages needs
+ * that same directory layout when dist is served directly. */
+for (const directory of ['_expo', 'assets']) {
+  const destination = path.join(distDir, 'static', directory)
+  cleanDir(destination)
+  fs.renameSync(path.join(distDir, directory), destination)
+}

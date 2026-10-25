@@ -14,6 +14,7 @@ import {
   findPostNumberingInQueryData as findPostNumberingInExploreFeedPreviewsQueryData,
 } from '#/state/queries/explore-feed-previews'
 import {findAllPostsInQueryData as findAllPostsInNotifsQueryData} from '#/state/queries/notifications/feed'
+import {findAllPostsInQueryData as findAllPostsInGroupedNotifsQueryData} from '#/state/queries/notifications/grouped'
 import {findAllPostsInQueryData as findAllPostsInPostQueryData} from '#/state/queries/post'
 import {findAllPostsInQueryData as findAllPostsInAlsoLikedQueryData} from '#/state/queries/post-also-liked'
 import {
@@ -270,6 +271,9 @@ export function* getThreadPlaceholderCandidates(
    * avoid a notification->post scroll jump.
    */
   for (let post of findAllPostsInNotifsQueryData(queryClient, uri)) {
+    yield postViewToThreadPlaceholder(post, postNumbering)
+  }
+  for (let post of findAllPostsInGroupedNotifsQueryData(queryClient, uri)) {
     yield postViewToThreadPlaceholder(post, postNumbering)
   }
   for (let post of findAllPostsInFeedQueryData(queryClient, uri)) {

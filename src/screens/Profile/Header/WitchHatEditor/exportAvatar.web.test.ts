@@ -133,7 +133,7 @@ it('routes the blob request to a self-hosted PDS using the real client', async (
     'https://cdn.bsky.app/img/avatar/plain/did:plc:alice/bafkreieq5jui4j25lacwomsqgjeswwl3y5zcdrresptwgmfylxo2depppq@jpeg'
   const result = await exportAvatar({...options, avatar, pdsClient})
   expect(fetchMock).toHaveBeenCalledTimes(1)
-  const request: unknown = fetchMock.mock.calls[0][0]
+  const request: unknown = (fetchMock.mock.calls as unknown[][])[0][0]
   expect(String(request)).toBe(
     'https://alice.pds.example/xrpc/com.atproto.sync.getBlob?did=did%3Aplc%3Aalice&cid=bafkreieq5jui4j25lacwomsqgjeswwl3y5zcdrresptwgmfylxo2depppq',
   )

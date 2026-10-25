@@ -117,6 +117,7 @@ import {IS_INTERNAL} from '#/env'
 import {IS_NATIVE} from '#/env'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
+import {PostMenuControlItems} from './PostMenuControlItems'
 
 let PostMenuItems = ({
   post,
@@ -128,6 +129,7 @@ let PostMenuItems = ({
   onShowLess,
   logContext,
   forceGoogleTranslate,
+  includeControls = false,
 }: {
   testID: string
   post: Shadow<app.bsky.feed.defs.PostView>
@@ -143,6 +145,11 @@ let PostMenuItems = ({
   onShowLess?: (interaction: app.bsky.feed.defs.Interaction) => void
   logContext: 'FeedItem' | 'PostThreadItem' | 'Post' | 'ImmersiveVideo'
   forceGoogleTranslate: boolean
+  /**
+   * Adds repost, quote, share and save to the top of the menu, for surfaces
+   * that don't render the full `PostControls`.
+   */
+  includeControls?: boolean
 }): React.ReactNode => {
   const {hasSession, currentAccount} = useSession()
   const {t: l} = useLingui()
@@ -819,6 +826,15 @@ let PostMenuItems = ({
         confirmButtonColor="primary"
       />
       <Menu.Outer>
+        {includeControls && (
+          <PostMenuControlItems
+            post={post}
+            postFeedContext={postFeedContext}
+            postReqId={postReqId}
+            logContext={logContext}
+          />
+        )}
+
         {isAuthor && (
           <>
             <Menu.Group>

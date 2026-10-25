@@ -18,9 +18,9 @@ describe('profileIdentifier', () => {
   })
 
   it('returns did for malformed handles', () => {
-    expect(profileIdentifier({did: 'did:plc:abc', handle: 'not a handle'})).toBe(
-      'did:plc:abc',
-    )
+    expect(
+      profileIdentifier({did: 'did:plc:abc', handle: 'not a handle'}),
+    ).toBe('did:plc:abc')
   })
 })
 

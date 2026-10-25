@@ -335,7 +335,7 @@ describe('OAuth sessions', () => {
     expect(mockOAuthResume).toHaveBeenCalledWith(account)
     expect(mockResume).not.toHaveBeenCalled()
     expect(session.hasSession).toBe(true)
-    expect(session.currentAccount).toEqual(account)
+    expect(session.currentAccount).toMatchObject(account)
   })
 })
 

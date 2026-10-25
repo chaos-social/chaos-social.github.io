@@ -1,5 +1,4 @@
-import {useCallback, useEffect, useState} from 'react'
-import {useRef} from 'react'
+import {useCallback, useEffect, useRef, useState} from 'react'
 import {View} from 'react-native'
 import {Pressable} from 'react-native'
 import {type UriString} from '@atproto/syntax'
@@ -11,6 +10,7 @@ import {
   MAX_DISPLAY_NAME,
   urls,
 } from '#/lib/constants'
+import {useCallOnce} from '#/lib/once'
 import {getShapeStyle} from '#/lib/shapes'
 import {cleanError} from '#/lib/strings/errors'
 import {isOverMaxGraphemeCount} from '#/lib/strings/helpers'
@@ -43,6 +43,17 @@ import * as Prompt from '#/components/Prompt'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useSimpleVerificationStateWithDeer} from '#/components/verification'
+import {useAnalytics} from '#/analytics'
+import {
+  logProfileLinkChanges,
+  type ProfileLink,
+  ProfileLinksEditor,
+  sameProfileLinks,
+  useCanEditProfileLinks,
+  useOwnProfileLinksQuery,
+  useSetOwnProfileLinksCache,
+  useWriteProfileLinks,
+} from '#/features/profileLinks'
 import {type app} from '#/lexicons'
 
 const PRONOUNS_MAX_GRAPHEMES = 20
@@ -118,8 +129,13 @@ function DialogInner({
 }) {
   const {t: l} = useLingui()
   const t = useTheme()
+  const ax = useAnalytics()
   const control = Dialog.useDialogContext()
   const enableSquareButtons = useEnableSquareButtons()
+  // the dialog's contents mount on every open, so this fires once per open
+  useCallOnce(() => {
+    ax.metric('profile:edit:open', {})
+  })()
   const verification = useSimpleVerificationStateWithDeer({
     profile,
   })
@@ -153,13 +169,44 @@ function DialogInner({
     ImageMeta | undefined | null
   >()
 
-  const dirty =
+  const linksEnabled = useCanEditProfileLinks()
+  const {data: storedLinks} = useOwnProfileLinksQuery(profile.did, {
+    enabled: linksEnabled,
+  })
+  const writeProfileLinks = useWriteProfileLinks()
+  const setOwnProfileLinksCache = useSetOwnProfileLinksCache()
+  /*
+   * Unset until the owner edits their links, so edits always start from the
+   * loaded records and a save can't overwrite links that hadn't loaded yet.
+   */
+  const [editedLinks, setEditedLinks] = useState<ProfileLink[]>()
+  const links = editedLinks ?? storedLinks
+  const linksLoaded = !!storedLinks
+
+  useEffect(() => {
+    if (!linksEnabled || !storedLinks) return
+    ax.metric('profile:links:editorOpen', {
+      linkCount: storedLinks.length,
+    })
+    // Once, when the links first load.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [linksEnabled, linksLoaded])
+  const [isDraggingLinks, setIsDraggingLinks] = useState(false)
+  // on Android the sheet turns its own drag off while scrolled, so put that back after
+  const sheetDragWasDisabled = useRef(false)
+
+  const profileDirty =
     displayName !== initialDisplayName ||
     description !== initialDescription ||
     userAvatar !== profile.avatar ||
     userBanner !== profile.banner ||
     pronouns !== initialPronouns ||
     website !== initialWebsite
+  const linksDirty =
+    !!editedLinks &&
+    !!storedLinks &&
+    !sameProfileLinks(editedLinks, storedLinks)
+  const dirty = profileDirty || linksDirty
 
   const enableSquareAvatars = useEnableSquareAvatars()
 
@@ -213,6 +260,11 @@ function DialogInner({
   const onPressSave = useCallback(async () => {
     setImageError('')
     try {
+      const nextLinks = linksDirty ? editedLinks : undefined
+      // the profile can only point at link records that already exist
+      const written = nextLinks
+        ? await writeProfileLinks(profile.did, nextLinks, storedLinks ?? [])
+        : undefined
       await updateProfileMutation({
         profile,
         updates: {
@@ -220,10 +272,18 @@ function DialogInner({
           description: description.trimEnd(),
           pronouns: pronouns.trim().toLowerCase() || undefined,
           website: (website.trim() || undefined) as UriString | undefined,
+          ...(written && {
+            links: written.refs.length ? written.refs : undefined,
+          }),
         },
         newUserAvatar,
         newUserBanner,
       })
+      if (nextLinks && written) {
+        logProfileLinkChanges(ax, storedLinks ?? [], nextLinks)
+        setOwnProfileLinksCache(profile.did, nextLinks, written.refs)
+        await written.deleteRemoved()
+      }
       control.close(() => onUpdate?.())
       Toast.show(l({message: 'Profile updated', context: 'toast'}))
     } catch (e: any) {
@@ -242,6 +302,12 @@ function DialogInner({
     newUserBanner,
     setImageError,
     l,
+    editedLinks,
+    linksDirty,
+    storedLinks,
+    ax,
+    writeProfileLinks,
+    setOwnProfileLinksCache,
   ])
 
   const displayNameTooLong = isOverMaxGraphemeCount({
@@ -340,6 +406,7 @@ function DialogInner({
   return (
     <Dialog.ScrollableInner
       label={l`Edit profile`}
+      scrollEnabled={!isDraggingLinks}
       style={[a.overflow_hidden]}
       contentContainerStyle={[a.px_0, a.pt_0]}
       header={
@@ -393,7 +460,7 @@ function DialogInner({
           </TextField.LabelText>
           <TextField.Root isInvalid={displayNameTooLong}>
             <Dialog.Input
-              defaultValue={displayName}
+              value={displayName}
               onChangeText={setDisplayName}
               label={l`Display name`}
               placeholder={l`e.g. Alice Lastname`}
@@ -441,7 +508,7 @@ function DialogInner({
           </TextField.LabelText>
           <TextField.Root isInvalid={descriptionTooLong}>
             <Dialog.Input
-              defaultValue={description}
+              value={description}
               onChangeText={setDescription}
               multiline
               label={l`Description`}
@@ -584,6 +651,23 @@ function DialogInner({
             </Text>
           )}
         </View>
+
+        {linksEnabled && links && (
+          <ProfileLinksEditor
+            did={profile.did}
+            links={links}
+            onChange={setEditedLinks}
+            onDragStateChange={dragging => {
+              setIsDraggingLinks(dragging)
+              if (dragging) {
+                sheetDragWasDisabled.current = control.disableDrag
+                control.setDisableDrag(true)
+              } else {
+                control.setDisableDrag(sheetDragWasDisabled.current)
+              }
+            }}
+          />
+        )}
       </View>
       {isOctober() && userAvatar && (
         <WitchHatEditor

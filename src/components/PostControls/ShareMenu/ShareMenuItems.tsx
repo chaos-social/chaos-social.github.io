@@ -9,7 +9,7 @@ import {useQueryClient} from '@tanstack/react-query'
 import {useOpenLink} from '#/lib/hooks/useOpenLink'
 import {makeProfileLink} from '#/lib/routes/links'
 import {type NavigationProp} from '#/lib/routes/types'
-import {shareText, shareUrl} from '#/lib/sharing'
+import {shareUrl, simpleShareText} from '#/lib/sharing'
 import {toShareUrl, toShareUrlBsky} from '#/lib/strings/url-helpers'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
 import {
@@ -74,12 +74,20 @@ let ShareMenuItems = ({
   const onSharePostBsky = () => {
     ax.metric('share:press:nativeShare', {})
     const url = toShareUrlBsky(href)
-    void shareUrl(url)
+    void shareUrl(url).then(result => {
+      if (!result) return
+      ax.metric('share:nativeShare:result', {
+        uri: postUri,
+        authorDid: postAuthor.did,
+        entryPoint: 'ShareMenu',
+        ...result,
+      })
+    })
     onShareProp()
   }
 
   const onCopyLink = async () => {
-    ax.metric('share:press:copyLink', {})
+    ax.metric('share:press:copyLink', {uri: postUri})
     const url = toShareUrl(href)
     if (IS_IOS) {
       // iOS only
@@ -94,7 +102,7 @@ let ShareMenuItems = ({
   }
 
   const onCopyLinkBsky = async () => {
-    ax.metric('share:press:copyLink', {})
+    ax.metric('share:press:copyLink', {uri: postUri})
     const url = toShareUrlBsky(href)
     if (isIOS) {
       // iOS only
@@ -138,11 +146,11 @@ let ShareMenuItems = ({
   }
 
   const onShareATURI = () => {
-    void shareText(postUri)
+    void simpleShareText(postUri)
   }
 
   const onShareAuthorDID = () => {
-    void shareText(postAuthor.did)
+    void simpleShareText(postAuthor.did)
   }
 
   const isBridgedPost =

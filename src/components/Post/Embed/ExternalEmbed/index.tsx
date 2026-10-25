@@ -55,7 +55,7 @@ export const ExternalEmbed = ({
 
   const {_} = useLingui()
   const t = useTheme()
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const externalEmbedPrefs = useExternalEmbedsPrefs()
   const thumbnailFormat = useThumbnailFormat()
   const imageCdnHost = useImageCdnHost()
@@ -82,14 +82,14 @@ export const ExternalEmbed = ({
     IS_ANDROID && viewContext === PostEmbedViewContext.FeedCarousel
 
   const onPress = () => {
-    playHaptic('Light')
+    haptics.tap()
     onOpen?.()
   }
 
   const onShareExternal = IS_NATIVE
     ? () => {
         if (link.uri) {
-          playHaptic('Heavy')
+          haptics.longPress()
           void shareUrl(link.uri)
         }
       }

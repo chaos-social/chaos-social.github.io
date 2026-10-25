@@ -23,10 +23,8 @@ jest.mock('#/logger', () => ({
   },
 }))
 
-jest.mock('@sentry/react-native', () => ({
-  logger: {
-    info: mockSentryLogInfo,
-  },
+jest.mock('#/logger/sentry/lib', () => ({
+  Sentry: {logger: {info: (...args: unknown[]) => mockSentryLogInfo(...args)}},
 }))
 
 jest.mock('#/env', () => ({

@@ -124,7 +124,7 @@ export function ProfileFeedHeader({
 
   const onToggleSaved = async () => {
     try {
-      playHaptic()
+      playHaptic.confirm()
 
       if (savedFeedConfig) {
         await removeFeed(savedFeedConfig)
@@ -154,7 +154,7 @@ export function ProfileFeedHeader({
 
   const onTogglePinned = async () => {
     try {
-      playHaptic()
+      playHaptic.confirm()
 
       if (savedFeedConfig) {
         const pinned = !savedFeedConfig.pinned
@@ -220,7 +220,7 @@ export function ProfileFeedHeader({
                   color="secondary"
                   variant="ghost"
                   onPress={() => {
-                    playHaptic()
+                    playHaptic.confirm()
                     infoControl.open()
                   }}>
                   <ButtonIcon icon={EllipsisIcon} />
@@ -237,7 +237,7 @@ export function ProfileFeedHeader({
                   },
                 ]}
                 onPress={() => {
-                  playHaptic()
+                  playHaptic.confirm()
                   infoControl.open()
                 }}>
                 {({hovered, pressed}) => (
@@ -456,7 +456,7 @@ function DialogInner({
 
   const onToggleLiked = async () => {
     try {
-      playHaptic()
+      playHaptic.confirm()
 
       if (isLiked && likeUri) {
         await unlikeFeed({uri: likeUri})
@@ -479,7 +479,7 @@ function DialogInner({
   }
 
   const onPressShare = useCallback(() => {
-    playHaptic()
+    playHaptic.confirm()
     const url = toShareUrl(info.route.href)
     void shareUrl(url)
     ax.metric('feed:share', {feedUrl: info.uri})

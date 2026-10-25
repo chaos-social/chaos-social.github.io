@@ -1,4 +1,4 @@
-import {StyleSheet} from 'react-native'
+import {StyleSheet, useWindowDimensions} from 'react-native'
 import Animated from 'react-native-reanimated'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {useMediaQuery} from 'react-responsive'
@@ -19,6 +19,7 @@ import {ArrowTop_Stroke2_Corner0_Rounded as ArrowIcon} from '#/components/icons/
 import {CENTER_COLUMN_OFFSET} from '#/components/Layout'
 import {SubtleHover} from '#/components/SubtleHover'
 import {IS_WEB} from '#/env'
+import {IS_NATIVE} from '#/env'
 
 export function LoadLatestBtn({
   onPress,
@@ -32,6 +33,7 @@ export function LoadLatestBtn({
   const {hasSession} = useSession()
   const {isDesktop, isTablet, isMobile, isTabletOrMobile} = useWebMediaQueries()
   const {centerColumnOffset} = useLayoutBreakpoints()
+  const {width: windowWidth} = useWindowDimensions()
   const fabMinimalShellTransform = useMinimalShellFabTransform()
   const insets = useSafeAreaInsets()
   const t = useTheme()
@@ -77,6 +79,11 @@ export function LoadLatestBtn({
           (centerColumnOffset
             ? styles.loadLatestInlineOffset
             : styles.loadLatestInline),
+        /*
+         * Always inline on native: the native left nav is a scroll view drawn
+         * above the screen, so it would swallow taps on the out-of-line spot.
+         */
+        IS_NATIVE && (isTablet || isDesktop) && {left: windowWidth / 2 - 282},
         bottomPosition,
         showBottomBar && fabMinimalShellTransform,
       ]}>

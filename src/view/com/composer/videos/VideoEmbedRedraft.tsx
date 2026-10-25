@@ -48,6 +48,9 @@ export function VideoEmbedRedraft({
           setActive={() => {}}
           onScreen={true}
           onPlaybackStart={() => {}}
+          onPlaybackProgress={() => {}}
+          onPlaybackStateChange={() => {}}
+          onPlaybackEnd={() => {}}
           lastKnownTime={{current: undefined}}
         />
       ) : (

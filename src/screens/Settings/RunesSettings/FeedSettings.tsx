@@ -42,7 +42,7 @@ import {EyeSlash_Stroke2_Corner0_Rounded as EyeSlashIcon} from '#/components/ico
 import {PencilLine_Stroke2_Corner2_Rounded as PencilIcon} from '#/components/icons/Pencil'
 import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
 import {CloseQuote_Stroke2_Corner1_Rounded as QuoteIcon} from '#/components/icons/Quote'
-import {Reply as ReplyIcon} from '#/components/icons/Reply'
+import {Reply_Stroke2_Corner0_Rounded as ReplyIcon} from '#/components/icons/Reply'
 import {TimesLarge_Stroke2_Corner0_Rounded as TimesIcon} from '#/components/icons/Times'
 import {RunesScreenLayout} from './components/RunesScreenLayout'
 

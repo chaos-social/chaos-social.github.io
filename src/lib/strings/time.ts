@@ -3,6 +3,14 @@ import {msg} from '@lingui/core/macro'
 
 import {formatDateWithSystemTime} from '#/lib/strings/systemTime'
 
+export function formatDateTime(
+  i18n: I18n,
+  date: number | string | Date,
+  options: Intl.DateTimeFormatOptions,
+) {
+  return formatDateWithSystemTime(i18n, date, options)
+}
+
 export function niceDate(
   i18n: I18n,
   date: number | string | Date,
@@ -16,15 +24,14 @@ export function niceDate(
     return i18n._(
       msg({
         context: 'date and time formatted like this: [time] · [date]',
-        message: `${formatDateWithSystemTime(i18n, d, {timeStyle: ts})} · ${i18n.date(d, {dateStyle: 'medium'})}`,
+        message: `${formatDateTime(i18n, d, {timeStyle: ts})} · ${i18n.date(d, {dateStyle: 'medium'})}`,
       }),
     )
   }
 
-  return formatDateWithSystemTime(i18n, d, {
-    dateStyle,
-    timeStyle: ts,
-  })
+  return ts
+    ? formatDateTime(i18n, d, {dateStyle, timeStyle: ts})
+    : i18n.date(d, {dateStyle})
 }
 
 export function getAge(birthDate: Date): number {

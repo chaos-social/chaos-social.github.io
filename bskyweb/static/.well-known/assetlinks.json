@@ -10,5 +10,19 @@
       "sha256_cert_fingerprints":
         ["46:63:BB:B1:BE:98:57:5F:D6:DA:B2:70:B6:A1:77:D5:3C:4D:13:9D:3F:37:3F:D8:38:DE:AF:2B:1A:88:99:D3"]
     }
+  },
+  {
+    "relation": ["delegate_permission/common.get_login_creds"],
+    "target": {
+      "namespace": "web",
+      "site": "https://bsky.app"
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.get_login_creds"],
+    "target": {
+      "namespace": "web",
+      "site": "https://bsky.social"
+    }
   }
 ]

@@ -1,14 +1,8 @@
 import {forwardRef, useCallback, useId, useMemo, useRef, useState} from 'react'
-import {
-  Pressable,
-  type StyleProp,
-  type TextStyle,
-  View,
-  type ViewStyle,
-} from 'react-native'
+import {Pressable, type StyleProp, type TextStyle, View} from 'react-native'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
-import {DropdownMenu} from 'radix-ui'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 
 import {getShapeStyle, SHARP_CORNERS} from '#/lib/shapes'
 import {userStyle} from '#/lib/userstyles'
@@ -30,6 +24,7 @@ import {
   type ItemIconProps,
   type ItemProps,
   type ItemTextProps,
+  type OuterProps,
   type RadixPassThroughTriggerProps,
   type SubmenuProps,
   type TriggerProps,
@@ -45,7 +40,10 @@ export function useMenuControl(): Dialog.DialogControlProps {
   const id = useId()
   const [isOpen, setIsOpen] = useState(false)
   const open = useCallback(() => setIsOpen(true), [])
-  const close = useCallback(() => setIsOpen(false), [])
+  const close = useCallback((cb?: () => void) => {
+    setIsOpen(false)
+    if (cb) setTimeout(cb)
+  }, [])
 
   return useMemo(
     () => ({
@@ -203,16 +201,7 @@ export function Outer({
   side,
   align,
   label,
-}: React.PropsWithChildren<{
-  showCancel?: boolean
-  side?: React.ComponentProps<typeof DropdownMenu.Content>['side']
-  align?: React.ComponentProps<typeof DropdownMenu.Content>['align']
-  label?: string
-  style?: StyleProp<ViewStyle>
-  onCloseAutoFocus?: React.ComponentProps<
-    typeof DropdownMenu.Content
-  >['onCloseAutoFocus']
-}>) {
+}: OuterProps) {
   const t = useTheme()
   const enableSquareButtons = useEnableSquareButtons()
   const {reduceMotionEnabled} = useA11y()

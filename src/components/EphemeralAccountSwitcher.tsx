@@ -351,7 +351,7 @@ function EphemeralAccountSwitcherWithData({
           renderTrigger({
             currentProfile,
             triggerProps: {
-              ...(props as SwitcherTriggerProps),
+              ...(props as unknown as SwitcherTriggerProps),
             },
           })
         }

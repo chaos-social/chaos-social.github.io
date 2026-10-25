@@ -6,7 +6,7 @@ import {Trans} from '@lingui/react/macro'
 
 import {useDebouncedValue} from '#/lib/hooks/useDebouncedValue'
 import {cleanError} from '#/lib/strings/errors'
-import {formatDateWithSystemTime} from '#/lib/strings/systemTime'
+import {formatDateTime} from '#/lib/strings/time'
 import {definitelyUrl} from '#/lib/strings/url-helpers'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {useTickEveryMinute} from '#/state/shell'
@@ -73,7 +73,7 @@ function DialogInner({profile}: {profile: bsky.profile.AnyProfileView}) {
 
       const date = new Date()
       date.setMinutes(date.getMinutes() + offset)
-      return formatDateWithSystemTime(i18n, date, {
+      return formatDateTime(i18n, date, {
         hour: 'numeric',
         minute: '2-digit',
       })

@@ -59,7 +59,7 @@ let ProfileHeaderLabeler = ({
 }: Props): React.ReactNode => {
   const profile: Shadow<app.bsky.actor.defs.ProfileViewDetailed> =
     useProfileShadow(profileUnshadowed)
-  const {currentAccount, } = useSession()
+  const {currentAccount} = useSession()
   const isSelf = currentAccount?.did === profile.did
 
   const moderation = useMemo(
@@ -97,6 +97,7 @@ let ProfileHeaderLabeler = ({
                   value={descriptionRT}
                   enableTags
                   authorHandle={profile.handle}
+                  shouldProxyLinks={true}
                 />
               </View>
             ) : undefined}
@@ -150,7 +151,7 @@ export function LabelerLikeSection({
   const ax = useAnalytics()
   const {_} = useLingui()
   const {hasSession} = useSession()
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const enableSquareButtons = useEnableSquareButtons()
   const {mutateAsync: likeMod, isPending: isLikePending} = useLikeMutation()
   const {mutateAsync: unlikeMod, isPending: isUnlikePending} =
@@ -160,7 +161,7 @@ export function LabelerLikeSection({
 
   const onToggleLiked = useCallback(async () => {
     try {
-      playHaptic()
+      haptics.confirm()
 
       if (likeUri) {
         await unlikeMod({uri: likeUri})
@@ -180,7 +181,7 @@ export function LabelerLikeSection({
       )
       ax.logger.error(`Failed to toggle labeler like`, {message: e.message})
     }
-  }, [ax, labeler, playHaptic, likeUri, unlikeMod, likeMod, _])
+  }, [ax, labeler, haptics, likeUri, unlikeMod, likeMod, _])
 
   if (isAppLabeler(profile.did)) {
     return null
@@ -250,7 +251,7 @@ export function LabelerSubscribeButton({
   const {_} = useLingui()
   const {hasSession} = useSession()
   const requireAuth = useRequireAuth()
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const {data: preferences} = usePreferencesQuery()
   const moderationOpts = useModerationOpts()
   const {
@@ -270,7 +271,7 @@ export function LabelerSubscribeButton({
 
   const onPressSubscribe = () =>
     requireAuth(async (): Promise<void> => {
-      playHaptic()
+      haptics.confirm()
       const subscribe = !isSubscribed
       const subscribeMetric = subscribe
         ? 'moderation:subscribedToLabeler'
@@ -355,7 +356,7 @@ export function HeaderLabelerButtons({
 }) {
   const {_} = useLingui()
   const {currentAccount, hasSession} = useSession()
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const editProfileControl = useDialogControl()
 
   const isMe = currentAccount?.did === profile.did
@@ -374,7 +375,7 @@ export function HeaderLabelerButtons({
             size="small"
             color="secondary"
             onPress={() => {
-              playHaptic('Light')
+              haptics.tap()
               editProfileControl.open()
             }}
             label={_(msg`Edit profile`)}

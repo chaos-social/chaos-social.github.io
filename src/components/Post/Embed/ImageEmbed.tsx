@@ -120,6 +120,7 @@ export function ImageEmbed({
       index: number,
       refs: AnimatedRef[],
       fetchedDims: (Dimensions | null)[],
+      onIndexChange?: (index: number) => void,
     ) => {
       if (postContext) {
         ax.metric('post:photoEmbed:open', {
@@ -144,6 +145,7 @@ export function ImageEmbed({
         })),
         index,
         metricsContext,
+        onIndexChange,
       })
     }
     const onPressIn = (index: number) => {

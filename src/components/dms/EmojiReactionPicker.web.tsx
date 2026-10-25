@@ -1,7 +1,7 @@
 import {useState} from 'react'
 import {Pressable, View} from 'react-native'
 import {useLingui} from '@lingui/react/macro'
-import {DropdownMenu} from 'radix-ui'
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 
 import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'

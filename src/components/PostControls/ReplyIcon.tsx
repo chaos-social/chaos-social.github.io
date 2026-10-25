@@ -2,7 +2,7 @@ import Svg, {Ellipse, Path} from 'react-native-svg'
 
 import {useReplyIconIndicators} from '#/state/preferences/reply-icon-indicators'
 import {type Props, useCommonSVGProps} from '#/components/icons/common'
-import {Reply as Bubble} from '#/components/icons/Reply'
+import {Reply_Stroke2_Corner0_Rounded as Bubble} from '#/components/icons/Reply'
 
 const replyIcons = [false, true].map(restricted =>
   Array.from({length: 4}, (_, dotCount) => {

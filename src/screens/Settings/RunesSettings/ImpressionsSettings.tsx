@@ -45,7 +45,7 @@ import * as Toggle from '#/components/forms/Toggle'
 import * as ToggleButton from '#/components/forms/ToggleButton'
 import {Bell_Stroke2_Corner0_Rounded as BellIcon} from '#/components/icons/Bell'
 import {Person_Stroke2_Corner0_Rounded as PersonIcon} from '#/components/icons/Person'
-import {Reply as ReplyIcon} from '#/components/icons/Reply'
+import {Reply_Stroke2_Corner0_Rounded as ReplyIcon} from '#/components/icons/Reply'
 import {Text} from '#/components/Typography'
 import {IS_WEB} from '#/env'
 import {RunesScreenLayout} from './components/RunesScreenLayout'
@@ -192,9 +192,7 @@ export function RunesImpressionsSettingsScreen() {
                 <Trans>Hidden</Trans>
               </ToggleButton.ButtonText>
             </ToggleButton.Button>
-            <ToggleButton.Button
-              name="notifications"
-              label={l`Notifications`}>
+            <ToggleButton.Button name="notifications" label={l`Notifications`}>
               <ToggleButton.ButtonText>
                 <Trans>Notifications</Trans>
               </ToggleButton.ButtonText>
@@ -282,9 +280,7 @@ function TabBadgeRow({
       {value === 'text' && (
         <>
           <Text style={[a.text_sm]}>
-            <Trans>
-              Custom badge text:
-            </Trans>
+            <Trans>Custom badge text:</Trans>
           </Text>
           <TextInput
             accessibilityLabel={l`Custom badge text for ${name}`}

@@ -1,24 +1,24 @@
 const url = new URL(window.location)
-const viewport = document.querySelector("meta[name=viewport]")
+const viewport = document.querySelector('meta[name=viewport]')
 
-const tag = document.createElement("script")
-tag.src = "https://www.youtube.com/iframe_api"
-const firstScriptTag = document.getElementsByTagName('script')[0];
-firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+const tag = document.createElement('script')
+tag.src = 'https://www.youtube.com/iframe_api'
+const firstScriptTag = document.getElementsByTagName('script')[0]
+firstScriptTag.parentNode.insertBefore(tag, firstScriptTag)
 
 let player
 function onYouTubeIframeAPIReady() {
   let videoId = url.searchParams.get('videoId')
   videoId = decodeURIComponent(videoId)
-  videoId = videoId.replace(/[^a-zA-Z0-9_-]/g, "")
-  if (videoId.length !== 11) throw new Error("Invalid video ID")
+  videoId = videoId.replace(/[^a-zA-Z0-9_-]/g, '')
+  if (videoId.length !== 11) throw new Error('Invalid video ID')
 
   let start = url.searchParams.get('start')
-  start = start.replace(/[^0-9]/g, "")
+  start = start.replace(/[^0-9]/g, '')
 
   player = new YT.Player('player', {
-    width: "1000",
-    height: "1000",
+    width: '1000',
+    height: '1000',
     videoId,
     playerVars: {
       autoplay: 1,
@@ -26,10 +26,10 @@ function onYouTubeIframeAPIReady() {
       rel: 0,
       loop: 0,
       playsinline: 1,
-      origin: url.origin
+      origin: url.origin,
     },
-  });
+  })
 }
 function onPlayerReady(event) {
-  event.target.playVideo();
+  event.target.playVideo()
 }

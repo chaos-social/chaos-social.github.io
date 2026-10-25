@@ -35,7 +35,7 @@ import {atoms as a, useTheme} from '#/alf'
 import {EphemeralAccountSwitcherFromScope} from '#/components/EphemeralAccountSwitcher'
 import {useEphemeralAccountError} from '#/components/hooks/useEphemeralAccountError'
 import {useRunWithEphemeralAgent} from '#/components/hooks/useRunWithEphemeralAgent'
-import {Reply as ReplyIcon} from '#/components/icons/Reply'
+import {Reply_Stroke2_Corner0_Rounded as ReplyIcon} from '#/components/icons/Reply'
 import {
   PostControlButton,
   PostControlButtonIcon,

@@ -444,11 +444,11 @@ function PinnedFeedItem({
 }) {
   const {_} = useLingui()
   const t = useTheme()
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const feedUri = feed.value
 
   const onTogglePinned = () => {
-    playHaptic()
+    haptics.confirm()
     setCurrentFeeds(
       currentFeeds.map(f =>
         f.id === feed.id ? {...feed, pinned: !feed.pinned} : f,
@@ -527,11 +527,11 @@ function UnpinnedFeedItem({
 }) {
   const {_} = useLingui()
   const t = useTheme()
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const feedUri = feed.value
 
   const onTogglePinned = () => {
-    playHaptic()
+    haptics.confirm()
     setCurrentFeeds(
       currentFeeds.map(f =>
         f.id === feed.id ? {...feed, pinned: !feed.pinned} : f,
@@ -540,7 +540,7 @@ function UnpinnedFeedItem({
   }
 
   const onPressRemove = () => {
-    playHaptic()
+    haptics.confirm()
     setCurrentFeeds(currentFeeds.filter(f => f.id !== feed.id))
   }
 

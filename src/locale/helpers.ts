@@ -308,22 +308,7 @@ export function fixLegacyLanguageCode(code: string | null): string | null {
   return code
 }
 
-/**
- * Find the first language supported by our translation infra. Values should be
- * in order of preference, and match the values of {@link AppLanguage}.
- *
- * If no match, returns `en`.
- */
-export function findSupportedAppLanguage(languageTags: (string | undefined)[]) {
-  const supported = new Set(Object.values(AppLanguage))
-  for (const tag of languageTags) {
-    if (!tag) continue
-    if (supported.has(tag as AppLanguage)) {
-      return tag
-    }
-  }
-  return AppLanguage.en
-}
+export {findSupportedAppLanguage} from './languages'
 
 /**
  * Gets region name for a given country code and language.

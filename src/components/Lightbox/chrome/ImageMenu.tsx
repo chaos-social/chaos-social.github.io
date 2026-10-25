@@ -1,5 +1,12 @@
-import {useRef, useState} from 'react'
-import {Modal, Pressable, ScrollView, StyleSheet, View} from 'react-native'
+import {useEffect, useRef, useState} from 'react'
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import Animated, {
   interpolate,
   useAnimatedStyle,
@@ -22,6 +29,7 @@ import {type Props as IconProps} from '#/components/icons/common'
 import {DotGrid3x1_Stroke2_Corner0_Rounded as DotsIcon} from '#/components/icons/DotGrid'
 import {Download_Stroke2_Corner0_Rounded as DownloadIcon} from '#/components/icons/Download'
 import {Text} from '#/components/Typography'
+import {IS_IPAD} from '#/env'
 import {CircleChromeButton} from './CircleChromeButton'
 
 type Props = {
@@ -46,7 +54,15 @@ export function ImageMenu({onPressShare, onPressSave}: Props) {
   const [isMounted, setIsMounted] = useState(false)
   const [anchor, setAnchor] = useState<Anchor | null>(null)
   const [showFormats, setShowFormats] = useState(false)
+  const {width: windowWidth, height: windowHeight} = useWindowDimensions()
   const progress = useSharedValue(0)
+
+  useEffect(() => {
+    if (!isMounted) return
+    triggerRef.current?.measureInWindow((x, y, width, height) => {
+      setAnchor({x, y, width, height})
+    })
+  }, [isMounted, windowWidth, windowHeight])
 
   const open = () => {
     setShowFormats(false)
@@ -87,7 +103,16 @@ export function ImageMenu({onPressShare, onPressSave}: Props) {
         visible={isMounted}
         animationType="none"
         onRequestClose={close}
-        supportedOrientations={['portrait', 'landscape']}
+        supportedOrientations={
+          IS_IPAD
+            ? [
+                'portrait',
+                'portrait-upside-down',
+                'landscape-left',
+                'landscape-right',
+              ]
+            : ['portrait', 'landscape']
+        }
         statusBarTranslucent>
         <Pressable
           accessibilityRole="button"

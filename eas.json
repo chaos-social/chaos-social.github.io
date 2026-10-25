@@ -1,45 +1,47 @@
 {
   "cli": {
-    "version": ">=18",
+    "version": "24.12.0",
     "promptToConfigurePushNotifications": false,
     "appVersionSource": "remote"
   },
   "build": {
     "base": {
-      "node": "24.19.0"
+      "node": "24.22.1"
     },
-      "development": {
-        "extends": "base",
-        "developmentClient": true,
-        "distribution": "internal",
-        "channel": "development",
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
       "ios": {
         "simulator": true,
         "resourceClass": "large"
-        },
-        "env": {
-          "EXPO_PUBLIC_ENV": "production",
-          "SENTRY_DISABLE_AUTO_UPLOAD": "true"
-        }
       },
-      "preview": {
-        "extends": "base",
-        "distribution": "internal",
-        "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_ENV": "production",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      }
+    },
+    "preview": {
+      "extends": "base",
+      "distribution": "internal",
+      "channel": "production",
       "ios": {
         "resourceClass": "large"
-        },
-        "env": {
-          "EXPO_PUBLIC_ENV": "production",
-          "SENTRY_DISABLE_AUTO_UPLOAD": "true"
-        }
       },
-      "production": {
-        "extends": "base",
+      "env": {
+        "EXPO_PUBLIC_ENV": "production",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      }
+    },
+    "production": {
+      "extends": "base",
       "ios": {
         "resourceClass": "large",
         "autoIncrement": true,
-        "buildArtifactPaths": ["ios/build/*"]
+        "buildArtifactPaths": [
+          "ios/build/*"
+        ]
       },
       "android": {
         "autoIncrement": true
@@ -47,14 +49,16 @@
       "channel": "production",
       "env": {
         "EXPO_PUBLIC_ENV": "production",
-          "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
     "testflight": {
       "extends": "base",
       "ios": {
         "autoIncrement": true,
-        "buildArtifactPaths": ["ios/build/*"]
+        "buildArtifactPaths": [
+          "ios/build/*"
+        ]
       },
       "android": {
         "autoIncrement": true
@@ -62,33 +66,52 @@
       "channel": "testflight",
       "env": {
         "EXPO_PUBLIC_ENV": "testflight",
-          "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
     "testflight-android": {
       "extends": "base",
       "ios": {
         "autoIncrement": true,
-        "buildArtifactPaths": ["ios/build/*"]
+        "buildArtifactPaths": [
+          "ios/build/*"
+        ]
       },
       "android": {
         "autoIncrement": true
       },
-        "channel": "testflight",
-        "env": {
-          "EXPO_PUBLIC_ENV": "testflight",
-          "SENTRY_DISABLE_AUTO_UPLOAD": "true"
-        }
+      "channel": "testflight",
+      "env": {
+        "EXPO_PUBLIC_ENV": "testflight",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      }
+    },
+    "sideload-android": {
+      "extends": "production",
+      "env": {
+        "EXPO_PUBLIC_ENV": "production",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
-      "sideload-android": {
-        "extends": "production",
-        "env": {
-          "EXPO_PUBLIC_ENV": "production",
-          "SENTRY_DISABLE_AUTO_UPLOAD": "true"
-        },
-        "android": {
-          "buildType": "apk"
-        }
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "development-simulator": {
+      "extends": "development",
+      "env": {
+        "DISABLE_UPDATES": "1"
+      }
+    },
+    "e2e": {
+      "extends": "development",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_ENV": "e2e",
+        "NODE_ENV": "development",
+        "RN_SRC_EXT": "e2e.ts,e2e.tsx"
+      }
     }
   },
   "submit": {

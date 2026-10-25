@@ -1,5 +1,4 @@
 import {useEffect, useState} from 'react'
-import {InteractionManager} from 'react-native'
 
 /**
  * Delays enabling a query until after animations/interactions settle.
@@ -16,7 +15,7 @@ export function useDeferredEnable(enabled: boolean): boolean {
     }
 
     let cancelled = false
-    const handle = InteractionManager.runAfterInteractions(() => {
+    const handle = requestIdleCallback(() => {
       if (!cancelled) {
         setReady(true)
       }
@@ -24,7 +23,7 @@ export function useDeferredEnable(enabled: boolean): boolean {
 
     return () => {
       cancelled = true
-      handle.cancel()
+      cancelIdleCallback(handle)
     }
   }, [enabled])
 

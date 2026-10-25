@@ -6,7 +6,7 @@ import {useNavigation} from '@react-navigation/native'
 import {useOpenLink} from '#/lib/hooks/useOpenLink'
 import {makeProfileLink} from '#/lib/routes/links'
 import {type NavigationProp} from '#/lib/routes/types'
-import {shareText, shareUrl} from '#/lib/sharing'
+import {shareUrl, simpleShareText} from '#/lib/sharing'
 import {toShareUrl, toShareUrlBsky} from '#/lib/strings/url-helpers'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
 import {
@@ -69,14 +69,14 @@ let ShareMenuItems = ({
   }, [postAuthor])
 
   const onCopyLink = () => {
-    ax.metric('share:press:copyLink', {})
+    ax.metric('share:press:copyLink', {uri: postUri})
     const url = toShareUrl(href)
     void shareUrl(url)
     onShareProp()
   }
 
   const onCopyLinkBsky = () => {
-    ax.metric('share:press:copyLink', {})
+    ax.metric('share:press:copyLink', {uri: postUri})
     const url = toShareUrlBsky(href)
     void shareUrl(url)
     onShareProp()
@@ -88,7 +88,7 @@ let ShareMenuItems = ({
   }
 
   const onSelectChatToShareTo = (conversation: string) => {
-    ax.metric('share:press:dmSelected', {})
+    ax.metric('share:press:dmSelected', {uri: postUri})
     navigation.navigate('MessagesConversation', {
       conversation,
       embed: postUri,
@@ -98,11 +98,11 @@ let ShareMenuItems = ({
   const canEmbed = IS_WEB && gtMobile && !hideInPWI
 
   const onShareATURI = () => {
-    void shareText(postUri)
+    void simpleShareText(postUri)
   }
 
   const onShareAuthorDID = () => {
-    void shareText(postAuthor.did)
+    void simpleShareText(postAuthor.did)
   }
 
   const isBridgedPost =
@@ -242,7 +242,7 @@ let ShareMenuItems = ({
             testID="postDropdownEmbedBtn"
             label={l`Embed post`}
             onPress={() => {
-              ax.metric('share:press:embed', {})
+              ax.metric('share:press:embed', {uri: postUri})
               embedPostControl.open()
             }}>
             <Menu.ItemText>{l`Embed post`}</Menu.ItemText>

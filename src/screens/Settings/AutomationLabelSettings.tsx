@@ -16,7 +16,7 @@ import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, platform, useTheme} from '#/alf'
 import {BotBadge} from '#/components/BotBadge'
 import * as Toggle from '#/components/forms/Toggle'
-import {Bot_Filled as RobotIcon} from '#/components/icons/Bot'
+import {Bot_Filled_Corner0_Rounded as RobotIcon} from '#/components/icons/Bot'
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
 import {useSimpleVerificationStateWithDeer} from '#/components/verification'
@@ -87,8 +87,11 @@ export function AutomationLabelSettingsScreen({}: Props) {
       },
       {
         onSuccess() {
-          void queryClient.invalidateQueries({queryKey: [POST_FEED_RQKEY_ROOT]})
-          void queryClient.invalidateQueries({queryKey: [postThreadQueryKeyRoot]})
+          // Resetting refetches a feed's first page, not every loaded page.
+          void queryClient.resetQueries({queryKey: [POST_FEED_RQKEY_ROOT]})
+          void queryClient.invalidateQueries({
+            queryKey: [postThreadQueryKeyRoot],
+          })
         },
       },
     )

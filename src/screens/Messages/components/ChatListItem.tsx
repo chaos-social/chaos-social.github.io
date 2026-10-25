@@ -1,4 +1,5 @@
 import {useCallback, useMemo, useState} from 'react'
+import {type GestureResponderEvent} from 'react-native'
 import {View} from 'react-native'
 import {
   moderateProfile,
@@ -290,7 +291,7 @@ function BaseChatItem({
   const {gtMobile} = useBreakpoints()
   const {isWithinLeftPanel} = useIsWithinSplitView()
 
-  const playHaptic = useHaptics()
+  const haptics = useHaptics()
   const queryClient = useQueryClient()
   const hasUnread =
     !selected &&
@@ -433,10 +434,13 @@ function BaseChatItem({
     ax.metric('chat:open', {logContext: 'ChatsList'})
   }, [ax, queryClient, convo])
 
-  const onLongPress = useCallback(() => {
-    playHaptic()
-    menuControl.open()
-  }, [playHaptic, menuControl])
+  const onLongPress = useCallback(
+    (e: {currentTarget: GestureResponderEvent['currentTarget']}) => {
+      haptics.longPress()
+      menuControl.open({currentTarget: e.currentTarget})
+    },
+    [haptics, menuControl],
+  )
 
   const markReadAction = {
     threshold: 120,

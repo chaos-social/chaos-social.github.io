@@ -10,6 +10,7 @@ import {t} from '@lingui/core/macro'
 import {type QueryClient} from '@tanstack/react-query'
 
 import {type LinkResolvers} from '#/lib/api/resolve'
+import {withCreator} from '#/lib/at-card'
 import {IMAGE_SIZE_CONFIG_POSTS} from '#/lib/constants'
 import {MAX_TAGS} from '#/lib/constants'
 import {isNetworkError} from '#/lib/strings/errors'
@@ -554,13 +555,16 @@ async function resolveMedia(
       }
       return {
         $type: 'app.bsky.embed.external',
-        external: {
-          uri: resolvedLink.uri as UriString,
-          title: resolvedLink.title,
-          description: resolvedLink.description,
-          thumb: blob,
-          associatedRefs: resolvedLink.associatedRefs,
-        },
+        external: withCreator(
+          {
+            uri: resolvedLink.uri as UriString,
+            title: resolvedLink.title,
+            description: resolvedLink.description,
+            thumb: blob,
+            associatedRefs: resolvedLink.associatedRefs,
+          },
+          resolvedLink.authorDid,
+        ),
       }
     }
     if (

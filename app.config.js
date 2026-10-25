@@ -34,13 +34,13 @@ module.exports = function (_config) {
     ...(IS_DEV || IS_TESTFLIGHT ? [] : []),
   ]
 
-  // const UPDATES_CHANNEL = IS_TESTFLIGHT
-  //   ? 'testflight'
-  //   : IS_PRODUCTION
-  //   ? 'production'
-  //   : undefined
-  // const UPDATES_ENABLED = !!UPDATES_CHANNEL
-  const UPDATES_ENABLED = IS_TESTFLIGHT || IS_PRODUCTION
+  /*
+   * EXPO_PUBLIC_ENV is also an EAS environment secret, which wins over a build
+   * profile's env, so profiles opt out of OTA updates with their own flag. A
+   * dev client with updates on rejects unsigned manifests from a local Metro.
+   */
+  const UPDATES_ENABLED =
+    (IS_TESTFLIGHT || IS_PRODUCTION) && !process.env.DISABLE_UPDATES
 
   const USE_SENTRY = Boolean(process.env.EXPO_PUBLIC_SENTRY_DSN)
   const IOS_BUILD_NUMBER = process.env.BSKY_IOS_BUILD_NUMBER || '1'
@@ -71,7 +71,7 @@ module.exports = function (_config) {
       userInterfaceStyle: 'automatic',
       primaryColor: '#ED5345',
       ios: {
-        supportsTablet: false,
+        supportsTablet: true,
         bundleIdentifier: process.env.WITCHSKY_BUNDLE_ID || 'app.witchsky',
         appleTeamId: process.env.WITCHSKY_APPLE_TEAM_ID || 'TODO: Xan',
         buildNumber: IOS_BUILD_NUMBER,
@@ -80,6 +80,13 @@ module.exports = function (_config) {
         },
         icon: IOS_ICON_FILE,
         infoPlist: {
+          UISupportedInterfaceOrientations: ['UIInterfaceOrientationPortrait'],
+          'UISupportedInterfaceOrientations~ipad': [
+            'UIInterfaceOrientationPortrait',
+            'UIInterfaceOrientationPortraitUpsideDown',
+            'UIInterfaceOrientationLandscapeLeft',
+            'UIInterfaceOrientationLandscapeRight',
+          ],
           CADisableMinimumFrameDurationOnPhone: true,
           UIBackgroundModes: ['remote-notification'],
           NSUserActivityTypes: ['INSendMessageIntent'],
@@ -200,9 +207,6 @@ module.exports = function (_config) {
           ],
         },
       },
-      androidStatusBar: {
-        barStyle: 'light-content',
-      },
       android: {
         icon: './assets/app-icons/android_icon_legacy_light.png',
         adaptiveIcon: {
@@ -258,6 +262,7 @@ module.exports = function (_config) {
         ],
       },
       web: {
+        bundler: 'metro',
         favicon: './assets/favicon.png',
       },
       // updates: {
@@ -311,12 +316,49 @@ module.exports = function (_config) {
               : {}),
           },
         ],
+        'expo-asset',
+        'expo-sharing',
         'expo-video',
-        'expo-localization',
+        [
+          'expo-localization',
+          {
+            /*
+             * React Native 0.88 fixed Android RTL detection, which until then
+             * always reported LTR. Opt out so Android keeps rendering LTR like
+             * iOS, until RTL layouts get a proper QA pass.
+             */
+            supportsRTL: false,
+          },
+        ],
         'expo-web-browser',
+        [
+          'react-native-nano-icons',
+          {
+            /*
+             * One font per codegen directory under `assets/icons/`, see
+             * `scripts/icons/README.md`.
+             */
+            iconSets: ['ui', 'brands', 'community'].map(lane => ({
+              inputDir: `./assets/icons/${lane}`,
+              outputDir: './assets/nano-icons/nanoicons',
+              fontFamily: `icons-${lane}`,
+            })),
+          },
+        ],
         [
           'react-native-edge-to-edge',
           {android: {enforceNavigationBarContrast: false}},
+        ],
+        /*
+         * Expo runs Gradle mods in reverse registration order. Keep Bitdrift
+         * before Sentry so its plugins block is prepended after Sentry's apply
+         * statement and remains at the top, as required by Gradle.
+         */
+        [
+          '@bitdrift/react-native',
+          {
+            networkInstrumentation: true,
+          },
         ],
         ...(USE_SENTRY
           ? [
@@ -326,6 +368,9 @@ module.exports = function (_config) {
                   organization: 'blueskyweb',
                   project: 'app',
                   url: 'https://sentry.io',
+                  experimental_android: {
+                    enableAndroidGradlePlugin: true,
+                  },
                 },
               ]),
             ]
@@ -347,10 +392,11 @@ module.exports = function (_config) {
               ],
             },
             android: {
-              compileSdkVersion: 36,
+              compileSdkVersion: 37,
               targetSdkVersion: 36,
-              buildToolsVersion: '36.0.0',
-              buildReactNativeFromSource: IS_PRODUCTION,
+              buildToolsVersion: '37.0.0',
+              buildReactNativeFromSource: true,
+              enableMinifyInReleaseBuilds: true,
             },
           },
         ],
@@ -362,89 +408,93 @@ module.exports = function (_config) {
             sounds: PLATFORM === 'ios' ? ['assets/dm.aiff'] : ['assets/dm.mp3'],
           },
         ],
-        [
-          '@bitdrift/react-native',
-          {
-            networkInstrumentation: true,
-          },
-        ],
         './plugins/starterPackAppClipExtension/withStarterPackAppClip.js',
         './plugins/withGradleJVMHeapSizeIncrease.js',
         './plugins/withAndroidManifestLargeHeapPlugin.js',
         './plugins/withAndroidManifestFCMIconPlugin.js',
         './plugins/withAndroidManifestIntentQueriesPlugin.js',
+        './plugins/withAndroidManifestOptionalCameraPlugin.js',
         './plugins/withAndroidStylesAccentColorPlugin.js',
         './plugins/withAndroidNoJitpackPlugin.js',
+        './plugins/withAndroidPreparedTextLayoutPlugin.js',
+        './plugins/withAndroidComposeVersion.js',
         './plugins/shareExtension/withShareExtensions.js',
         './plugins/notificationsExtension/withNotificationsExtension.js',
         [
           'expo-font',
           {
-            fonts: [
-              './assets/fonts/inter/InterVariable.woff2',
-              './assets/fonts/inter/InterVariable-Italic.woff2',
-              './assets/fonts/google-sans-flex/GoogleSansFlex-Regular.ttf',
-              // Android only
-              './assets/fonts/inter/Inter-Regular.otf',
-              './assets/fonts/inter/Inter-Italic.otf',
-              './assets/fonts/inter/Inter-Medium.otf',
-              './assets/fonts/inter/Inter-MediumItalic.otf',
-              './assets/fonts/inter/Inter-SemiBold.otf',
-              './assets/fonts/inter/Inter-SemiBoldItalic.otf',
-              './assets/fonts/inter/Inter-Bold.otf',
-              './assets/fonts/inter/Inter-BoldItalic.otf',
-              // Google Sans Flex - Android only
-              // 9pt optical size
-              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Thin.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-ExtraLight.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Light.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Regular.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Medium.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-SemiBold.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Bold.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-ExtraBold.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Black.ttf',
-              // 24pt optical size (default)
-              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Thin.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-ExtraLight.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Light.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Regular.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Medium.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-SemiBold.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Bold.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-ExtraBold.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Black.ttf',
-              // 36pt optical size
-              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Thin.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-ExtraLight.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Light.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Regular.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Medium.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-SemiBold.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Bold.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-ExtraBold.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Black.ttf',
-              // 72pt optical size
-              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Thin.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-ExtraLight.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Light.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Regular.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Medium.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-SemiBold.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Bold.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-ExtraBold.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Black.ttf',
-              // 120pt optical size
-              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Thin.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-ExtraLight.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Light.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Regular.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Medium.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-SemiBold.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Bold.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-ExtraBold.ttf',
-              './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Black.ttf',
-            ],
+            ios: {
+              /*
+               * Uncompressed TTF rather than WOFF2: iOS decompresses WOFF2
+               * fonts on every launch, which took ~200 ms of the startup
+               * critical path. These are the same Inter 4.001 fonts as the
+               * WOFF2 files used on web.
+               */
+              fonts: [
+                './assets/fonts/inter/InterVariable.ttf',
+                './assets/fonts/inter/InterVariable-Italic.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex-Regular.ttf',
+              ],
+            },
+            android: {
+              fonts: [
+                './assets/fonts/inter/InterVariable.woff2',
+                './assets/fonts/inter/InterVariable-Italic.woff2',
+                './assets/fonts/inter/Inter-Regular.otf',
+                './assets/fonts/inter/Inter-Italic.otf',
+                './assets/fonts/inter/Inter-Medium.otf',
+                './assets/fonts/inter/Inter-MediumItalic.otf',
+                './assets/fonts/inter/Inter-SemiBold.otf',
+                './assets/fonts/inter/Inter-SemiBoldItalic.otf',
+                './assets/fonts/inter/Inter-Bold.otf',
+                './assets/fonts/inter/Inter-BoldItalic.otf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Thin.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-ExtraLight.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Light.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Regular.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Medium.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-SemiBold.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Bold.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-ExtraBold.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_9pt-Black.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Thin.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-ExtraLight.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Light.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Regular.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Medium.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-SemiBold.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Bold.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-ExtraBold.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_24pt-Black.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Thin.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-ExtraLight.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Light.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Regular.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Medium.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-SemiBold.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Bold.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-ExtraBold.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_36pt-Black.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Thin.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-ExtraLight.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Light.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Regular.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Medium.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-SemiBold.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Bold.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-ExtraBold.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_72pt-Black.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Thin.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-ExtraLight.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Light.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Regular.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Medium.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-SemiBold.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Bold.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-ExtraBold.ttf',
+                './assets/fonts/google-sans-flex/GoogleSansFlex_120pt-Black.ttf',
+              ],
+            },
           },
         ],
         [
@@ -539,7 +589,7 @@ module.exports = function (_config) {
             // },
           },
         ],
-        ['expo-screen-orientation', {initialOrientation: 'PORTRAIT_UP'}],
+        ['expo-screen-orientation'],
         ['expo-location'],
         [
           'expo-contacts',
@@ -583,6 +633,10 @@ module.exports = function (_config) {
           },
           projectId: 'da056e41-38f9-4fee-a534-b9c5891f9c8d',
         },
+      },
+      experiments: {
+        baseUrl: '/static',
+        buildCacheProvider: 'eas',
       },
     },
   }

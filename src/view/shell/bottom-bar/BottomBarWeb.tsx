@@ -22,6 +22,7 @@ import {type CommonNavigatorParams} from '#/lib/routes/types'
 import {convertBskyAppUrlIfNeeded} from '#/lib/strings/url-helpers'
 import {userStyle} from '#/lib/userstyles'
 import {emitSoftReset} from '#/state/events'
+import {useHomeBadge} from '#/state/home-badge'
 import {badgeText, useBadgePreference} from '#/state/preferences/badge-text'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {
@@ -63,6 +64,7 @@ import {Text} from '#/components/Typography'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
 import {IS_WEB_TOUCH_DEVICE} from '#/env'
+import {isFollowingV2HomeDotEnabled} from '#/features/followingV2/eligibility'
 import {accentForeground} from '#/features/themes/accentForeground'
 import {router} from '#/routes'
 import {styles} from './BottomBarStyles'
@@ -96,6 +98,8 @@ export function BottomBarWeb() {
   const chatsTabBadgeDisplay = useChatsTabBadgeDisplay()
   const chatsText =
     chatsTabBadgeDisplay === 'text' ? chatsCustomText : undefined
+  const hasHomeBadge = useHomeBadge()
+  const ax = useAnalytics()
   const aa = useAgeAssurance()
   const isLabeler = profile?.associated?.labeler
 
@@ -134,7 +138,11 @@ export function BottomBarWeb() {
         onLayout={event => footerHeight.set(event.nativeEvent.layout.height)}>
         {hasSession ? (
           <>
-            <NavItem routeName="Home" href="/" navItem="home">
+            <NavItem
+              routeName="Home"
+              href="/"
+              navItem="home"
+              hasNew={hasHomeBadge && isFollowingV2HomeDotEnabled(ax)}>
               {({isActive}) => {
                 const Icon = isActive ? HomeFilled : Home
                 return (

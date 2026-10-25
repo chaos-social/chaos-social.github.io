@@ -1,4 +1,14 @@
 {
+  "bskylink/src/routes/redirect.ts": {
+    "typescript/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "bskylink/src/routes/safelinkCheck.ts": {
+    "typescript/no-misused-promises": {
+      "count": 1
+    }
+  },
   "modules/bottom-sheet/src/BottomSheetNativeComponent.tsx": {
     "typescript/no-explicit-any": {
       "count": 2
@@ -31,31 +41,12 @@
       "count": 2
     }
   },
-  "modules/expo-bluesky-swiss-army/src/SharedPrefs/index.native.ts": {
-    "typescript/no-explicit-any": {
-      "count": 1
-    },
-    "typescript/no-unsafe-call": {
-      "count": 9
-    },
-    "typescript/no-unsafe-member-access": {
-      "count": 9
-    }
-  },
   "modules/expo-bluesky-swiss-army/src/VisibilityView/index.native.tsx": {
     "typescript/no-unsafe-call": {
       "count": 1
     },
     "typescript/no-unsafe-member-access": {
       "count": 1
-    }
-  },
-  "src/analytics/identifiers/session.test.ts": {
-    "typescript/no-unsafe-call": {
-      "count": 9
-    },
-    "typescript/no-unsafe-member-access": {
-      "count": 9
     }
   },
   "src/analytics/metrics/client.ts": {
@@ -70,7 +61,7 @@
   },
   "src/components/Autocomplete/useAutocomplete/index.ts": {
     "no-unused-vars": {
-      "count": 3
+      "count": 1
     }
   },
   "src/components/Composer/index.tsx": {
@@ -313,23 +304,7 @@
   },
   "src/components/images/Gallery/index.tsx": {
     "typescript/no-explicit-any": {
-      "count": 5
-    },
-    "typescript/no-unsafe-call": {
       "count": 1
-    },
-    "typescript/no-unsafe-member-access": {
-      "count": 4
-    }
-  },
-  "src/components/images/Gallery/useKeyboardHandlers.ts": {
-    "typescript/no-explicit-any": {
-      "count": 6
-    }
-  },
-  "src/components/images/Gallery/usePointerHandlers.ts": {
-    "typescript/no-explicit-any": {
-      "count": 6
     }
   },
   "src/components/images/ImageLayoutGrid.tsx": {
@@ -447,10 +422,10 @@
   },
   "src/lib/hooks/useToggleMutationQueue.ts": {
     "typescript/no-explicit-any": {
-      "count": 2
+      "count": 1
     },
     "typescript/no-unsafe-call": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/hooks/useWebScrollRestoration.ts": {
@@ -471,11 +446,6 @@
   "src/lib/international-telephone-codes.ts": {
     "typescript/no-explicit-any": {
       "count": 1
-    }
-  },
-  "src/lib/link-meta/link-meta.ts": {
-    "typescript/no-unsafe-member-access": {
-      "count": 9
     }
   },
   "src/lib/media/manip.ts": {
@@ -686,11 +656,6 @@
   "src/screens/Settings/components/ChangeHandleDialog.tsx": {
     "typescript/no-misused-promises": {
       "count": 1
-    }
-  },
-  "src/screens/Settings/components/ChangePasswordDialog.tsx": {
-    "typescript/no-explicit-any": {
-      "count": 2
     }
   },
   "src/screens/Settings/components/DeactivateAccountDialog.tsx": {
@@ -1030,9 +995,6 @@
     },
     "typescript/no-misused-promises": {
       "count": 2
-    },
-    "typescript/no-unsafe-member-access": {
-      "count": 1
     }
   },
   "src/view/com/post-thread/PostRepostedBy.tsx": {
@@ -1158,17 +1120,6 @@
     },
     "typescript/no-unsafe-call": {
       "count": 1
-    }
-  },
-  "webpack.config.js": {
-    "import/no-nodejs-modules": {
-      "count": 1
-    },
-    "typescript/no-unsafe-call": {
-      "count": 12
-    },
-    "typescript/no-unsafe-member-access": {
-      "count": 33
     }
   }
 }

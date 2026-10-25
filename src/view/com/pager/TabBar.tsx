@@ -21,6 +21,7 @@ import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {PressableWithHover} from '#/view/com/util/PressableWithHover'
 import {BlockDrawerGesture} from '#/view/shell/BlockDrawerGesture'
 import {atoms as a, useTheme} from '#/alf'
+import {Center} from '#/components/Layout'
 import {Text} from '#/components/Typography'
 
 export interface TabBarProps {
@@ -319,7 +320,7 @@ export function TabBar({
   )
 
   return (
-    <View
+    <Center
       testID={testID}
       style={[!transparent && t.atoms.bg, a.flex_row]}
       accessibilityRole="tablist">
@@ -378,7 +379,7 @@ export function TabBar({
         </ScrollView>
       </BlockDrawerGesture>
       <View style={[t.atoms.bg_contrast_100, styles.outerBottomBorder]} />
-    </View>
+    </Center>
   )
 }
 

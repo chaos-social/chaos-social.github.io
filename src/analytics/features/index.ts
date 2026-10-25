@@ -44,7 +44,14 @@ export const features = new GrowthBook({
 export const init = Promise.resolve()
 
 export function setForcedFeatureValues(overrides?: Record<string, boolean>) {
-  features.setForcedFeatures(new Map(Object.entries(overrides ?? {})))
+  const next = new Map(Object.entries(overrides ?? {}))
+  const previous = features.getForcedFeatures()
+  if (
+    next.size === previous.size &&
+    [...next].every(([key, value]) => previous.get(key) === value)
+  )
+    return
+  features.setForcedFeatures(next)
 }
 
 /**
@@ -71,6 +78,60 @@ export function getFeatureDescription(feature: Features, i18n: I18n) {
           msg({
             message: 'Spot posts your friends and follows have liked.',
             comment: 'Description of a feature flag (Social proofing on posts)',
+          }),
+        ),
+      }
+    case Features.FollowingV2Enable:
+      // Following v2 behaviour is native-only, see `isFollowingV2Eligible`
+      if (env.IS_WEB) return null
+      return {
+        key: feature,
+        name: i18n._(
+          msg({
+            message: 'Keep your place in the Following feed',
+            comment: 'Name for a feature flag',
+          }),
+        ),
+        description: i18n._(
+          msg({
+            message:
+              'Save your position in the Following feed between sessions. New posts wait above you until you’re ready to view them.',
+            comment:
+              'Description of a feature flag (Keep your place in the Following feed)',
+          }),
+        ),
+      }
+    case Features.NotificationsV2Enable:
+      return {
+        key: feature,
+        name: i18n._(
+          msg({
+            message: 'Redesigned notifications',
+            comment: 'Name for a feature flag',
+          }),
+        ),
+        description: i18n._(
+          msg({
+            message:
+              'Notifications sorted into tabs – people you follow, followers, replies and activity.',
+            comment: 'Description of a feature flag (Redesigned notifications)',
+          }),
+        ),
+      }
+    case Features.ModerationInboxEnable:
+      return {
+        key: feature,
+        name: i18n._(
+          msg({
+            message: 'Moderation inbox',
+            comment: 'Name for a feature flag',
+          }),
+        ),
+        description: i18n._(
+          msg({
+            message:
+              'Track your reports, review moderation decisions, and submit appeals.',
+            comment: 'Description of a feature flag (Moderation inbox)',
           }),
         ),
       }
@@ -136,10 +197,27 @@ export function getTargetedFeatures(i18n: I18n) {
 }
 
 /**
+ * Whether `feature` is on for the current user because they opted in to beta
+ * features, i.e. the rule GrowthBook matched for them targets the beta user
+ * attribute, as the features listed on the Beta features screen do.
+ */
+export function isOnForBetaUser(feature: Features): boolean {
+  const result = features.evalFeature(feature)
+  if (!result.on || !result.ruleId) return false
+  const rules = features.getFeatures()[feature]?.rules
+  const rule = rules?.find(({id}) => id === result.ruleId)
+  return conditionTargetsAttribute(rule?.condition, BETA_USER_ATTRIBUTE)
+}
+
+/**
  * Converts our metadata into GrowthBook attributes and sets them. GrowthBook
  * attributes are manually configured in the GrowthBook dashboard. So these
  * values need to match exactly. Therefore, let's add them here manually to and
  * not spread them to avoid mistakes.
+ *
+ * Analytics session IDs are event metadata only, not feature targeting or
+ * experiment bucketing inputs. They are intentionally excluded from GrowthBook
+ * attributes, so session rotation does not require feature reevaluation.
  */
 export function setAttributes({
   base,
@@ -149,7 +227,6 @@ export function setAttributes({
 }: Metadata) {
   void features.setAttributes({
     deviceId: base.deviceId,
-    sessionId: base.sessionId,
     platform: base.platform,
     appVersion: base.appVersion,
     countryCode: geolocation.countryCode,

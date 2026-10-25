@@ -1,6 +1,6 @@
 import {memo, useCallback} from 'react'
 import {Platform} from 'react-native'
-import {type GestureType} from 'react-native-gesture-handler'
+import {type PanGesture} from 'react-native-gesture-handler'
 import * as Clipboard from 'expo-clipboard'
 import {type ModerationOpts} from '@bsky/sdk/moderation'
 import {RichText} from '@bsky/sdk/richtext'
@@ -10,7 +10,7 @@ import {useLingui} from '@lingui/react/macro'
 import {EMOJI_REACTION_LIMIT} from '#/lib/constants'
 import {useGoogleTranslate} from '#/lib/hooks/useGoogleTranslate'
 import {richTextToString} from '#/lib/strings/rich-text-helpers'
-import {formatDateWithSystemTime} from '#/lib/strings/systemTime'
+import {formatDateTime} from '#/lib/strings/time'
 import {useMaybeProfileShadow} from '#/state/cache/profile-shadow'
 import {useConvoActive} from '#/state/messages/convo'
 import {useLanguagePrefs} from '#/state/preferences'
@@ -48,7 +48,7 @@ export let MessageContextMenu = ({
    * Native only. A swipe gesture (swipe-to-reply) composed into the trigger's
    * gesture group so it's mutually exclusive with the tap and long-press.
    */
-  swipeGesture?: GestureType
+  swipeGesture?: PanGesture
 }): React.ReactNode => {
   const {t: l, i18n} = useLingui()
   const ax = useAnalytics()
@@ -171,13 +171,9 @@ export let MessageContextMenu = ({
 
       <ContextMenu.Outer
         align={isFromSelf ? 'right' : 'left'}
-        label={l`Sent at ${formatDateWithSystemTime(
-          i18n,
-          new Date(message.sentAt),
-          {
-            timeStyle: 'short',
-          },
-        )}`}
+        label={l`Sent at ${formatDateTime(i18n, new Date(message.sentAt), {
+          timeStyle: 'short',
+        })}`}
         style={[isFromSelf && isGroupChatEnabled ? null : a.ml_sm]}
         onCloseAutoFocus={onCloseAutoFocus}>
         <ContextMenu.Item

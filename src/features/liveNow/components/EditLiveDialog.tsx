@@ -7,7 +7,7 @@ import {differenceInMinutes} from 'date-fns'
 
 import {useDebouncedValue} from '#/lib/hooks/useDebouncedValue'
 import {cleanError} from '#/lib/strings/errors'
-import {formatDateWithSystemTime} from '#/lib/strings/systemTime'
+import {formatDateTime} from '#/lib/strings/time'
 import {definitelyUrl} from '#/lib/strings/url-helpers'
 import {useTickEveryMinute} from '#/state/shell'
 import {atoms as a, platform, useTheme, web} from '#/alf'
@@ -127,7 +127,7 @@ function DialogInner({
               {typeof record?.durationMinutes === 'number' ? (
                 <Trans>
                   Expires in {displayDuration(i18n, minutesUntilExpiry)} at{' '}
-                  {formatDateWithSystemTime(i18n, expiryDateTime, {
+                  {formatDateTime(i18n, expiryDateTime, {
                     hour: 'numeric',
                     minute: '2-digit',
                   })}

@@ -2642,3 +2642,20 @@ export const LANGUAGES_MAP_CODE3 = Object.fromEntries(
 if (LANGUAGES_MAP_CODE2.fa) {
   LANGUAGES_MAP_CODE3.pes = LANGUAGES_MAP_CODE2.fa
 }
+
+/**
+ * Find the first language supported by our translation infra. Values should be
+ * in order of preference, and match the values of {@link AppLanguage}.
+ *
+ * If no match, returns `en`.
+ */
+export function findSupportedAppLanguage(languageTags: (string | undefined)[]) {
+  const supported = new Set(Object.values(AppLanguage))
+  for (const tag of languageTags) {
+    if (!tag) continue
+    if (supported.has(tag as AppLanguage)) {
+      return tag
+    }
+  }
+  return AppLanguage.en
+}

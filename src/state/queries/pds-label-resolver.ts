@@ -1,5 +1,3 @@
-import {InteractionManager} from 'react-native'
-
 import {isBridgedPdsUrl, isBskyPdsUrl} from '#/state/queries/pds-label.util'
 import {resolvePdsServiceUrl} from '#/state/queries/resolve-identity'
 import {IS_NATIVE} from '#/env'
@@ -65,11 +63,9 @@ const labelListeners = new Map<string, Set<() => void>>()
 let taskOrder = 0
 let activeCount = 0
 let activeNearCount = 0
-let nearDrainHandle:
-  ReturnType<typeof InteractionManager.runAfterInteractions> | undefined
+let nearDrainHandle: ReturnType<typeof requestIdleCallback> | undefined
 let persistTimer: ReturnType<typeof setTimeout> | undefined
-let persistInteractionHandle:
-  ReturnType<typeof InteractionManager.runAfterInteractions> | undefined
+let persistInteractionHandle: ReturnType<typeof requestIdleCallback> | undefined
 
 function notifyLabelListeners(did: string) {
   labelListeners.get(did)?.forEach(listener => listener())
@@ -158,7 +154,7 @@ function queuePersist(did: string, data: PdsLabelData) {
   persistTimer = setTimeout(() => {
     persistTimer = undefined
     if (IS_NATIVE) {
-      persistInteractionHandle = InteractionManager.runAfterInteractions(() => {
+      persistInteractionHandle = requestIdleCallback(() => {
         persistInteractionHandle = undefined
         void flushPersistBatch().catch(() => {})
       })
@@ -198,12 +194,10 @@ async function flushPersistBatch() {
     persistTimer = setTimeout(() => {
       persistTimer = undefined
       if (IS_NATIVE) {
-        persistInteractionHandle = InteractionManager.runAfterInteractions(
-          () => {
-            persistInteractionHandle = undefined
-            void flushPersistBatch().catch(() => {})
-          },
-        )
+        persistInteractionHandle = requestIdleCallback(() => {
+          persistInteractionHandle = undefined
+          void flushPersistBatch().catch(() => {})
+        })
       } else {
         void flushPersistBatch().catch(() => {})
       }
@@ -269,7 +263,7 @@ function requestDrain(priority: PdsRequestPriority) {
   if (priority === 'visible' || !IS_NATIVE) {
     drainQueue(!IS_NATIVE)
   } else if (!nearDrainHandle) {
-    nearDrainHandle = InteractionManager.runAfterInteractions(() => {
+    nearDrainHandle = requestIdleCallback(() => {
       nearDrainHandle = undefined
       drainQueue(true)
     })

@@ -45,7 +45,11 @@ jest.mock('#/lib/strings/display-names', () => ({
 }))
 jest.mock('#/lib/userstyles', () => ({userStyle: () => ({})}))
 jest.mock('#/lib/styles', () => ({colors: {}}))
-jest.mock('#/alf', () => ({atoms: {}, useTheme: () => ({})}))
+jest.mock('#/alf', () => ({
+  atoms: {},
+  useTheme: () => ({atoms: {}}),
+  useBreakpoints: () => ({gtMobile: false}),
+}))
 jest.mock('@bsky/sdk/moderation', () => ({
   moderateProfile: () => ({ui: () => ({})}),
 }))

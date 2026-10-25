@@ -3,10 +3,11 @@ const path = require('node:path')
 const sharp = require('sharp')
 const {generateSW} = require('workbox-build')
 
-/** Builds install assets and a conservative offline app shell after Rspack. */
+/** Builds install assets and a conservative offline app shell after the web export. */
 async function buildPwa() {
   const root = path.resolve(__dirname, '..')
-  const output = path.join(root, 'web-build')
+  const metro = process.argv.includes('--metro')
+  const output = path.join(root, metro ? 'dist' : 'web-build')
   const pwa = path.join(output, 'pwa')
   await fs.mkdir(pwa, {recursive: true})
   await fs.copyFile(
@@ -28,12 +29,14 @@ async function buildPwa() {
     globDirectory: output,
     globPatterns: [
       'pwa/**/*.{html,png,webmanifest}',
-      'static/**/*.{js,css,woff2,ttf,png,jpg,webp,svg}',
+      'static/**/*.{js,css,woff2,ttf,png,jpg,webp,svg,avif}',
     ],
     // Download optional emoji fonts only after they are selected.
     globIgnores: [
       'static/media/WitchskyNotoColorEmoji.*.woff2',
       'static/media/WitchskyTwemoji.*.woff2',
+      'static/assets/**/WitchskyNotoColorEmoji*.woff2',
+      'static/assets/**/WitchskyTwemoji*.woff2',
     ],
     swDest: path.join(output, 'sw.js'),
     cacheId: 'witchsky',
@@ -43,7 +46,7 @@ async function buildPwa() {
     // Activate updates after existing tabs close, preserving their bundle version.
     skipWaiting: false,
     clientsClaim: true,
-    maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+    maximumFileSizeToCacheInBytes: (metro ? 20 : 10) * 1024 * 1024,
     runtimeCaching: [
       {
         // Online navigations always reach the server, including its page metadata.

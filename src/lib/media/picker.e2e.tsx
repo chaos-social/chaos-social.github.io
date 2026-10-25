@@ -57,7 +57,7 @@ async function getFile() {
  */
 async function getAndroidFile() {
   const asset = Asset.fromModule(
-    require('../../../assets/images/welcome-modal-bg.jpg'),
+    require('../../../assets/images/welcome-modal-bg.webp'),
   )
   await asset.downloadAsync()
 
@@ -69,7 +69,7 @@ async function getAndroidFile() {
   }
 
   /*
-   * Dimensions of the bundled asset (assets/images/welcome-modal-bg.jpg). Only
+   * Dimensions of the bundled asset (assets/images/welcome-modal-bg.webp). Only
    * used for downstream aspect-ratio display; the actual bytes are read from
    * disk by compressIfNeeded.
    */

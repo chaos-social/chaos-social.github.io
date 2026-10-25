@@ -66,8 +66,9 @@ import {useAnalytics} from '#/analytics'
 import {IS_IOS, IS_NATIVE} from '#/env'
 import {InviteFriendsDialog} from '#/features/inviteFriends'
 import {useActorStatus} from '#/features/liveNow'
+import {ProfileHeaderLinks} from '#/features/profileLinks'
 import {type app} from '#/lexicons'
-import {GermButton} from '../components/GermButton'
+import {GermButton, isGermButtonShown} from '../components/GermButton'
 import {ProfileHeaderDisplayName} from './DisplayName'
 import {EditProfileDialog} from './EditProfileDialog'
 import {ProfileHeaderHandle} from './Handle'
@@ -225,16 +226,28 @@ let ProfileHeaderStandard = ({
                       value={descriptionRT}
                       enableTags
                       authorHandle={profile.handle}
+                      shouldProxyLinks={true}
                     />
                   </View>
                 ) : undefined}
 
-                {showGermDmButton && profile.associated?.germ && (
-                  <GermButton
-                    germ={profile.associated.germ}
-                    profile={profile}
-                  />
-                )}
+                <ProfileHeaderLinks
+                  profile={profile}
+                  hidden={!!moderation.ui('profileView').blur}
+                  germButton={
+                    showGermDmButton &&
+                    isGermButtonShown(
+                      profile.associated?.germ,
+                      profile,
+                      currentAccount?.did,
+                    ) ? (
+                      <GermButton
+                        germ={profile.associated.germ}
+                        profile={profile}
+                      />
+                    ) : undefined
+                  }
+                />
               </View>
             )}
           </View>
@@ -471,7 +484,7 @@ export function HeaderStandardButtons({
   }
 
   const onPressFollow = () => {
-    playHaptic()
+    playHaptic.confirm()
     requireAuth(() => {
       if (confirmFollow) {
         setConfirmationAction('follow')
@@ -483,7 +496,7 @@ export function HeaderStandardButtons({
   }
 
   const onPressUnfollow = () => {
-    playHaptic()
+    playHaptic.confirm()
     setConfirmationAction('unfollow')
     followPromptControl.open()
   }
@@ -534,7 +547,7 @@ export function HeaderStandardButtons({
             size="small"
             color="secondary"
             onPress={() => {
-              playHaptic('Light')
+              playHaptic.tap()
               editProfileControl.open()
             }}
             label={_(msg`Edit profile`)}>
@@ -555,7 +568,7 @@ export function HeaderStandardButtons({
               // overlap the neighboring buttons' own targets
               hitSlop={{top: 6, bottom: 6, left: 2, right: 2}}
               onPress={() => {
-                playHaptic('Light')
+                playHaptic.tap()
                 ax.metric('invite:dialog:open', {logContext: 'ProfileHeader'})
                 inviteFriendsControl.open()
               }}

@@ -747,6 +747,7 @@ export function Provider({children}: PropsWithChildren<{}>) {
         account: redactAccount(account),
       })
       clearAgeAssuranceServerDataForDid({did: account.did})
+      void clearPersistedQueryStorage(account.did)
     },
     [store, cancelPendingTask],
   )
