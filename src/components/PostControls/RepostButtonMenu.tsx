@@ -19,7 +19,7 @@ export interface RepostButtonProps {
   onBumpRepost?: () => void
   onLongPress?: () => void
   metricsDisplay?: CountsMetricsDisplay
-  onQuote: () => void
+  onQuote: (openAccountSwitcher?: boolean) => void
   big?: boolean
   embeddingDisabled: boolean
   longPressToQuote?: boolean
@@ -82,7 +82,7 @@ export function RepostButtonMenu({
             </PostControlButton>
           )}
         </Menu.Trigger>
-        <Menu.Outer style={{minWidth: 170}}>
+        <Menu.Outer>
           <Menu.Group>
             {isReposted && onBumpRepost && (
               <Menu.Item
@@ -114,7 +114,7 @@ export function RepostButtonMenu({
                 embeddingDisabled ? l`Quote posts disabled` : l`Quote post`
               }
               testID="repostDropdownQuoteBtn"
-              onPress={onQuote}>
+              onPress={() => onQuote()}>
               <Menu.ItemText>
                 {embeddingDisabled ? l`Quote posts disabled` : l`Quote post`}
               </Menu.ItemText>

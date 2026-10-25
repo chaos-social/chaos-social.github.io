@@ -2,6 +2,11 @@
 
 import 'fast-text-encoding'
 
+import {act, createElement} from 'react'
+import {createRoot} from 'react-dom/client'
+
+import {EphemeralAccountPicker} from '#/components/EphemeralAccountPicker/index.web'
+import {RepostButton} from '#/components/PostControls/RepostButton.web'
 import {POST_KEYBOARD_ACTION_EVENT} from './postActions.web'
 import {
   clickPostAction,
@@ -16,6 +21,34 @@ import {
   setPostSelected,
   switchPageTab,
 } from './postNavigation.web'
+
+jest.mock('#/state/session', () => ({
+  useSession: () => ({hasSession: true}),
+}))
+
+jest.mock('#/components/Menu', () => ({
+  Root: ({
+    children,
+    control,
+  }: React.PropsWithChildren<{control: {isOpen: boolean}}>) => {
+    const {createElement} = jest.requireActual<typeof import('react')>('react')
+    const {Root} = jest.requireActual<
+      typeof import('@radix-ui/react-dropdown-menu')
+    >('@radix-ui/react-dropdown-menu')
+    return createElement(Root, {open: control.isOpen}, children)
+  },
+}))
+
+jest.mock('#/view/shell/desktop/LeftNav', () => ({
+  SwitchMenuItems: () => null,
+}))
+
+jest.mock('#/components/PostControls/RepostButtonMenu', () => ({
+  RepostButtonMenu: () => {
+    const {createElement} = jest.requireActual<typeof import('react')>('react')
+    return createElement('button', {'data-testid': 'repostBtn'})
+  },
+}))
 
 function createPost({
   top,
@@ -40,6 +73,58 @@ function createPost({
   document.body.appendChild(element)
   return element
 }
+
+it('remeasures the account picker when the same post button reopens after scrolling', () => {
+  const post = createPost({top: 20})
+  const target = document.createElement('button')
+  document.body.appendChild(target)
+  let top = 300
+  target.getBoundingClientRect = () => ({
+    top,
+    bottom: top + 30,
+    left: 100,
+    right: 130,
+    width: 30,
+    height: 30,
+    x: 100,
+    y: top,
+    toJSON() {},
+  })
+  const root = createRoot(post)
+  const renderPicker = (isOpen: boolean) => {
+    const control = {
+      id: 'account-picker',
+      ref: {current: null},
+      isOpen,
+      open: jest.fn(),
+      close: jest.fn(),
+    }
+    act(() => {
+      root.render(
+        createElement(EphemeralAccountPicker, {
+          control,
+          request: {target, title: 'Reply as', onSelectAccount: jest.fn()},
+          accounts: [],
+          signOutPromptControl: control,
+        }),
+      )
+    })
+  }
+
+  try {
+    renderPicker(true)
+    const trigger = post.querySelector<HTMLElement>('[aria-haspopup="menu"]')
+    expect(trigger?.style.top).toBe('300px')
+    renderPicker(false)
+    top = 120
+    renderPicker(true)
+    expect(trigger?.style.top).toBe('120px')
+  } finally {
+    act(() => root.unmount())
+    post.remove()
+    target.remove()
+  }
+})
 
 describe('post keyboard navigation', () => {
   beforeEach(() => {
@@ -156,6 +241,51 @@ it.each([
       openAccountSwitcher: dropdown,
     })
     expect(openMenu).not.toHaveBeenCalled()
+  },
+)
+
+it.each([
+  ['repost', false, false],
+  ['quote', false, false],
+  ['quote', true, false],
+  ['quote', false, true],
+] as const)(
+  'connects the web repost control to %s (switcher: %s, quote disabled: %s)',
+  (action, dropdown, embeddingDisabled) => {
+    const post = createPost({top: 20})
+    const root = createRoot(post)
+    const onRepost = jest.fn()
+    const onQuote = jest.fn()
+
+    try {
+      act(() => {
+        root.render(
+          createElement(RepostButton, {
+            isReposted: false,
+            onRepost,
+            onQuote,
+            embeddingDisabled,
+          }),
+        )
+      })
+      act(() => {
+        clickPostAction(post, action, dropdown)
+      })
+
+      if (action === 'repost') {
+        expect(onRepost).toHaveBeenCalledTimes(1)
+        expect(onQuote).not.toHaveBeenCalled()
+      } else if (embeddingDisabled) {
+        expect(onQuote).not.toHaveBeenCalled()
+      } else {
+        expect(onQuote).toHaveBeenCalledTimes(1)
+        expect(onQuote).toHaveBeenCalledWith(dropdown)
+        expect(onRepost).not.toHaveBeenCalled()
+      }
+    } finally {
+      act(() => root.unmount())
+      post.remove()
+    }
   },
 )
 

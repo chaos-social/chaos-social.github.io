@@ -120,6 +120,25 @@ afterEach(() => {
 })
 
 describe('RepostButtonMenu', () => {
+  it('does not pass the press event into the quote account-picker option', () => {
+    const onQuote = jest.fn()
+    const screen = render(
+      <RepostButtonMenu
+        isReposted={false}
+        onRepost={jest.fn()}
+        onQuote={onQuote}
+        embeddingDisabled={false}
+      />,
+    )
+
+    fireEvent.press(screen.getByTestId('repostDropdownQuoteBtn'), {
+      nativeEvent: {},
+    })
+
+    expect(onQuote).toHaveBeenCalledTimes(1)
+    expect(onQuote).toHaveBeenCalledWith()
+  })
+
   it('keeps repost and quote together in one group', () => {
     const screen = render(
       <RepostButtonMenu

@@ -1,4 +1,4 @@
-import {useEffect, useRef} from 'react'
+import {useEffect, useLayoutEffect, useRef, useState} from 'react'
 import {DropdownMenu} from 'radix-ui'
 
 import {SwitchMenuItems} from '#/view/shell/desktop/LeftNav'
@@ -20,7 +20,13 @@ export function EphemeralAccountPicker({
     target instanceof Element
       ? target.closest<HTMLElement>('button, [role="button"]')
       : null
-  const rect = anchor?.getBoundingClientRect()
+  const [rect, setRect] = useState<DOMRect | null>(null)
+
+  useLayoutEffect(() => {
+    if (!control.isOpen) return
+    /* Measure on each opening; render-time DOM reads can be compiler-cached. */
+    setRect(anchor?.getBoundingClientRect() ?? null)
+  }, [anchor, control.isOpen, request])
 
   useEffect(() => {
     if (!control.isOpen) return

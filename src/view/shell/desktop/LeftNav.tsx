@@ -319,26 +319,7 @@ export function SwitchMenuItems({
   onCloseAutoFocus?: (event: Event) => void
 }) {
   const {t: l} = useLingui()
-  const {currentAccount} = useSession()
   const {onPressSwitchAccount, pendingDid} = useAccountSwitcher()
-  const navigation = useNavigation<NavigationProp>()
-  const {control} = Menu.useMenuContext()
-  const currentRouteInfo = useNavigationState(state => {
-    if (!state) {
-      return {name: 'Home'}
-    }
-    return getCurrentRoute(state)
-  })
-  const profileLink = currentAccount ? makeProfileLink(currentAccount) : '/'
-  const isCurrent = isCurrentProfileRoute({
-    routeName: currentRouteInfo.name,
-    profileName:
-      currentRouteInfo.name === 'Profile'
-        ? (currentRouteInfo.params as CommonNavigatorParams['Profile']).name
-        : undefined,
-    currentHandle: currentAccount?.handle,
-    currentDid: currentAccount?.did,
-  })
   const {setShowLoggedOut} = useLoggedOutViewControls()
   const closeEverything = useCloseAllActiveElements()
   const [, , hiddenDidsSet] = useHiddenAccountsElsewhere()
@@ -355,36 +336,26 @@ export function SwitchMenuItems({
     closeEverything()
   }
 
-  const onProfilePress = (e: GestureResponderEvent) => {
-    if (IS_WEB) {
-      const mouseEvent = e as unknown as React.MouseEvent<
-        HTMLAnchorElement,
-        MouseEvent
-      >
-      if (mouseEvent.ctrlKey || mouseEvent.metaKey || mouseEvent.altKey) {
-        return
-      }
-      mouseEvent.preventDefault()
-    }
-
-    const onNavigate = () => {
-      if (isCurrent) {
-        emitSoftReset()
-      } else {
-        const [screen, params] = router.matchPath(profileLink)
-        // @ts-expect-error TODO: type matchPath well enough that it can be plugged into navigation.navigate directly
-        navigation.navigate(screen, params, {pop: true})
-      }
-    }
-
-    if (IS_IOS) {
-      onNavigate()
-    } else if (IS_NATIVE) {
-      control.close(onNavigate)
-    } else {
-      control.close(onNavigate)
-    }
-  }
+  const footerItems = (
+    <>
+      {showAddAccount && (
+        <Menu.Item label={l`Add another account`} onPress={onAddAnotherAccount}>
+          <Menu.ItemIcon icon={PlusIcon} />
+          <Menu.ItemText>
+            <Trans>Add another account</Trans>
+          </Menu.ItemText>
+        </Menu.Item>
+      )}
+      {showExtraButtons && (
+        <Menu.Item label={l`Sign out`} onPress={signOutPromptControl.open}>
+          <Menu.ItemIcon icon={LeaveIcon} />
+          <Menu.ItemText>
+            <Trans>Sign out</Trans>
+          </Menu.ItemText>
+        </Menu.Item>
+      )}
+    </>
+  )
 
   return (
     <Menu.Outer onCloseAutoFocus={onCloseAutoFocus}>
@@ -428,41 +399,83 @@ export function SwitchMenuItems({
           {hasFooterItems ? <Menu.Divider /> : null}
         </>
       ) : null}
-      {hasFooterItems && (
-        <Menu.Group>
-          {showExtraButtons && (
-            <Menu.Item
-              label={l`Go to profile`}
-              onPress={onProfilePress}
-              // @ts-expect-error href is web-only -prf
-              href={profileLink}>
-              <Menu.ItemIcon icon={UserCircleIcon} />
-              <Menu.ItemText>
-                <Trans>Go to profile</Trans>
-              </Menu.ItemText>
-            </Menu.Item>
-          )}
-          {showAddAccount && (
-            <Menu.Item
-              label={l`Add another account`}
-              onPress={onAddAnotherAccount}>
-              <Menu.ItemIcon icon={PlusIcon} />
-              <Menu.ItemText>
-                <Trans>Add another account</Trans>
-              </Menu.ItemText>
-            </Menu.Item>
-          )}
-          {showExtraButtons && (
-            <Menu.Item label={l`Sign out`} onPress={signOutPromptControl.open}>
-              <Menu.ItemIcon icon={LeaveIcon} />
-              <Menu.ItemText>
-                <Trans>Sign out</Trans>
-              </Menu.ItemText>
-            </Menu.Item>
-          )}
-        </Menu.Group>
-      )}
+      {showExtraButtons ? (
+        <SwitcherMenuProfileGroup>{footerItems}</SwitcherMenuProfileGroup>
+      ) : showAddAccount ? (
+        <Menu.Group>{footerItems}</Menu.Group>
+      ) : null}
     </Menu.Outer>
+  )
+}
+
+/** Navigation actions only mount in the sidebar, never in shared account pickers. */
+function SwitcherMenuProfileGroup({children}: React.PropsWithChildren) {
+  const {t: l} = useLingui()
+  const {currentAccount} = useSession()
+  const navigation = useNavigation<NavigationProp>()
+  const {control} = Menu.useMenuContext()
+  const currentRouteInfo = useNavigationState(state => {
+    if (!state) {
+      return {name: 'Home'}
+    }
+    return getCurrentRoute(state)
+  })
+  const profileLink = currentAccount ? makeProfileLink(currentAccount) : '/'
+  const isCurrent = isCurrentProfileRoute({
+    routeName: currentRouteInfo.name,
+    profileName:
+      currentRouteInfo.name === 'Profile'
+        ? (currentRouteInfo.params as CommonNavigatorParams['Profile']).name
+        : undefined,
+    currentHandle: currentAccount?.handle,
+    currentDid: currentAccount?.did,
+  })
+
+  const onProfilePress = (e: GestureResponderEvent) => {
+    if (IS_WEB) {
+      const mouseEvent = e as unknown as React.MouseEvent<
+        HTMLAnchorElement,
+        MouseEvent
+      >
+      if (mouseEvent.ctrlKey || mouseEvent.metaKey || mouseEvent.altKey) {
+        return
+      }
+      mouseEvent.preventDefault()
+    }
+
+    const onNavigate = () => {
+      if (isCurrent) {
+        emitSoftReset()
+      } else {
+        const [screen, params] = router.matchPath(profileLink)
+        // @ts-expect-error TODO: type matchPath well enough that it can be plugged into navigation.navigate directly
+        navigation.navigate(screen, params, {pop: true})
+      }
+    }
+
+    if (IS_IOS) {
+      onNavigate()
+    } else if (IS_NATIVE) {
+      control.close(onNavigate)
+    } else {
+      control.close(onNavigate)
+    }
+  }
+
+  return (
+    <Menu.Group>
+      <Menu.Item
+        label={l`Go to profile`}
+        onPress={onProfilePress}
+        // @ts-expect-error href is web-only -prf
+        href={profileLink}>
+        <Menu.ItemIcon icon={UserCircleIcon} />
+        <Menu.ItemText>
+          <Trans>Go to profile</Trans>
+        </Menu.ItemText>
+      </Menu.Item>
+      {children}
+    </Menu.Group>
   )
 }
 
