@@ -42,7 +42,7 @@ dev-web:
 
 [group('dev')]
 dev-web-functions: build-web
-    wrangler pages dev ./web-build
+    wrangler pages dev ./dist
 
 [group('lint')]
 typecheck:

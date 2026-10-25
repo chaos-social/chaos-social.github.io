@@ -12,4 +12,4 @@ fi
 EXPO_PUBLIC_RELEASE_VERSION="$release_version" \
 EXPO_PUBLIC_BUNDLE_IDENTIFIER="$bundle_identifier" \
 EXPO_PUBLIC_BUNDLE_DATE="$bundle_date" \
-pnpm use-build-number-with-bump expo run:android --variant release "$@"
+exec pnpm exec expo run:android --variant release "$@"

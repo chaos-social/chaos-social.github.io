@@ -18,12 +18,11 @@
     <link rel="preconnect" href="https://bsky.social">
     <link rel="preconnect" href="https://go.bsky.app">
     <title>Witchsky</title>
+    <meta name="description" content="Social media as it should be. Find your community among millions of users, unleash your creativity, and have some fun again." />
     <link rel="manifest" href="/pwa/manifest.webmanifest">
     <link rel="apple-touch-icon" sizes="180x180" href="/pwa/icon-180.png">
-    <link rel="icon" type="image/png" href="/favicon.ico">
 
     <link rel="preload" as="font" type="font/woff2" href="/static/fonts/InterVariable.woff2" crossorigin>
-    <link rel="stylesheet" href="/static/style.css">
 
     <style>
       /**
@@ -148,20 +147,54 @@
   </head>
 
   <body>
-  <noscript style="
-     background-color: #fff;
-     position: fixed;
-     top: 0;
-     left: 0;
-     right: 0;
-     bottom: 0;
-     z-index: 9999;
-     margin: 1em;
-   ">
-    <h1 lang="en">JavaScript Required</h1>
-    <p lang="en">This is a heavily interactive web application, and JavaScript is required. Simple HTML interfaces are possible, but that is not what this is.</p>
-    <p lang="en">Learn more about Bluesky at <a href="https://bsky.social">bsky.social</a> and <a href="https://atproto.com">atproto.com</a>, or this fork at <a href="https://tangled.org/jollywhoppers.com/witchsky.app/">https://tangled.org/jollywhoppers.com/witchsky.app/</a>.</p>
-  </noscript>
+    <noscript>
+      <form
+        action=""
+        style="
+          background-color: #fff;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 9999;
+        "
+      >
+        <div
+          style="
+            font-size: 18px;
+            font-family: Helvetica, sans-serif;
+            line-height: 24px;
+            margin: 10%;
+            width: 80%;
+          "
+        >
+          <h1 lang="en">Witchsky</h1>
+          <p lang="en">Social media as it should be. Find your community among millions of users, unleash your creativity, and have some fun again.</p>
+          <div data-nosnippet>
+            <p lang="en">Enable JavaScript to use Witchsky.</p>
+            <p lang="en" style="margin: 20px 0;">
+              <button
+                type="submit"
+                style="
+                  background-color: #ed5345;
+                  border-radius: 100px;
+                  border: none;
+                  box-shadow: none;
+                  color: #fff;
+                  cursor: pointer;
+                  font-weight: bold;
+                  line-height: 20px;
+                  padding: 6px 16px;
+                "
+              >
+                Reload
+              </button>
+            </p>
+          </div>
+        </div>
+      </form>
+    </noscript>
 
     <!-- The root element for your Expo app. -->
     <div id="splash">

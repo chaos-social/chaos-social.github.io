@@ -5,10 +5,12 @@
 PWA output into `bskyweb/static` for the Go server. Serve the complete build over
 HTTPS (localhost also works). Development builds do not register a worker.
 
-The default build uses Expo's Metro export. `pnpm build-web:rspack` retains the
-Rspack build and writes to `web-build`. Cloudflare Pages uses `dist` by default.
-Both builds include Witchsky's static pages, OAuth metadata, fonts, and PWA
-assets.
+Development (`pnpm web`) and production (`pnpm build-web`) both use Expo's
+Metro builder. Expo serves `public` directly in development and copies it into
+`dist` for production. Cloudflare Pages uses `dist`.
+The manifest and development icons live in `public/pwa`; production regenerates
+the icons from the logo, preserving transparency. The install splash uses
+Witchsky’s dark background.
 
 Only build assets and a copy of the app shell are precached. Online navigation
 always reaches the server; failed navigation falls back to the shell. API

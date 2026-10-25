@@ -241,7 +241,7 @@ test('a missing or changed build workflow blocks all proposed operations', () =>
   })
 })
 
-test('planned build inputs match available dispatch definitions and no live option exists', () => {
+test('planned builds require matching dispatch definitions and no live option exists', () => {
   const result = spawnSync(
     process.execPath,
     [
@@ -253,7 +253,11 @@ test('planned build inputs match available dispatch definitions and no live opti
     import assert from 'node:assert/strict'
     import {buildWorkflows,workflowHashes} from ${JSON.stringify(plannerUrl)}
     const yaml = createRequire(import.meta.url)('js-yaml')
-    for (const build of buildWorkflows.filter(build => existsSync('.github/workflows/' + build.file))) {
+    const missingWorkflow = buildWorkflows.some(build => !existsSync('.github/workflows/' + build.file))
+    if (missingWorkflow) {
+      // Forks without Bluesky deployment workflows must fail before planning dispatches.
+      assert.throws(() => workflowHashes(), {code: 'ENOENT'})
+    } else for (const build of buildWorkflows) {
       const workflow = yaml.load(readFileSync('.github/workflows/' + build.file,'utf8'))
       assert('workflow_dispatch' in workflow.on)
       const definitions = workflow.on.workflow_dispatch?.inputs ?? {}

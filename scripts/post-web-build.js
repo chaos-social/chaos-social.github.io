@@ -66,69 +66,10 @@ for (const src of jsEntries) {
 console.log(`Writing ${templateFile}`)
 fs.writeFileSync(templateFile, outputLines.join('\n'))
 
-// Generate fonts.html — preload + @font-face for the splash, using the same
-// content-hashed paths Metro emits for the bundle. Avoids shipping a duplicate
-// font copy under /static/media/ and ensures the preload is actually used.
-const fontsDir = path.join(distDir, 'assets', 'assets', 'fonts', 'inter')
-/*
- * Witchsky's web font styles use static URLs, so Metro need not discover the
- * Inter files through a JS import. Emit them explicitly for the splash too.
- */
-fs.mkdirSync(fontsDir, {recursive: true})
-for (const name of ['InterVariable', 'InterVariable-Italic']) {
-  const source = path.join(
-    projectRoot,
-    'assets',
-    'fonts',
-    'inter',
-    `${name}.woff2`,
-  )
-  const bytes = fs.readFileSync(source)
-  const hash = require('node:crypto')
-    .createHash('sha256')
-    .update(bytes)
-    .digest('hex')
-    .slice(0, 32)
-  fs.writeFileSync(path.join(fontsDir, `${name}.${hash}.woff2`), bytes)
-}
-function findFontHash(prefix) {
-  if (!fs.existsSync(fontsDir)) return null
-  const match = fs
-    .readdirSync(fontsDir)
-    .find(name => name.startsWith(prefix) && name.endsWith('.woff2'))
-  return match || null
-}
-const interRegular = findFontHash('InterVariable.')
-const interItalic = findFontHash('InterVariable-Italic.')
-if (!interRegular || !interItalic) {
-  throw new Error(
-    `Could not find Inter font files in ${fontsDir}. ` +
-      'Update post-web-build.js if the font emit path changed.',
-  )
-}
-
-const interFontPath = '/assets/assets/fonts/inter/'
-/*
- * The static index.html references the fonts by their unhashed names, but
- * Metro emits them content-hashed. Rewrite dist/index.html in place so the
- * font preload and @font-face URLs resolve when serving dist/ directly.
- */
-const fixedIndexHtml = indexHtml
-  .replaceAll(
-    '/assets/assets/fonts/inter/InterVariable.woff2',
-    `/static${interFontPath}${interRegular}`,
-  )
-  .replaceAll(
-    '/assets/assets/fonts/inter/InterVariable-Italic.woff2',
-    `/static${interFontPath}${interItalic}`,
-  )
-if (fixedIndexHtml !== indexHtml) {
-  console.log('Rewriting font paths in dist/index.html to hashed filenames')
-  fs.writeFileSync(path.join(distDir, 'index.html'), fixedIndexHtml)
-}
-
-const interRegularPath = `{{ staticCDNHost }}/static${interFontPath}${interRegular}`
-const interItalicPath = `{{ staticCDNHost }}/static${interFontPath}${interItalic}`
+/* The splash and Go templates share the fonts served by Expo's public folder. */
+const interFontPath = '{{ staticCDNHost }}/static/fonts/'
+const interRegularPath = `${interFontPath}InterVariable.woff2`
+const interItalicPath = `${interFontPath}InterVariable-Italic.woff2`
 
 const fontsHtml = `<link rel="preload" as="font" type="font/woff2" href="${interRegularPath}" crossorigin>
 <style>
@@ -246,11 +187,6 @@ for (const [source, target] of [
   ['bskyweb/static/iframe', 'iframe'],
   ['bskyweb/static/.well-known', '.well-known'],
   ['witchsky-static-about', 'about'],
-  ['web/static/fonts', 'static/fonts'],
-  ['src/style.css', 'style.css'],
-  ['src/style.css', 'static/style.css'],
-  ['assets/favicon.png', 'favicon.ico'],
-  ['assets/favicon.png', 'static/favicon.ico'],
   ['web/_headers', '_headers'],
   ['web/_routes.json', '_routes.json'],
 ]) {
@@ -263,13 +199,13 @@ for (const directory of [distDir, bskywebStatic]) {
 }
 
 copyDir(
-  path.join(projectRoot, 'web', 'static', 'fonts'),
+  path.join(projectRoot, 'public', 'static', 'fonts'),
   path.join(bskywebStatic, 'fonts'),
 )
 
 /* Metro embeds /static in chunk and asset URLs for the Go server. Pages needs
  * that same directory layout when dist is served directly. */
-for (const directory of ['_expo', 'assets']) {
+for (const directory of ['_expo', 'assets', 'favicon.ico']) {
   const destination = path.join(distDir, 'static', directory)
   cleanDir(destination)
   fs.renameSync(path.join(distDir, directory), destination)

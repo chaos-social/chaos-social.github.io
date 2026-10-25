@@ -37,6 +37,11 @@ steps:
         > .env
 
   - name: Build
+    environment:
+      NODE_OPTIONS: "--max-old-space-size=2560"
+      # The 4 GiB runner cannot hold the experimental optimizer's full AST graph.
+      EXPO_UNSTABLE_METRO_OPTIMIZE_GRAPH: "0"
+      EXPO_UNSTABLE_TREE_SHAKING: "0"
     command: |
       pnpm intl:build
       pnpm build-web
@@ -54,7 +59,9 @@ steps:
         *) echo "Refusing to deploy unexpected branch: $TANGLED_REF_NAME" >&2; exit 1 ;;
       esac
 
-      pnpm exec wrangler pages deploy ./web-build \
+      node ./scripts/prepare-pages-assets.js
+
+      pnpm exec wrangler pages deploy ./dist \
         --project-name witchsky \
         --branch "$cloudflare_branch" \
         --commit-hash "$TANGLED_SHA"

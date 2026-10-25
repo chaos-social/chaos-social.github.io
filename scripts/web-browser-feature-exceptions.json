@@ -1,8 +1,12 @@
 {
   "features": [
-    "ArrayToSorted"
+    "ArrayToSorted",
+    "Uint8ArrayFromHex",
+    "Uint8ArrayToHex"
   ],
   "reasons": {
-    "ArrayToSorted": "False positive in @radix-ui/react-collection 1.1.7: OrderedDict defines its own toSorted method using [...this.entries()].sort(compareFn). Its callers operate on OrderedDict, not Array.prototype.toSorted. Recheck this exception when upgrading Radix."
+    "ArrayToSorted": "False positive in @radix-ui/react-collection 1.1.7: OrderedDict defines its own toSorted method using [...this.entries()].sort(compareFn). Its callers operate on OrderedDict, not Array.prototype.toSorted. Recheck this exception when upgrading Radix.",
+    "Uint8ArrayFromHex": "Guarded optional fast path in @noble/hashes 2.4.0 utils.js: hasHexBuiltin checks both native hex methods before hexToBytes calls Uint8Array.fromHex, with an ASCII parsing fallback otherwise. Visible in non-tree-shaken builds. Recheck when upgrading @noble/hashes.",
+    "Uint8ArrayToHex": "Guarded optional fast path in @noble/hashes 2.4.0 utils.js: hasHexBuiltin checks both native hex methods before bytesToHex calls bytes.toHex, with a lookup-table fallback otherwise. Visible in non-tree-shaken builds. Recheck when upgrading @noble/hashes."
   }
 }
