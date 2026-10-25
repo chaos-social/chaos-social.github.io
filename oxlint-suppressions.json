@@ -587,13 +587,7 @@
   },
   "src/screens/Profile/Header/EditProfileDialog.tsx": {
     "typescript/no-explicit-any": {
-      "count": 4
-    },
-    "typescript/no-unsafe-call": {
-      "count": 1
-    },
-    "typescript/no-unsafe-member-access": {
-      "count": 1
+      "count": 3
     }
   },
   "src/screens/Profile/Header/ProfileHeaderLabeler.tsx": {

@@ -52,12 +52,15 @@ function suggestTitle(pageTitle: string | undefined): string {
 export function LinkFormDialog({
   control,
   link,
+  initialUrl = '',
   existingUrls,
   onSave,
   onRemove,
 }: {
   control: Dialog.DialogControlProps
   link: ProfileLink | null
+  /** URL to prefill when adding a new link. */
+  initialUrl?: string
   /** Other links on the profile, to catch duplicates. */
   existingUrls: string[]
   /** Runs after the sheet closes. */
@@ -78,6 +81,7 @@ export function LinkFormDialog({
       <Dialog.Handle />
       <LinkFormInner
         link={link}
+        initialUrl={initialUrl}
         existingUrls={existingUrls}
         onSave={onSave}
         onRemove={onRemove}
@@ -88,11 +92,13 @@ export function LinkFormDialog({
 
 function LinkFormInner({
   link,
+  initialUrl,
   existingUrls,
   onSave,
   onRemove,
 }: {
   link: ProfileLink | null
+  initialUrl: string
   existingUrls: string[]
   onSave: (link: ProfileLink) => void
   onRemove?: () => void
@@ -106,7 +112,7 @@ function LinkFormInner({
   const supportedSitesControl = Dialog.useDialogControl()
 
   const isEditing = !!link
-  const startingInput = link ? formatLinkUrl(link.url) : ''
+  const startingInput = link ? formatLinkUrl(link.url) : initialUrl
   const [input, setInput] = useState(startingInput)
   const [touched, setTouched] = useState(false)
   const [title, setTitle] = useState(link?.title ?? '')

@@ -227,6 +227,7 @@ export function Outer({
       }
       prevSnapPoint.current = BottomSheetSnapPoint.Hidden
     }
+    nativeOptions?.onStateChange?.(e)
   }
 
   useImperativeHandle(

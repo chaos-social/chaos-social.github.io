@@ -1,20 +1,12 @@
 import {useCallback, useEffect, useRef, useState} from 'react'
 import {View} from 'react-native'
-import {Pressable} from 'react-native'
-import {type UriString} from '@atproto/syntax'
 import {Plural, Trans, useLingui} from '@lingui/react/macro'
 
-import {
-  HITSLOP_10,
-  MAX_DESCRIPTION,
-  MAX_DISPLAY_NAME,
-  urls,
-} from '#/lib/constants'
+import {MAX_DESCRIPTION, MAX_DISPLAY_NAME, urls} from '#/lib/constants'
 import {useCallOnce} from '#/lib/once'
 import {getShapeStyle} from '#/lib/shapes'
 import {cleanError} from '#/lib/strings/errors'
 import {isOverMaxGraphemeCount} from '#/lib/strings/helpers'
-import {isValidWebsiteFormat} from '#/lib/strings/website'
 import {logger} from '#/logger'
 import {type ImageMeta} from '#/state/gallery'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
@@ -30,13 +22,10 @@ import {Logo} from '#/view/icons/Logo'
 import {WitchHatEditor} from '#/screens/Profile/Header/WitchHatEditor'
 import {isOctober} from '#/screens/Profile/Header/WitchHatEditor/utils'
 import {atoms as a, useTheme} from '#/alf'
-import * as tokens from '#/alf/tokens'
 import {Admonition} from '#/components/Admonition'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
 import * as TextField from '#/components/forms/TextField'
-import {CircleX_Stroke2_Corner0_Rounded as CircleX} from '#/components/icons/CircleX'
-import {Globe_Stroke2_Corner0_Rounded as Globe} from '#/components/icons/Globe'
 import {InlineLinkText} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import * as Prompt from '#/components/Prompt'
@@ -44,6 +33,7 @@ import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useSimpleVerificationStateWithDeer} from '#/components/verification'
 import {useAnalytics} from '#/analytics'
+import {IS_WEB} from '#/env'
 import {
   logProfileLinkChanges,
   type ProfileLink,
@@ -57,7 +47,6 @@ import {
 import {type app} from '#/lexicons'
 
 const PRONOUNS_MAX_GRAPHEMES = 20
-const WEBSITE_MAX_GRAPHEMES = 2048
 
 export function EditProfileDialog({
   profile,
@@ -71,6 +60,7 @@ export function EditProfileDialog({
   const {t: l} = useLingui()
   const cancelControl = Dialog.useDialogControl()
   const [dirty, setDirty] = useState(false)
+  const [isPresented, setIsPresented] = useState(false)
 
   const onPressCancel = useCallback(() => {
     if (dirty) {
@@ -83,9 +73,14 @@ export function EditProfileDialog({
   return (
     <Dialog.Outer
       control={control}
+      onOpen={() => setIsPresented(IS_WEB)}
+      onClose={() => setIsPresented(false)}
       nativeOptions={{
         preventDismiss: dirty,
         fullHeight: true,
+        onStateChange: event => {
+          setIsPresented(event.nativeEvent.state === 'open')
+        },
       }}
       webOptions={{
         onBackgroundPress: () => {
@@ -102,6 +97,7 @@ export function EditProfileDialog({
         onUpdate={onUpdate}
         setDirty={setDirty}
         onPressCancel={onPressCancel}
+        isPresented={isPresented}
       />
 
       <Prompt.Basic
@@ -121,11 +117,13 @@ function DialogInner({
   onUpdate,
   setDirty,
   onPressCancel,
+  isPresented,
 }: {
   profile: app.bsky.actor.defs.ProfileViewDetailed
   onUpdate?: () => void
   setDirty: (dirty: boolean) => void
   onPressCancel: () => void
+  isPresented: boolean
 }) {
   const {t: l} = useLingui()
   const t = useTheme()
@@ -153,9 +151,7 @@ function DialogInner({
   const [description, setDescription] = useState(initialDescription)
   const initialPronouns = profile.pronouns || ''
   const [pronouns, setPronouns] = useState(initialPronouns)
-  const initialWebsite = profile.website || ''
-  const [website, setWebsite] = useState(initialWebsite)
-  const websiteInputRef = useRef<any>(null)
+  const [websiteTransferred, setWebsiteTransferred] = useState(false)
   const [userBanner, setUserBanner] = useState<string | undefined | null>(
     profile.banner,
   )
@@ -201,7 +197,7 @@ function DialogInner({
     userAvatar !== profile.avatar ||
     userBanner !== profile.banner ||
     pronouns !== initialPronouns ||
-    website !== initialWebsite
+    websiteTransferred
   const linksDirty =
     !!editedLinks &&
     !!storedLinks &&
@@ -250,13 +246,6 @@ function DialogInner({
     [setNewUserBanner, setUserBanner, setImageError],
   )
 
-  const onClearWebsite = useCallback(() => {
-    setWebsite('')
-    if (websiteInputRef.current) {
-      websiteInputRef.current.clear()
-    }
-  }, [setWebsite])
-
   const onPressSave = useCallback(async () => {
     setImageError('')
     try {
@@ -271,7 +260,7 @@ function DialogInner({
           displayName: displayName.trimEnd(),
           description: description.trimEnd(),
           pronouns: pronouns.trim().toLowerCase() || undefined,
-          website: (website.trim() || undefined) as UriString | undefined,
+          ...(websiteTransferred && {website: undefined}),
           ...(written && {
             links: written.refs.length ? written.refs : undefined,
           }),
@@ -297,7 +286,7 @@ function DialogInner({
     displayName,
     description,
     pronouns,
-    website,
+    websiteTransferred,
     newUserAvatar,
     newUserBanner,
     setImageError,
@@ -318,11 +307,6 @@ function DialogInner({
     text: pronouns,
     maxCount: PRONOUNS_MAX_GRAPHEMES,
   })
-  const websiteTooLong = isOverMaxGraphemeCount({
-    text: website,
-    maxCount: WEBSITE_MAX_GRAPHEMES,
-  })
-  const websiteInvalidFormat = !isValidWebsiteFormat(website)
   const descriptionTooLong = isOverMaxGraphemeCount({
     text: description,
     maxCount: MAX_DESCRIPTION,
@@ -372,9 +356,7 @@ function DialogInner({
           !dirty ||
           isUpdatingProfile ||
           displayNameTooLong ||
-          descriptionTooLong ||
-          websiteTooLong ||
-          websiteInvalidFormat
+          descriptionTooLong
         }
         size="small"
         color="primary"
@@ -397,8 +379,6 @@ function DialogInner({
       isUpdatingProfile,
       displayNameTooLong,
       descriptionTooLong,
-      websiteTooLong,
-      websiteInvalidFormat,
       enableSquareButtons,
     ],
   )
@@ -561,102 +541,14 @@ function DialogInner({
           )}
         </View>
 
-        <View>
-          <TextField.LabelText>
-            <Trans>Website</Trans>
-          </TextField.LabelText>
-          <View style={[a.w_full, a.relative]}>
-            <TextField.Root isInvalid={websiteTooLong || websiteInvalidFormat}>
-              <TextField.Icon icon={Globe} />
-              <Dialog.Input
-                inputRef={websiteInputRef}
-                defaultValue={website}
-                onChangeText={setWebsite}
-                label={l`EditWebsite`}
-                placeholder={l`https://example.com`}
-                testID="editProfileWebsiteInput"
-                autoCapitalize="none"
-                keyboardType="url"
-                style={[
-                  website
-                    ? {
-                        paddingRight: tokens.space._5xl,
-                      }
-                    : {},
-                ]}
-              />
-            </TextField.Root>
-
-            {website && (
-              <View
-                style={[
-                  a.absolute,
-                  a.z_10,
-                  a.my_auto,
-                  a.inset_0,
-                  a.justify_center,
-                  a.pr_sm,
-                  {left: 'auto'},
-                ]}>
-                <Pressable
-                  testID="clearWebsiteBtn"
-                  onPress={onClearWebsite}
-                  accessibilityLabel={l`Clear website`}
-                  accessibilityHint={l`Removes the website URL`}
-                  hitSlop={HITSLOP_10}
-                  style={[
-                    a.flex_row,
-                    a.align_center,
-                    a.justify_center,
-                    {
-                      width: tokens.space._2xl,
-                      height: tokens.space._2xl,
-                    },
-                    a.rounded_full,
-                  ]}>
-                  <CircleX
-                    width={tokens.space.lg}
-                    style={{color: t.palette.contrast_600}}
-                  />
-                </Pressable>
-              </View>
-            )}
-          </View>
-          {websiteTooLong && (
-            <Text
-              style={[
-                a.text_sm,
-                a.mt_xs,
-                a.font_bold,
-                {color: t.palette.negative_400},
-              ]}>
-              <Plural
-                value={WEBSITE_MAX_GRAPHEMES}
-                other="Website is too long. The maximum number of characters is #."
-              />
-            </Text>
-          )}
-          {websiteInvalidFormat && (
-            <Text
-              style={[
-                a.text_sm,
-                a.mt_xs,
-                a.font_bold,
-                {color: t.palette.negative_400},
-              ]}>
-              <Trans>
-                Website must be a valid HTTPS URL (e.g.
-                https://twelvemen.neocities.org/)
-              </Trans>
-            </Text>
-          )}
-        </View>
-
         {linksEnabled && links && (
           <ProfileLinksEditor
             did={profile.did}
             links={links}
             onChange={setEditedLinks}
+            legacyWebsite={websiteTransferred ? undefined : profile.website}
+            websiteTransferReady={isPresented}
+            onWebsiteTransferred={() => setWebsiteTransferred(true)}
             onDragStateChange={dragging => {
               setIsDraggingLinks(dragging)
               if (dragging) {

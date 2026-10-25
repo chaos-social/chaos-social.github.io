@@ -14,10 +14,6 @@ import {useHaptics} from '#/lib/haptics'
 import {isFollowedByMetricHidden} from '#/lib/metrics-display'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {formatJoinDate, niceDate} from '#/lib/strings/time'
-import {
-  sanitizeWebsiteForDisplay,
-  sanitizeWebsiteForLink,
-} from '#/lib/strings/website'
 import {logger} from '#/logger'
 import {type Shadow, useProfileShadow} from '#/state/cache/profile-shadow'
 import {useShowGermDmButton} from '#/state/preferences'
@@ -49,13 +45,11 @@ import {
   Check_Stroke2_Corner0_Rounded as Check,
   DoubleCheck_Stroke2_Corner0_Rounded as DoubleCheck,
 } from '#/components/icons/Check'
-import {Globe_Stroke2_Corner0_Rounded as Globe} from '#/components/icons/Globe'
 import {PlusLarge_Stroke2_Corner0_Rounded as Plus} from '#/components/icons/Plus'
 import {
   KnownFollowers,
   shouldShowKnownFollowers,
 } from '#/components/KnownFollowers'
-import {Link} from '#/components/Link'
 import * as Prompt from '#/components/Prompt'
 import {PronounPill} from '#/components/PronounPill'
 import {RichText} from '#/components/RichText'
@@ -116,9 +110,6 @@ let ProfileHeaderStandard = ({
     profile.viewer?.blocking ||
     profile.viewer?.blockedBy ||
     profile.viewer?.blockingByList
-
-  const website = profile.website
-  const websiteFormatted = sanitizeWebsiteForDisplay(website ?? '')
 
   const dateJoined = useMemo(() => {
     if (!profile.createdAt) return ''
@@ -263,36 +254,7 @@ let ProfileHeaderStandard = ({
               web({position: 'relative', zIndex: 2}),
             ]}>
             <PronounPill pronouns={profile.pronouns} showLabel />
-            {websiteFormatted && (
-              <Link
-                to={sanitizeWebsiteForLink(website ?? '')}
-                label={_(msg({message: `Visit ${websiteFormatted}`}))}
-                style={[
-                  a.flex_row,
-                  a.align_center,
-                  a.gap_xs,
-                  {maxWidth: '100%'},
-                ]}>
-                {({hovered}) => (
-                  <>
-                    <Globe
-                      width={tokens.space.lg}
-                      style={{color: t.palette.primary_500, flexShrink: 0}}
-                    />
-                    <Text
-                      numberOfLines={1}
-                      ellipsizeMode="middle"
-                      style={[
-                        a.flex_shrink,
-                        {color: t.palette.primary_500},
-                        hovered && a.underline,
-                      ]}>
-                      {websiteFormatted}
-                    </Text>
-                  </>
-                )}
-              </Link>
-            )}
+
             <View style={[a.flex_row, a.align_center, a.gap_xs]}>
               <CalendarDays
                 width={tokens.space.lg}

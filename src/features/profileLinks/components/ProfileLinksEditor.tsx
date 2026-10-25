@@ -1,4 +1,4 @@
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
@@ -7,7 +7,9 @@ import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import {useDialogControl} from '#/components/Dialog'
 import * as TextField from '#/components/forms/TextField'
 import {PlusSmall_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
+import * as Prompt from '#/components/Prompt'
 import {PILL_LEFT, PILL_RIGHT_TEXT, PILL_VERTICAL} from '../pillSize'
+import {normalizeProfileLinkUrl} from '../providers'
 import {buildProfileRow, reorderLinks} from '../row'
 import {MAX_PROFILE_LINKS, type ProfileLink} from '../types'
 import {LinkFormDialog} from './LinkFormDialog'
@@ -24,23 +26,45 @@ export function ProfileLinksEditor({
   links,
   onChange,
   onDragStateChange,
+  legacyWebsite,
+  websiteTransferReady = false,
+  onWebsiteTransferred,
 }: {
   /** The owner, whose repo holds the links' stored icons. */
   did: string
   links: ProfileLink[]
   onChange: (links: ProfileLink[]) => void
   onDragStateChange?: (dragging: boolean) => void
+  /** The previous website field, offered for transfer only in Edit Profile. */
+  legacyWebsite?: string
+  /** Wait until the parent profile editor has finished opening. */
+  websiteTransferReady?: boolean
+  /** Clears the old website field in the profile's unsaved changes. */
+  onWebsiteTransferred?: () => void
 }) {
   const {t: l} = useLingui()
   const formControl = useDialogControl()
+  const transferControl = Prompt.usePromptControl()
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [initialUrl, setInitialUrl] = useState<string>()
   const editing = editingIndex === null ? null : links[editingIndex]
+  const website = legacyWebsite?.trim()
+  const normalizedWebsite = website ? normalizeProfileLinkUrl(website) : null
+  const hasWebsiteLink =
+    !!normalizedWebsite &&
+    links.some(link => normalizeProfileLinkUrl(link.url) === normalizedWebsite)
+  const canTransfer = hasWebsiteLink || links.length < MAX_PROFILE_LINKS
+
+  useEffect(() => {
+    if (website && websiteTransferReady) transferControl.open()
+  }, [website, websiteTransferReady, transferControl])
 
   const row = buildProfileRow(links, false)
   const rowKeys = row.map(item => item.key)
 
-  const openForm = (index: number | null) => {
+  const openForm = (index: number | null, url?: string) => {
     setEditingIndex(index)
+    setInitialUrl(url)
     formControl.open()
   }
 
@@ -104,22 +128,67 @@ export function ProfileLinksEditor({
       <LinkFormDialog
         control={formControl}
         link={editing}
+        initialUrl={initialUrl}
         existingUrls={links
           .filter((_, i) => i !== editingIndex)
           .map(link => link.url)}
-        onSave={saved =>
+        onSave={saved => {
           onChange(
             editingIndex === null
               ? [...links, saved]
               : links.map((link, i) => (i === editingIndex ? saved : link)),
           )
-        }
+          if (initialUrl) onWebsiteTransferred?.()
+        }}
         onRemove={
           editingIndex === null
             ? undefined
             : () => onChange(links.filter((_, i) => i !== editingIndex))
         }
       />
+      <Prompt.Outer
+        control={transferControl}
+        testID="profileWebsiteTransferPrompt">
+        <Prompt.Content>
+          <Prompt.TitleText>
+            <Trans>Transfer your website to a link?</Trans>
+          </Prompt.TitleText>
+          <Prompt.DescriptionText>
+            {hasWebsiteLink ? (
+              <Trans>
+                The website field is deprecated. Your website is already a
+                profile link. Save to clear the old field.
+              </Trans>
+            ) : canTransfer ? (
+              <Trans>
+                The website field is deprecated. Transfer your website to a
+                profile link, then save your profile.
+              </Trans>
+            ) : (
+              <Trans>
+                The website field is deprecated. Remove one of your{' '}
+                {MAX_PROFILE_LINKS} links, then reopen this editor to transfer
+                your website.
+              </Trans>
+            )}
+          </Prompt.DescriptionText>
+        </Prompt.Content>
+        <Prompt.Actions>
+          <Prompt.Action
+            testID="profileWebsiteTransferConfirmBtn"
+            disabled={!canTransfer}
+            cta={hasWebsiteLink ? l`Use existing link` : l`Transfer`}
+            onPress={() => {
+              if (hasWebsiteLink) {
+                onWebsiteTransferred?.()
+              } else {
+                openForm(null, website)
+              }
+            }}
+          />
+          <Prompt.Cancel cta={l`Don’t clear`} />
+        </Prompt.Actions>
+      </Prompt.Outer>
     </View>
   )
 }
