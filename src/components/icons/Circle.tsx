@@ -44,6 +44,12 @@ export const CircleQuestion_Stroke2_Corner2_Rounded = createSinglePathSVG({
   glyph: 'CircleQuestion_Stroke2_Corner2_Rounded',
 })
 
+/** Temporary SVG-only icon. Move its source to assets/icons/ui/ before a native release. */
+export const CircleSlash_Stroke2_Corner0_Rounded = createSinglePathSVG({
+  path: 'M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2Zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM8.464 14.121l5.657-5.657a1 1 0 0 1 1.415 1.415l-5.657 5.657a1 1 0 0 1-1.415-1.415Z',
+  viewBox: '0 0 24 24',
+})
+
 export const CircleX_Stroke2_Corner0_Rounded = createSinglePathSVG({
   path: 'M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12Zm6.293-3.707a1 1 0 0 1 1.414 0L12 10.586l2.293-2.293a1 1 0 1 1 1.414 1.414L13.414 12l2.293 2.293a1 1 0 0 1-1.414 1.414L12 13.414l-2.293 2.293a1 1 0 0 1-1.414-1.414L10.586 12 8.293 9.707a1 1 0 0 1 0-1.414Z',
   viewBox: '0 0 24 24',

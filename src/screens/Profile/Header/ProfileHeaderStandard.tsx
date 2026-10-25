@@ -253,7 +253,7 @@ let ProfileHeaderStandard = ({
               // Keep above Followed by / tabs so the join-date tooltip paints correctly
               web({position: 'relative', zIndex: 2}),
             ]}>
-            <PronounPill pronouns={profile.pronouns} showLabel />
+            <PronounPill pronouns={profile.pronouns} showIcon />
 
             <View style={[a.flex_row, a.align_center, a.gap_xs]}>
               <CalendarDays
