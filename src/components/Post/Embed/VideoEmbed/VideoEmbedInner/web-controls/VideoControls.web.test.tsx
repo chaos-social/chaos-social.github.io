@@ -71,8 +71,17 @@ it('shows keyboard actions, refreshes the timeout, and ignores editable targets'
   container.append(video, input)
   Object.defineProperty(video, 'duration', {value: 60})
   Object.defineProperty(video, 'readyState', {value: 4})
-  const pause = jest.spyOn(video, 'pause').mockImplementation(() => {})
-  const play = jest.spyOn(video, 'play').mockResolvedValue()
+  let paused = true
+  Object.defineProperty(video, 'paused', {get: () => paused})
+  const pause = jest.spyOn(video, 'pause').mockImplementation(() => {
+    paused = true
+    video.dispatchEvent(new Event('pause'))
+  })
+  const play = jest.spyOn(video, 'play').mockImplementation(() => {
+    paused = false
+    video.dispatchEvent(new Event('play'))
+    return Promise.resolve()
+  })
   const rootContainer = document.createElement('div')
   container.append(rootContainer)
   const root = createRoot(rootContainer)
@@ -164,6 +173,56 @@ it('shows keyboard actions, refreshes the timeout, and ignores editable targets'
     expect(
       rootContainer.querySelector('[data-testid="videoKeyboardFeedback"]'),
     ).toBeNull()
+    const releaseSpace = () =>
+      act(() => {
+        document.dispatchEvent(
+          new KeyboardEvent('keyup', {
+            key: ' ',
+            bubbles: true,
+            cancelable: true,
+          }),
+        )
+      })
+    const holdBadge = () =>
+      rootContainer.querySelector('[data-testid="videoHoldSpeedFeedback"]')
+    press(' ')
+    act(() => jest.advanceTimersByTime(299))
+    expect(video.paused).toBe(false)
+    expect(video.playbackRate).toBe(1.25)
+    expect(holdBadge()).toBeNull()
+    releaseSpace()
+    expect(video.paused).toBe(true)
+
+    press(' ')
+    act(() => jest.advanceTimersByTime(300))
+    expect(video.paused).toBe(false)
+    expect(video.playbackRate).toBe(2)
+    expect(holdBadge()?.textContent).toBe('2×')
+    act(() => jest.advanceTimersByTime(2000))
+    expect(holdBadge()).not.toBeNull()
+    press('>')
+    expect(video.playbackRate).toBe(2)
+    releaseSpace()
+    expect(video.playbackRate).toBe(1.25)
+    expect(video.paused).toBe(true)
+    expect(holdBadge()).toBeNull()
+
+    press('k')
+    press(' ')
+    act(() => jest.advanceTimersByTime(300))
+    releaseSpace()
+    expect(video.playbackRate).toBe(1.25)
+    expect(video.paused).toBe(false)
+    press(' ')
+    act(() => jest.advanceTimersByTime(300))
+    act(() => {
+      window.dispatchEvent(new Event('blur'))
+    })
+    expect(video.playbackRate).toBe(1.25)
+    expect(holdBadge()).toBeNull()
+    releaseSpace()
+    expect(video.paused).toBe(false)
+
     otherPlayer.tabIndex = 0
     otherPlayer.focus()
     press('ArrowRight')

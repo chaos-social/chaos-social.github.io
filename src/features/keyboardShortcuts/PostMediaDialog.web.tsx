@@ -1,3 +1,4 @@
+import {useRef} from 'react'
 import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
@@ -14,6 +15,7 @@ export function PostMediaDialog({
   control: Dialog.DialogControlProps
   targets: PostMediaTarget[]
 }) {
+  const openingVideoRef = useRef(false)
   const {t: l} = useLingui()
   const t = useTheme()
   const labels = {
@@ -24,7 +26,12 @@ export function PostMediaDialog({
 
   function choose(index: number) {
     const target = targets[index]
-    if (target) control.close(() => openPostMediaTarget(target))
+    if (target) {
+      openingVideoRef.current = !!target.control.closest(
+        '[data-testid="postVideoFocusTarget"]',
+      )
+      control.close(() => openPostMediaTarget(target))
+    }
   }
 
   function onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
@@ -65,9 +72,17 @@ export function PostMediaDialog({
   }
 
   return (
-    <Dialog.Outer control={control} webOptions={{alignCenter: true}}>
+    <Dialog.Outer
+      control={control}
+      onOpen={() => {
+        openingVideoRef.current = false
+      }}
+      webOptions={{alignCenter: true}}>
       <Dialog.ScrollableInner
         label={l`Open from this post`}
+        onCloseAutoFocus={event => {
+          if (openingVideoRef.current) event.preventDefault()
+        }}
         style={[web({maxWidth: 400}), a.w_full]}>
         <div onKeyDown={onKeyDown}>
           <View style={[a.gap_lg]}>

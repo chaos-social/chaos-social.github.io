@@ -209,6 +209,7 @@ export function Inner({
   header,
   footer,
   contentContainerStyle,
+  onCloseAutoFocus,
 }: DialogInnerProps) {
   const t = useTheme()
   const enableSquareButtons = useEnableSquareButtons()
@@ -217,7 +218,11 @@ export function Inner({
   const {reduceMotionEnabled} = useA11y()
   FocusGuards.useFocusGuards()
   return (
-    <FocusScope.FocusScope loop asChild trapped>
+    <FocusScope.FocusScope
+      loop
+      asChild
+      trapped
+      onUnmountAutoFocus={onCloseAutoFocus}>
       <View
         role="dialog"
         aria-role="dialog"

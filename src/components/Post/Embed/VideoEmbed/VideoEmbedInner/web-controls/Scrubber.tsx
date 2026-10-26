@@ -19,7 +19,6 @@ export function Scrubber({
   onSeekStart,
   seekLeft,
   seekRight,
-  togglePlayPause,
   drawFocus,
 }: {
   duration: number
@@ -29,7 +28,6 @@ export function Scrubber({
   onSeekStart: () => void
   seekLeft: () => void
   seekRight: () => void
-  togglePlayPause: () => void
   drawFocus: () => void
 }) {
   const {_} = useLingui()
@@ -120,15 +118,10 @@ export function Scrubber({
       circleRef.current.addEventListener(
         'keydown',
         evt => {
-          // space: play/pause
           // arrow left: seek backward
           // arrow right: seek forward
 
-          if (evt.key === ' ') {
-            evt.preventDefault()
-            drawFocus()
-            togglePlayPause()
-          } else if (evt.key === 'ArrowLeft') {
+          if (evt.key === 'ArrowLeft') {
             evt.preventDefault()
             drawFocus()
             seekLeft()
@@ -143,7 +136,7 @@ export function Scrubber({
 
       return () => abortController.abort()
     }
-  }, [focused, seekLeft, seekRight, togglePlayPause, drawFocus])
+  }, [focused, seekLeft, seekRight, drawFocus])
 
   const progress = scrubberActive ? seekPosition : currentTime
   const progressPercent = (progress / duration) * 100

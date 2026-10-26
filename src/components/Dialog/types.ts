@@ -88,6 +88,8 @@ export type DialogOuterProps = {
 type DialogInnerPropsBase<T> = React.PropsWithChildren<ViewStyleProp> &
   T & {
     testID?: string
+    /** Web only. Customize focus restoration when the dialog closes. */
+    onCloseAutoFocus?: (event: Event) => void
     /**
      * Native only. Lets content like drag-to-reorder lists pause scrolling
      * while a gesture is active.

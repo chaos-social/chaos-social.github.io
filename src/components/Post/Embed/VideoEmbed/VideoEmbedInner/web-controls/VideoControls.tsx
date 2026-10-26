@@ -89,6 +89,14 @@ export function Controls({
   const isPictureInPicture =
     pictureInPictureElement !== null &&
     pictureInPictureElement === videoRef.current
+  const [spaceHeld, setSpaceHeld] = useState(false)
+  const spaceHoldRef = useRef<{
+    video: HTMLVideoElement
+    rate: number
+    paused: boolean
+    boosted: boolean
+    timeout?: ReturnType<typeof setTimeout>
+  } | null>(null)
   const [playbackSpeed, setPlaybackSpeed] = useVideoPlaybackSpeed()
   useEffect(() => {
     const video = videoRef.current
@@ -96,7 +104,7 @@ export function Controls({
     const applySpeed = () => {
       const rate = isGif ? 1 : playbackSpeed
       video.defaultPlaybackRate = rate
-      video.playbackRate = rate
+      video.playbackRate = spaceHoldRef.current?.boosted ? 2 : rate
     }
     applySpeed()
     video.addEventListener('loadedmetadata', applySpeed)
@@ -320,6 +328,49 @@ export function Controls({
     }
   }
 
+  const stopSpaceHold = useCallback(
+    (toggleOnTap = false) => {
+      const hold = spaceHoldRef.current
+      if (!hold) return
+      spaceHoldRef.current = null
+      clearTimeout(hold.timeout)
+      if (hold.boosted) {
+        hold.video.playbackRate = hold.rate
+        if (hold.paused) pause()
+        setSpaceHeld(false)
+      } else if (toggleOnTap) {
+        togglePlayPause()
+      }
+    },
+    [pause, togglePlayPause],
+  )
+
+  useEffect(() => {
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key !== ' ' || !spaceHoldRef.current) return
+      event.preventDefault()
+      event.stopPropagation()
+      stopSpaceHold(true)
+    }
+    const cancelHold = () => stopSpaceHold()
+    const onVisibilityChange = () => {
+      if (document.hidden) cancelHold()
+    }
+    document.addEventListener('keyup', onKeyUp)
+    window.addEventListener('blur', cancelHold)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      document.removeEventListener('keyup', onKeyUp)
+      window.removeEventListener('blur', cancelHold)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      cancelHold()
+    }
+  }, [stopSpaceHold])
+
+  useEffect(() => {
+    if (!active || !focused || isGif || settingsOpen) stopSpaceHold()
+  }, [active, focused, isGif, settingsOpen, stopSpaceHold])
+
   const onPressFullscreen = useCallback(() => {
     drawFocus()
     toggleFullscreen()
@@ -385,7 +436,25 @@ export function Controls({
       } else if (isPlayback && video) {
         if (event.repeat) return
         drawFocus()
-        togglePlayPause()
+        if (key === ' ') {
+          if (spaceHoldRef.current) return
+          const hold = {
+            video,
+            rate: video.playbackRate,
+            paused: video.paused,
+            boosted: false,
+            timeout: undefined as ReturnType<typeof setTimeout> | undefined,
+          }
+          spaceHoldRef.current = hold
+          hold.timeout = setTimeout(() => {
+            hold.boosted = true
+            video.playbackRate = 2
+            play()
+            setSpaceHeld(true)
+          }, 300)
+        } else {
+          togglePlayPause()
+        }
       } else if (isVolumeChange && video) {
         drawFocus()
         const percent = clamp(
@@ -400,6 +469,7 @@ export function Controls({
         changeMuted(percent === 0)
         showVolumeFeedback(volume, percent === 0)
       } else if (isSpeedChange && video) {
+        if (spaceHoldRef.current) return
         drawFocus()
         const direction = key === '<' ? -1 : 1
         const speed = clamp(video.playbackRate + direction * 0.25, 0.25, 2)
@@ -443,6 +513,7 @@ export function Controls({
     setVolume,
     showVolumeFeedback,
     togglePlayPause,
+    play,
   ])
 
   const onSeek = useCallback(
@@ -649,7 +720,6 @@ export function Controls({
             onSeekEnd={onSeekEnd}
             seekLeft={seekLeft}
             seekRight={seekRight}
-            togglePlayPause={togglePlayPause}
             drawFocus={drawFocus}
           />
         )}
@@ -727,6 +797,32 @@ export function Controls({
           )}
         </View>
       </View>
+      {spaceHeld && (
+        <View
+          pointerEvents="none"
+          style={[a.absolute, a.inset_0, a.align_center, a.pt_sm]}>
+          <View
+            testID="videoHoldSpeedFeedback"
+            accessibilityLabel={l`Playback speed: 2×`}
+            accessibilityHint=""
+            accessibilityLiveRegion="polite"
+            style={[
+              a.flex_row,
+              a.align_center,
+              a.gap_xs,
+              a.px_sm,
+              a.py_xs,
+              a.rounded_md,
+              {backgroundColor: 'rgba(0, 0, 0, 0.65)'},
+              shapePreference === 'sharp' && SHARP_CORNERS,
+            ]}>
+            <ClockIcon fill={t.palette.white} width={16} aria-hidden />
+            <Text style={[a.font_bold, {color: t.palette.white}]}>
+              <Trans>2×</Trans>
+            </Text>
+          </View>
+        </View>
+      )}
       {keyboardFeedback && FeedbackIcon && (
         <View
           pointerEvents="none"

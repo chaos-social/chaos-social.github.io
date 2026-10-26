@@ -69,6 +69,11 @@ function KeyboardShortcutsDialogInner() {
         </ShortcutGroup>
 
         <ShortcutGroup title={l`Focused video`}>
+          <ShortcutRow shortcut={l`Space`} label={l`Play or pause video`} />
+          <ShortcutRow
+            shortcut={l`Hold Space`}
+            label={l`Temporarily play at 2× speed`}
+          />
           <ShortcutRow shortcut="F" label={l`Toggle fullscreen`} />
           <ShortcutRow shortcut="M" label={l`Mute or unmute video`} />
           <ShortcutRow
