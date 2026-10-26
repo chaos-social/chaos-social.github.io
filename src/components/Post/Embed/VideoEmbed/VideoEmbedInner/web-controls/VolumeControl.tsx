@@ -1,14 +1,13 @@
-import {useCallback} from 'react'
+import {useCallback, useRef} from 'react'
 import {View} from 'react-native'
 import Animated, {FadeIn, FadeOut} from 'react-native-reanimated'
-import {msg} from '@lingui/core/macro'
-import {useLingui} from '@lingui/react'
+import {useLingui} from '@lingui/react/macro'
 
 import {SHARP_CORNERS} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a} from '#/alf'
 import {Mute_Stroke2_Corner0_Rounded as MuteIcon} from '#/components/icons/Mute'
-import {SpeakerVolumeFull_Stroke2_Corner0_Rounded as UnmuteIcon} from '#/components/icons/Speaker'
+import {SpeakerVolumeFull_Stroke2_Corner0_Rounded as UnmuteIcon} from '#/components/icons/SpeakerVolumeFull'
 import {useVideoVolumeState} from '#/components/Post/Embed/VideoEmbed/VideoVolumeContext'
 import {IS_WEB_SAFARI, IS_WEB_TOUCH_DEVICE} from '#/env'
 import {ControlButton} from './ControlButton'
@@ -20,17 +19,20 @@ export function VolumeControl({
   onHover,
   onEndHover,
   drawFocus,
+  onKeyboardVolumeChange,
 }: {
   muted: boolean
   changeMuted: (muted: boolean | ((prev: boolean) => boolean)) => void
   hovered: boolean
   onHover: () => void
   onEndHover: () => void
+  onKeyboardVolumeChange: (volume: number, muted: boolean) => void
   drawFocus: () => void
 }) {
+  const keyboardInputRef = useRef(false)
   const shapePreference = useEnableSquareButtons()
 
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const [volume, setVolume] = useVideoVolumeState()
 
   const onVolumeChange = useCallback(
@@ -39,8 +41,9 @@ export function VolumeControl({
       const vol = sliderVolumeToVideoVolume(Number(evt.target.value))
       setVolume(vol)
       changeMuted(vol === 0)
+      if (keyboardInputRef.current) onKeyboardVolumeChange(vol, vol === 0)
     },
-    [setVolume, drawFocus, changeMuted],
+    [setVolume, drawFocus, changeMuted, onKeyboardVolumeChange],
   )
 
   const sliderVolume = muted ? 0 : videoVolumeToSliderVolume(volume)
@@ -82,7 +85,7 @@ export function VolumeControl({
               min={0}
               max={100}
               value={sliderVolume}
-              aria-label={_(msg`Volume`)}
+              aria-label={l`Volume`}
               data-no-carousel-drag=""
               style={
                 // Ridiculous safari hack for old version of safari. Fixed in sonoma beta -h
@@ -90,6 +93,15 @@ export function VolumeControl({
                   ? {height: 92, minHeight: '100%'}
                   : {height: '100%'}
               }
+              onKeyDown={() => {
+                keyboardInputRef.current = true
+              }}
+              onPointerDown={() => {
+                keyboardInputRef.current = false
+              }}
+              onBlur={() => {
+                keyboardInputRef.current = false
+              }}
               onChange={onVolumeChange}
               // @ts-expect-error for old versions of firefox, and then re-using it for targeting the CSS -sfn
               orient="vertical"
@@ -99,8 +111,8 @@ export function VolumeControl({
       )}
       <ControlButton
         active={muted || volume === 0}
-        activeLabel={_(msg({message: `Unmute`, context: 'video'}))}
-        inactiveLabel={_(msg({message: `Mute`, context: 'video'}))}
+        activeLabel={l({message: `Unmute`, context: 'video'})}
+        inactiveLabel={l({message: `Mute`, context: 'video'})}
         activeIcon={MuteIcon}
         inactiveIcon={UnmuteIcon}
         onPress={onPressMute}
@@ -113,6 +125,6 @@ function sliderVolumeToVideoVolume(value: number) {
   return Math.pow(value / 100, 4)
 }
 
-function videoVolumeToSliderVolume(value: number) {
+export function videoVolumeToSliderVolume(value: number) {
   return Math.round(Math.pow(value, 1 / 4) * 100)
 }

@@ -5,19 +5,29 @@ import type Hls from 'hls.js'
 
 import {formatTime} from '#/lib/media/video/formatTime'
 import {clamp} from '#/lib/numbers'
+import {SHARP_CORNERS} from '#/lib/shapes'
 import {useAutoplayDisabled, useSubtitlesEnabled} from '#/state/preferences'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme, web} from '#/alf'
 import {useIsWithinMessage} from '#/components/dms/MessageContext'
 import {useFullscreen} from '#/components/hooks/useFullscreen'
 import {useInteractionState} from '#/components/hooks/useInteractionState'
 import {
+  ArrowLeft_Stroke2_Corner0_Rounded as ArrowLeftIcon,
+  ArrowRight_Stroke2_Corner0_Rounded as ArrowRightIcon,
+} from '#/components/icons/Arrow'
+import {
   ArrowsDiagonalIn_Stroke2_Corner0_Rounded as ArrowsInIcon,
   ArrowsDiagonalOut_Stroke2_Corner0_Rounded as ArrowsOutIcon,
 } from '#/components/icons/ArrowsDiagonal'
+import {Clock_Stroke2_Corner0_Rounded as ClockIcon} from '#/components/icons/Clock'
+import {Mute_Stroke2_Corner0_Rounded as MuteIcon} from '#/components/icons/Mute'
 import {Pause_Filled_Corner0_Rounded as PauseIcon} from '#/components/icons/Pause'
 import {PictureInPicture_Stroke2_Corner2_Rounded as PictureInPictureIcon} from '#/components/icons/PictureInPicture'
 import {Play_Filled_Corner0_Rounded as PlayIcon} from '#/components/icons/Play'
+import {SpeakerVolumeFull_Stroke2_Corner0_Rounded as VolumeIcon} from '#/components/icons/SpeakerVolumeFull'
 import {Loader} from '#/components/Loader'
+import {useVideoVolumeState} from '#/components/Post/Embed/VideoEmbed/VideoVolumeContext'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {IS_WEB_FIREFOX, IS_WEB_MOBILE_IOS, IS_WEB_TOUCH_DEVICE} from '#/env'
@@ -29,7 +39,7 @@ import {Scrubber} from './Scrubber'
 import {SettingsMenu} from './SettingsMenu'
 import {usePictureInPicture} from './usePictureInPicture'
 import {useVideoElement} from './utils'
-import {VolumeControl} from './VolumeControl'
+import {videoVolumeToSliderVolume, VolumeControl} from './VolumeControl'
 
 export function Controls({
   videoRef,
@@ -95,6 +105,42 @@ export function Controls({
 
   const t = useTheme()
   const {t: l} = useLingui()
+  const shapePreference = useEnableSquareButtons()
+  const [, setVolume] = useVideoVolumeState()
+  const [keyboardFeedback, setKeyboardFeedback] = useState<{
+    icon: typeof PlayIcon
+    text: string
+    position?: 'left' | 'right'
+  } | null>(null)
+
+  const [feedbackVisible, setFeedbackVisible] = useState(true)
+
+  useEffect(() => {
+    if (!keyboardFeedback) return
+    setFeedbackVisible(true)
+    const fadeTimeout = setTimeout(() => setFeedbackVisible(false), 650)
+    const timeout = setTimeout(() => setKeyboardFeedback(null), 800)
+    return () => {
+      clearTimeout(fadeTimeout)
+      clearTimeout(timeout)
+    }
+  }, [keyboardFeedback])
+
+  useEffect(() => {
+    if (!active) setKeyboardFeedback(null)
+  }, [active])
+
+  const showVolumeFeedback = useCallback(
+    (volume: number, muted: boolean) => {
+      const percent = muted ? 0 : videoVolumeToSliderVolume(volume)
+      setKeyboardFeedback({
+        icon: percent === 0 ? MuteIcon : VolumeIcon,
+        text: l`${percent}%`,
+      })
+    },
+    [l],
+  )
+
   const subtitlesEnabled = useSubtitlesEnabled()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [selectedSubtitle, setSelectedSubtitle] = useState(0)
@@ -285,6 +331,8 @@ export function Controls({
       const isFrameStep = key === ',' || key === '.'
       const isSeek = key === 'arrowleft' || key === 'arrowright' || isFrameStep
       const isSpeedChange = key === '<' || key === '>'
+      const isVolumeChange = key === 'arrowup' || key === 'arrowdown'
+      const isPlayback = key === ' ' || key === 'k'
       const container = fullscreenRef.current
       const target = event.target
       if (
@@ -296,7 +344,12 @@ export function Controls({
         event.ctrlKey ||
         event.metaKey ||
         event.altKey ||
-        (key !== 'f' && key !== 'm' && !isSeek && !isSpeedChange) ||
+        (key !== 'f' &&
+          key !== 'm' &&
+          !isSeek &&
+          !isSpeedChange &&
+          !isVolumeChange &&
+          !isPlayback) ||
         settingsOpen ||
         (target instanceof Element &&
           target.closest(
@@ -311,6 +364,13 @@ export function Controls({
         : container.contains(document.activeElement) ||
           (active && focused && document.activeElement === document.body)
       if (!ownsKeyboard) return
+      // Let focused buttons handle their own Space activation.
+      if (
+        key === ' ' &&
+        target instanceof Element &&
+        target.closest('button, [role="button"], a[href]')
+      )
+        return
       const video = videoRef.current
       if (isSpeedChange && !video) return
       if (isSeek && (!video || !Number.isFinite(video.duration))) return
@@ -321,16 +381,42 @@ export function Controls({
       } else if (key === 'm') {
         drawFocus()
         changeMuted(value => !value)
+        if (video) showVolumeFeedback(video.volume, video.muted)
+      } else if (isPlayback && video) {
+        if (event.repeat) return
+        drawFocus()
+        togglePlayPause()
+      } else if (isVolumeChange && video) {
+        drawFocus()
+        const percent = clamp(
+          (video.muted ? 0 : videoVolumeToSliderVolume(video.volume)) +
+            (key === 'arrowup' ? 5 : -5),
+          0,
+          100,
+        )
+        const volume = Math.pow(percent / 100, 4)
+        video.volume = volume
+        setVolume(volume)
+        changeMuted(percent === 0)
+        showVolumeFeedback(volume, percent === 0)
       } else if (isSpeedChange && video) {
         drawFocus()
         const direction = key === '<' ? -1 : 1
         const speed = clamp(video.playbackRate + direction * 0.25, 0.25, 2)
         video.playbackRate = speed
         setPlaybackSpeed(speed)
+        setKeyboardFeedback({icon: ClockIcon, text: l`${speed}×`})
       } else if (video) {
         drawFocus()
         if (isFrameStep) pause()
         const direction = key === 'arrowleft' || key === ',' ? -1 : 1
+        if (!isFrameStep) {
+          setKeyboardFeedback({
+            icon: direction < 0 ? ArrowLeftIcon : ArrowRightIcon,
+            text: direction < 0 ? l`-5` : l`+5`,
+            position: direction < 0 ? 'left' : 'right',
+          })
+        }
         // Assign currentTime directly so small steps don't snap to keyframes.
         video.currentTime = clamp(
           video.currentTime + direction * (isFrameStep ? 1 / 30 : 5),
@@ -353,6 +439,10 @@ export function Controls({
     drawFocus,
     pause,
     setPlaybackSpeed,
+    l,
+    setVolume,
+    showVolumeFeedback,
+    togglePlayPause,
   ])
 
   const onSeek = useCallback(
@@ -391,7 +481,8 @@ export function Controls({
     const duration = videoRef.current.duration || 0
     if (!Number.isFinite(duration)) return
     videoRef.current.currentTime = clamp(currentTime - 5, 0, duration)
-  }, [videoRef])
+    setKeyboardFeedback({icon: ArrowLeftIcon, text: l`-5`, position: 'left'})
+  }, [videoRef, l])
 
   const seekRight = useCallback(() => {
     if (!videoRef.current) return
@@ -401,7 +492,8 @@ export function Controls({
     const duration = videoRef.current.duration || 0
     if (!Number.isFinite(duration)) return
     videoRef.current.currentTime = clamp(currentTime + 5, 0, duration)
-  }, [videoRef])
+    setKeyboardFeedback({icon: ArrowRightIcon, text: l`+5`, position: 'right'})
+  }, [videoRef, l])
 
   const [showCursor, setShowCursor] = useState(true)
   const cursorTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -479,6 +571,8 @@ export function Controls({
     )
   }
 
+  const FeedbackIcon = keyboardFeedback?.icon
+
   return (
     <div
       data-testid="postVideoFocusTarget"
@@ -487,6 +581,7 @@ export function Controls({
         position: 'absolute',
         inset: 0,
         overflow: 'hidden',
+        borderRadius: 'inherit',
         display: 'flex',
         flexDirection: 'column',
       }}
@@ -592,6 +687,7 @@ export function Controls({
             onHover={onVolumeHover}
             onEndHover={onVolumeEndHover}
             drawFocus={drawFocus}
+            onKeyboardVolumeChange={showVolumeFeedback}
           />
           {typeof document !== 'undefined' &&
             document.pictureInPictureEnabled && (
@@ -631,6 +727,51 @@ export function Controls({
           )}
         </View>
       </View>
+      {keyboardFeedback && FeedbackIcon && (
+        <View
+          pointerEvents="none"
+          style={[
+            a.absolute,
+            a.inset_0,
+            a.justify_center,
+            keyboardFeedback.position === 'left'
+              ? a.align_start
+              : keyboardFeedback.position === 'right'
+                ? a.align_end
+                : a.align_center,
+            a.p_sm,
+          ]}>
+          <View
+            testID="videoKeyboardFeedback"
+            accessibilityLabel={keyboardFeedback.text}
+            accessibilityHint=""
+            accessibilityLiveRegion="polite"
+            style={[
+              a.justify_center,
+              a.align_center,
+              keyboardFeedback.position ? a.gap_xs : a.gap_2xs,
+              keyboardFeedback.position ? a.p_sm : a.p_2xs,
+              a.rounded_md,
+              {
+                backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                opacity: feedbackVisible ? 1 : 0,
+              },
+              web({transition: 'opacity 150ms ease-out'}),
+              !keyboardFeedback.position && {width: 72, height: 72},
+              shapePreference === 'sharp' && SHARP_CORNERS,
+            ]}>
+            <FeedbackIcon
+              fill={t.palette.white}
+              width={keyboardFeedback.position ? 28 : 24}
+              aria-hidden
+            />
+            <Text
+              style={[a.font_bold, a.text_center, {color: t.palette.white}]}>
+              {keyboardFeedback.text}
+            </Text>
+          </View>
+        </View>
+      )}
       {(showSpinner || error) && (
         <View
           pointerEvents="none"
