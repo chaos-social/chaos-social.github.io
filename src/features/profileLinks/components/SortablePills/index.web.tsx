@@ -1,6 +1,8 @@
 import {useEffect, useLayoutEffect, useRef, useState} from 'react'
 import {useLingui} from '@lingui/react/macro'
 
+import {getShapeRadius} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {
   GRIP_ZONE,
   HOLD_MS,
@@ -45,6 +47,7 @@ export function SortablePills({
   trailing,
 }: SortablePillsProps) {
   const {t: l} = useLingui()
+  const shape = useEnableSquareButtons()
   const [order, setOrder] = useState<string[]>(() =>
     items.map(item => item.key),
   )
@@ -387,7 +390,7 @@ export function SortablePills({
             top: drag.y - drag.grabY,
             zIndex: 1000,
             pointerEvents: 'none',
-            borderRadius: 999,
+            borderRadius: getShapeRadius(shape, 6, 999),
             boxShadow: '0 6px 18px rgba(0,0,0,0.18)',
             transform: 'scale(1.04)',
           }}>

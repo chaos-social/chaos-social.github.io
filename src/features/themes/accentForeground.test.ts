@@ -1,4 +1,4 @@
-import {accentForeground} from './accentForeground'
+import {accentForeground, contrastForeground} from './accentForeground'
 import {DEFAULT_ACTIVE_THEME} from './catalog'
 import {activeThemeToScheme} from './semanticTheme'
 
@@ -39,4 +39,25 @@ it('preserves the light Witchsky Dark foreground on its coral accent', () => {
   expect(accentForeground({...theme, onAccent: '#fefbfb'}, '#ed5345')).toBe(
     '#fefbfb',
   )
+})
+
+it('retains white on dark support green independently of the accent foreground', () => {
+  expect(contrastForeground('#16844a')).toBe('#ffffff')
+})
+
+it('uses dark text when a themed support color is too light for white', () => {
+  expect(contrastForeground('#b9f6ca')).toBe('#000000')
+})
+
+it('keeps a readable preferred foreground on a semantic background', () => {
+  expect(contrastForeground('#202000', '#fefbfb')).toBe('#fefbfb')
+})
+
+it('keeps the primary button foreground on the original green support chip', () => {
+  expect(contrastForeground('#119d56', '#ffffff', 3)).toBe('#ffffff')
+  expect(contrastForeground('#119d56', '#fefbfb', 3)).toBe('#fefbfb')
+})
+
+it('still falls back for support themes with an indistinguishable foreground', () => {
+  expect(contrastForeground('#b9f6ca', '#ffffff', 3)).toBe('#000000')
 })

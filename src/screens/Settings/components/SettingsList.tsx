@@ -8,12 +8,15 @@ import {
 import {useLingui} from '@lingui/react/macro'
 
 import {HITSLOP_10, UNREAD_NOTIFICATION_CAP} from '#/lib/constants'
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme, type ViewStyleProp} from '#/alf'
 import * as Button from '#/components/Button'
 import {ChevronRight_Stroke2_Corner0_Rounded as ChevronRightIcon} from '#/components/icons/Chevron'
 import {Link, type LinkProps} from '#/components/Link'
 import {createPortalGroup} from '#/components/Portal'
 import {Text} from '#/components/Typography'
+import {accentForeground} from '#/features/themes/accentForeground'
 
 const ItemContext = createContext({
   destructive: false,
@@ -303,6 +306,7 @@ export function BadgeText({
 }
 
 export function BadgeCount({count}: {count: number}) {
+  const shape = useEnableSquareButtons()
   const t = useTheme()
   const {i18n, t: l} = useLingui()
 
@@ -313,7 +317,7 @@ export function BadgeCount({count}: {count: number}) {
       style={[
         a.align_center,
         a.justify_center,
-        a.rounded_full,
+        getShapeStyle(shape, a.rounded_sm, a.rounded_full),
         a.px_xs,
         a.py_2xs,
         {
@@ -327,7 +331,10 @@ export function BadgeCount({count}: {count: number}) {
           a.text_xs,
           a.leading_tight,
           a.font_semi_bold,
-          {color: t.palette.white, fontVariant: ['tabular-nums']},
+          {
+            color: accentForeground(t, t.palette.primary_500),
+            fontVariant: ['tabular-nums'],
+          },
         ]}
         numberOfLines={1}>
         {count >= UNREAD_NOTIFICATION_CAP

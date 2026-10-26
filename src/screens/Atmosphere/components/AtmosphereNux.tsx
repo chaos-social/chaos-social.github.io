@@ -1,18 +1,23 @@
 import {View} from 'react-native'
+import {LinearGradient} from 'expo-linear-gradient'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {HITSLOP_10} from '#/lib/constants'
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {Nux, useNux, useSaveNux} from '#/state/queries/nuxs'
-import {atoms as a, tokens} from '#/alf'
+import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonIcon} from '#/components/Button'
-import {GradientFill} from '#/components/GradientFill'
 import {TimesLarge_Stroke2_Corner0_Rounded as XIcon} from '#/components/icons/TimesLarge'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
+import {accentForeground} from '#/features/themes/accentForeground'
 
 export function AtmosphereNux() {
   const {t: l} = useLingui()
+  const t = useTheme()
+  const shape = useEnableSquareButtons()
   const ax = useAnalytics()
   const {nux} = useNux(Nux.AtmosphereNux)
   const {mutate: save, variables} = useSaveNux()
@@ -36,7 +41,7 @@ export function AtmosphereNux() {
         style={[
           a.w_full,
           a.relative,
-          a.rounded_md,
+          getShapeStyle(shape, a.rounded_md, a.rounded_md),
           a.overflow_hidden,
           {height: 180},
         ]}>
@@ -48,17 +53,33 @@ export function AtmosphereNux() {
           accessible={false}
         />
         */}
-        <GradientFill gradient={tokens.gradients.sky} />
+        <LinearGradient
+          colors={[t.palette.primary_500, t.palette.primary_600]}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 1}}
+          style={[a.absolute, a.inset_0]}
+        />
         <View style={[a.absolute, a.inset_0, a.justify_end, a.p_lg, a.gap_xs]}>
           <Text
             emoji
-            style={[a.text_lg, a.font_bold, {color: 'white'}]}
+            style={[
+              a.text_lg,
+              a.font_bold,
+              {color: accentForeground(t, t.palette.primary_500)},
+            ]}
             numberOfLines={2}>
             <Trans>Discover the Atmosphere</Trans>
           </Text>
           <Text
             emoji
-            style={[a.text_sm, a.leading_snug, {color: 'white', maxWidth: 260}]}
+            style={[
+              a.text_sm,
+              a.leading_snug,
+              {
+                color: accentForeground(t, t.palette.primary_500),
+                maxWidth: 260,
+              },
+            ]}
             numberOfLines={4}>
             <Trans>
               Bluesky is part of a growing network of hundreds of social apps.

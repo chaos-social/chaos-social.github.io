@@ -4,10 +4,12 @@ import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
+import {getShapeStyle} from '#/lib/shapes'
 import {isNetworkError} from '#/lib/strings/errors'
 import {matchXrpcError} from '#/lib/xrpc-error'
 import {logger} from '#/logger'
 import {type Shadow} from '#/state/cache/types'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useLeaveConvo} from '#/state/queries/messages/leave-conversation'
 import {
   createListMutualGroupsQueryKey,
@@ -84,6 +86,7 @@ function BlockDialogInner({
   currentConvoId?: string
 }) {
   const t = useTheme()
+  const shape = useEnableSquareButtons()
   const {t: l} = useLingui()
   const mutualGroupChatsControl = Dialog.useDialogControl()
 
@@ -176,7 +179,7 @@ function BlockDialogInner({
             <View
               style={[
                 a.border,
-                a.rounded_md,
+                getShapeStyle(shape, a.rounded_md, a.rounded_md),
                 a.overflow_hidden,
                 t.atoms.border_contrast_low,
               ]}>

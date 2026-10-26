@@ -3,10 +3,13 @@ import {Image} from 'expo-image'
 import {LinearGradient} from 'expo-linear-gradient'
 import {useLingui} from '@lingui/react/macro'
 
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {type AtmosphereAnnouncementBannerData} from '#/screens/Atmosphere/data/exploreData'
-import {atoms as a, utils} from '#/alf'
+import {atoms as a, useTheme, utils} from '#/alf'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
+import {contrastForeground} from '#/features/themes/accentForeground'
 
 export function AnnouncementBanner({
   banner,
@@ -14,6 +17,8 @@ export function AnnouncementBanner({
   banner: AtmosphereAnnouncementBannerData
 }) {
   const {t: l} = useLingui()
+  const t = useTheme()
+  const shape = useEnableSquareButtons()
 
   return (
     <View style={a.pb_md}>
@@ -21,7 +26,8 @@ export function AnnouncementBanner({
         style={[
           a.w_full,
           a.relative,
-          a.rounded_md,
+          getShapeStyle(shape, a.rounded_md, a.rounded_md),
+          t.atoms.bg_contrast_50,
           a.overflow_hidden,
           {aspectRatio: 2.62},
         ]}>
@@ -61,14 +67,33 @@ export function AnnouncementBanner({
           ]}>
           <Text
             emoji
-            style={[a.text_lg, a.font_bold, {color: banner.textColor}]}
+            style={[
+              a.text_lg,
+              a.font_bold,
+              {
+                color:
+                  banner.textColor ??
+                  (banner.overlayColor
+                    ? contrastForeground(banner.overlayColor)
+                    : t.atoms.text.color),
+              },
+            ]}
             numberOfLines={2}>
             {banner.title}
           </Text>
           {banner.description ? (
             <Text
               emoji
-              style={[a.text_xs, {color: banner.textColor}]}
+              style={[
+                a.text_xs,
+                {
+                  color:
+                    banner.textColor ??
+                    (banner.overlayColor
+                      ? contrastForeground(banner.overlayColor)
+                      : t.atoms.text.color),
+                },
+              ]}
               numberOfLines={4}>
               {banner.description}
             </Text>

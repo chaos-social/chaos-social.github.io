@@ -7,6 +7,7 @@ import {Trans, useLingui} from '@lingui/react/macro'
 import {MAX_POST_LINES} from '#/lib/constants'
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {makeProfileLink} from '#/lib/routes/links'
+import {getShapeStyle} from '#/lib/shapes'
 import {forceLTR} from '#/lib/strings/bidi'
 import {NON_BREAKING_SPACE} from '#/lib/strings/constants'
 import {sanitizeHandle} from '#/lib/strings/handles'
@@ -16,6 +17,7 @@ import {
   type Shadow,
   usePostShadow,
 } from '#/state/cache/post-shadow'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {type ParentPost} from '#/state/queries/notifications/grouped/types'
 import {useSession} from '#/state/session'
@@ -524,6 +526,7 @@ function QuoteCardPost({
     ? moderatePost(quote, moderationOpts)
     : undefined
   const href = makePostLink(view)
+  const shape = useEnableSquareButtons()
   const quotedRecord = bsky.isType(app.bsky.feed.post, view.value)
     ? view.value
     : undefined
@@ -533,13 +536,20 @@ function QuoteCardPost({
       <Link
         to={href}
         label={l`Post by ${name}`}
-        style={[a.flex_col, a.align_stretch, a.rounded_md]}>
+        style={[
+          a.flex_col,
+          a.align_stretch,
+          getShapeStyle(shape, a.rounded_md, a.rounded_md),
+        ]}>
         {({hovered, pressed}) => (
           <Card style={[a.gap_xs]}>
             <SubtleHover
               hover={hovered || pressed}
               native
-              style={[a.rounded_md, a.curve_continuous]}
+              style={[
+                getShapeStyle(shape, a.rounded_md, a.rounded_md),
+                a.curve_continuous,
+              ]}
             />
             <View style={[a.flex_row, a.align_center, a.gap_xs, {height: 20}]}>
               <UserAvatar

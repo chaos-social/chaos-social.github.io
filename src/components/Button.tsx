@@ -909,6 +909,7 @@ export function ButtonText({children, style, ...rest}: ButtonTextProps) {
 export function ButtonIcon({
   icon: Comp,
   size,
+  color,
 }: {
   icon: React.ComponentType<SVGIconProps>
   /**
@@ -916,6 +917,8 @@ export function ButtonIcon({
    */
   position?: 'left' | 'right'
   size?: SVGIconProps['size']
+  /** Overrides the icon foreground when the button uses a custom surface. */
+  color?: string
 }) {
   const {size: buttonSize, shape: buttonShape} = useButtonContext()
   const textStyles = useSharedButtonTextStyles()
@@ -1017,7 +1020,7 @@ export function ButtonIcon({
           width={iconSize}
           style={[
             {
-              color: textStyles.color,
+              color: color ?? textStyles.color,
               pointerEvents: 'none',
             },
           ]}

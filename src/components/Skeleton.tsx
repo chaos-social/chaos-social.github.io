@@ -1,6 +1,8 @@
 import {type ReactNode} from 'react'
 import {View} from 'react-native'
 
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {
   atoms as a,
   flatten,
@@ -76,10 +78,11 @@ export function Pill({
   style,
 }: ViewStyleProp & {size: number} & SkeletonProps) {
   const t = useTheme()
+  const shape = useEnableSquareButtons()
   return (
     <View
       style={[
-        a.rounded_full,
+        getShapeStyle(shape, a.rounded_sm, a.rounded_full),
         t.atoms.bg_contrast_50,
         {
           width: size * 1.618,
@@ -98,10 +101,11 @@ export function Pill({
  */
 export function Block({blend, style}: ViewStyleProp & SkeletonProps) {
   const t = useTheme()
+  const shape = useEnableSquareButtons()
   return (
     <View
       style={[
-        a.rounded_md,
+        getShapeStyle(shape, a.rounded_md, a.rounded_md),
         t.atoms.bg_contrast_50,
         {opacity: blend ? 0.6 : 1},
         style,

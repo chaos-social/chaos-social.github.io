@@ -17,6 +17,8 @@ import Animated, {
 } from 'react-native-reanimated'
 import {useLingui} from '@lingui/react/macro'
 
+import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {DraggableScrollView} from '#/view/com/pager/DraggableScrollView'
 import {BlockDrawerGesture} from '#/view/shell/BlockDrawerGesture'
 import {atoms as a, tokens, useAlf, useTheme, utils, web} from '#/alf'
@@ -28,6 +30,7 @@ import {
 } from '#/components/icons/Arrow'
 import {Text} from '#/components/Typography'
 import {IS_WEB} from '#/env'
+import {accentForeground} from '#/features/themes/accentForeground'
 
 export type TabPillItem = {
   key: string
@@ -50,6 +53,7 @@ export function TabPills({
   gutterWidth?: number
 }) {
   const t = useTheme()
+  const shape = useEnableSquareButtons()
   const {t: l} = useLingui()
   const {width: windowWidth} = useWindowDimensions()
   const listRef = useRef<React.ComponentRef<typeof ScrollView>>(null)
@@ -118,18 +122,9 @@ export function TabPills({
     right: canScrollRight,
     width: gutterWidth + pillHeight + tokens.space.md,
   })
-  /*
-   * The active pill is a light grey under the usual text colour in the light
-   * theme. In the dark themes (dim and dark) it's the highest contrast colour
-   * instead, under inverted text.
-   */
-  const isDarkScheme = t.scheme === 'dark'
-  const indicatorColor = isDarkScheme
-    ? t.palette.contrast_1000
-    : t.palette.contrast_50
-  const activeLabelColor = isDarkScheme
-    ? t.atoms.text_inverted.color
-    : t.atoms.text.color
+  /* Keep the selected tab in the theme's authored accent and foreground. */
+  const indicatorColor = t.palette.primary_500
+  const activeLabelColor = accentForeground(t, indicatorColor)
   const cleanupRef = useRef<(() => void) | null>(null)
   const isContinuouslyScrollingRef = useRef(false)
 
@@ -260,7 +255,7 @@ export function TabPills({
                 pointerEvents="none"
                 style={[
                   a.absolute,
-                  a.rounded_full,
+                  getShapeStyle(shape, a.rounded_sm, a.rounded_full),
                   a.curve_continuous,
                   t.atoms.border_contrast_low,
                   {
@@ -342,7 +337,7 @@ export function TabPills({
               a.border,
               t.atoms.border_contrast_low,
               t.atoms.bg,
-              a.rounded_full,
+              getShapeStyle(shape, a.rounded_sm, a.rounded_full),
               a.curve_continuous,
               {height: pillHeight, width: pillHeight},
             ]}>
@@ -372,7 +367,7 @@ export function TabPills({
               a.border,
               t.atoms.border_contrast_low,
               t.atoms.bg,
-              a.rounded_full,
+              getShapeStyle(shape, a.rounded_sm, a.rounded_full),
               a.curve_continuous,
               {height: pillHeight, width: pillHeight},
             ]}>
@@ -398,6 +393,7 @@ function TabPill({
   onSelectTab: (index: number) => void
 }) {
   const {t: l} = useLingui()
+  const shape = useEnableSquareButtons()
 
   return (
     <View ref={elementRef}>
@@ -409,10 +405,13 @@ function TabPill({
         accessibilityRole="tab"
         accessibilityState={{selected: active}}
         onPress={() => onSelectTab(index)}
-        style={[a.rounded_full, a.curve_continuous]}>
+        style={[
+          getShapeStyle(shape, a.rounded_sm, a.rounded_full),
+          a.curve_continuous,
+        ]}>
         <View
           style={[
-            a.rounded_full,
+            getShapeStyle(shape, a.rounded_sm, a.rounded_full),
             a.curve_continuous,
             a.px_lg,
             // 6px gives the designed 32px pill height
@@ -549,7 +548,9 @@ function PillIndicator({
   borderColor: string
 }) {
   const height = layouts[0].height
+  const shape = useEnableSquareButtons()
   const radius = height / 2
+  const cornerRadius = getShapeRadius(shape, a.rounded_sm.borderRadius, radius)
   /**
    * Base width of the middle piece, which is stretched with scaleX. Layout
    * snaps it to whole physical pixels, so at fractional densities (e.g. 2.625x
@@ -620,8 +621,8 @@ function PillIndicator({
             borderTopWidth: 1,
             borderBottomWidth: 1,
             borderLeftWidth: 1,
-            borderTopLeftRadius: radius,
-            borderBottomLeftRadius: radius,
+            borderTopLeftRadius: cornerRadius,
+            borderBottomLeftRadius: cornerRadius,
           },
         ]}
       />
@@ -657,8 +658,8 @@ function PillIndicator({
             borderTopWidth: 1,
             borderRightWidth: 1,
             borderBottomWidth: 1,
-            borderTopRightRadius: radius,
-            borderBottomRightRadius: radius,
+            borderTopRightRadius: cornerRadius,
+            borderBottomRightRadius: cornerRadius,
           },
           rightCapStyle,
         ]}

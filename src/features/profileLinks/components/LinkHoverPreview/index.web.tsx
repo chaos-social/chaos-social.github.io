@@ -2,6 +2,8 @@ import {View} from 'react-native'
 import {utils} from '@bsky.app/alf'
 import * as Tooltip from '@radix-ui/react-tooltip'
 
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, flattenToCSS, useTheme} from '#/alf'
 import {
   ARROW_SIZE,
@@ -22,6 +24,7 @@ export function LinkHoverPreview({
   children: React.ReactNode
 }) {
   const t = useTheme()
+  const shape = useEnableSquareButtons()
   const style = getTooltipStyle(t, 'default')
   return (
     <Tooltip.Provider delayDuration={200}>
@@ -35,7 +38,7 @@ export function LinkHoverPreview({
             sideOffset={4}
             collisionPadding={MIN_EDGE_SPACE}
             style={flattenToCSS([
-              a.rounded_sm,
+              getShapeStyle(shape, a.rounded_sm, a.rounded_sm),
               a.px_md,
               a.py_sm,
               {

@@ -10,8 +10,10 @@ import {Plural, Trans} from '@lingui/react/macro'
 
 import {generateAltText} from '#/lib/ai/generateAltText'
 import {MAX_ALT_TEXT} from '#/lib/constants'
+import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
 import {enforceLen} from '#/lib/strings/helpers'
 import {type ComposerImage} from '#/state/gallery'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {
   useAltTextAiConfig,
   useAltTextAiConfigured,
@@ -84,6 +86,7 @@ const ImageAltTextInner = ({
   const [altText, setAltText] = useState(image.alt)
   const {_, i18n} = useLingui()
   const t = useTheme()
+  const shape = useEnableSquareButtons()
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState<string | null>(null)
 
@@ -94,7 +97,7 @@ const ImageAltTextInner = ({
   const imageStyle: ImageStyle = {
     width: '100%',
     aspectRatio: Math.max(1, source.width / source.height),
-    borderRadius: 8,
+    borderRadius: getShapeRadius(shape, 8, 8),
   }
 
   const handleGenerateAltText = useCallback(async () => {
@@ -157,7 +160,12 @@ const ImageAltTextInner = ({
           </Text>
         )}
 
-        <View style={[t.atoms.bg_contrast_50, a.rounded_sm, a.overflow_hidden]}>
+        <View
+          style={[
+            t.atoms.bg_contrast_50,
+            getShapeStyle(shape, a.rounded_sm, a.rounded_sm),
+            a.overflow_hidden,
+          ]}>
           <Image
             style={imageStyle}
             source={{uri: (image.transformed ?? image.source).path}}

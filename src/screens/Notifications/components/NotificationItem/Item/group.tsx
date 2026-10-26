@@ -17,8 +17,11 @@ import {useLingui} from '@lingui/react/macro'
 
 import {HITSLOP_10} from '#/lib/constants'
 import {useHaptics} from '#/lib/haptics'
+import {getShapeStyle} from '#/lib/shapes'
 import {isNetworkError} from '#/lib/strings/errors'
 import {logger} from '#/logger'
+import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {useGroupActorsQuery} from '#/state/queries/notifications/grouped'
 import {
@@ -464,12 +467,13 @@ function GroupToggle({
   const t = useTheme()
   const {t: l} = useLingui()
   const {isExpanded, toggleOnPress, onToggle} = expansion
+  const shape = useEnableSquareButtons()
 
   const style = [
     a.flex_row,
     a.align_center,
     a.gap_xs,
-    a.rounded_full,
+    getShapeStyle(shape, a.rounded_sm, a.rounded_full),
     {height: PREVIEW_AVATAR_SIZE, paddingRight: TOGGLE_PADDING},
     // A chevron on its own is padded to a circle
     remaining === 0 && {paddingLeft: TOGGLE_PADDING},
@@ -502,6 +506,7 @@ function GroupToggle({
  * The "+N" in an `AvatarRow`, sized to match the avatars.
  */
 function OverflowChip({count}: {count: number}) {
+  const shape = useEnableSquareAvatars()
   const t = useTheme()
   const {i18n} = useLingui()
 
@@ -510,7 +515,7 @@ function OverflowChip({count}: {count: number}) {
       style={[
         a.align_center,
         a.justify_center,
-        a.rounded_full,
+        getShapeStyle(shape, a.rounded_sm, a.rounded_full),
         t.atoms.bg_contrast_50,
         t.atoms.border_contrast_low,
         {

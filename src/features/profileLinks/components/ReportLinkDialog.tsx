@@ -2,6 +2,8 @@ import {useState} from 'react'
 import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme, web} from '#/alf'
 import {Button} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
@@ -166,6 +168,7 @@ function linkRowLabel(link: ProfileLink): string {
 }
 
 function LinkRowIcon({link}: {link: ProfileLink}) {
+  const shape = useEnableSquareButtons()
   const t = useTheme()
   const palette = useSupportPalette()
   const provider = getSupportProvider(link.url)
@@ -177,7 +180,7 @@ function LinkRowIcon({link}: {link: ProfileLink}) {
         style={[
           a.align_center,
           a.justify_center,
-          a.rounded_full,
+          getShapeStyle(shape, a.rounded_sm, a.rounded_full),
           a.border,
           {
             width: ICON_SIZE,

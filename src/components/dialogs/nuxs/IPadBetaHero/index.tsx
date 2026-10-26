@@ -5,7 +5,9 @@ import {Image} from 'expo-image'
 import {BlueskyVideoView} from '@bsky.app/video'
 import {useLingui} from '@lingui/react/macro'
 
+import {getShapeRadius} from '#/lib/shapes'
 import {useAutoplayDisabled} from '#/state/preferences'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a} from '#/alf'
 
 const VIDEO = Asset.fromModule(
@@ -21,6 +23,7 @@ const POSTER = require('../../../../../assets/images/ipad_beta_nux_poster.webp')
 export function IPadBetaHero() {
   const {t: l} = useLingui()
   const autoplayDisabled = useAutoplayDisabled()
+  const shape = useEnableSquareButtons()
   const reducedMotion = useReducedMotion()
 
   return (
@@ -34,8 +37,16 @@ export function IPadBetaHero() {
         a.overflow_hidden,
         {
           aspectRatio: 393 / 226,
-          borderTopLeftRadius: a.rounded_md.borderRadius,
-          borderTopRightRadius: a.rounded_md.borderRadius,
+          borderTopLeftRadius: getShapeRadius(
+            shape,
+            a.rounded_md.borderRadius,
+            a.rounded_md.borderRadius,
+          ),
+          borderTopRightRadius: getShapeRadius(
+            shape,
+            a.rounded_md.borderRadius,
+            a.rounded_md.borderRadius,
+          ),
         },
       ]}>
       <Image

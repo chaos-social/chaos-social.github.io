@@ -37,6 +37,7 @@ import {
   isFollowingV2Eligible,
   isFollowingV2HomeDotEnabled,
 } from '#/features/followingV2/eligibility'
+import {accentForeground} from '#/features/themes/accentForeground'
 import {app} from '#/lexicons'
 import {PostFeed, type PostFeedRef} from './PostFeed'
 import {type FeedDescriptor, type FeedParams} from './queries/postFeed'
@@ -187,7 +188,12 @@ export function FeedPage({
         <FAB
           testID="composeFAB"
           onPress={onPressCompose}
-          icon={<EditBigIcon size="lg" fill={t.palette.white} />}
+          icon={
+            <EditBigIcon
+              size="lg"
+              fill={accentForeground(t, t.palette.primary_500)}
+            />
+          }
           accessibilityRole="button"
           accessibilityLabel={_(msg({message: `New post`, context: 'action'}))}
           accessibilityHint=""

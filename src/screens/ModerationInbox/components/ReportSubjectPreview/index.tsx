@@ -2,6 +2,8 @@ import {View} from 'react-native'
 import {AtUri, isAtUriString} from '@atproto/syntax'
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useReportSubjectLabel} from '#/screens/ModerationInbox/components/hooks/useReportSubjectLabel'
 import {atoms as a, useTheme} from '#/alf'
 import {ButtonText} from '#/components/Button'
@@ -29,6 +31,7 @@ export function ReportSubjectPreview({
   allowOwnRecordSnapshot?: boolean
 }) {
   const t = useTheme()
+  const shape = useEnableSquareButtons()
   const {t: l} = useLingui()
   const subjectLabel = useReportSubjectLabel(report.subject)
   const uri =
@@ -105,7 +108,7 @@ export function ReportSubjectPreview({
       style={[
         a.p_lg,
         a.gap_sm,
-        a.rounded_md,
+        getShapeStyle(shape, a.rounded_md, a.rounded_md),
         a.border,
         t.atoms.bg,
         t.atoms.border_contrast_low,

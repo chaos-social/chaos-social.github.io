@@ -1,15 +1,18 @@
 import {Trans} from '@lingui/react/macro'
 
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
 import {Text} from '#/components/Typography'
 
 export function BetaTag() {
   const t = useTheme()
+  const shape = useEnableSquareButtons()
 
   return (
     <Text
       style={[
-        a.rounded_full,
+        getShapeStyle(shape, a.rounded_sm, a.rounded_full),
         a.px_sm,
         a.text_xs,
         a.font_semi_bold,

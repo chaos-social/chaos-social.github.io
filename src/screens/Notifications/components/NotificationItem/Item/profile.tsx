@@ -16,8 +16,10 @@ import {useRequireEmailVerification} from '#/lib/hooks/useRequireEmailVerificati
 import {isBlockedOrBlocking} from '#/lib/moderation/blocked-and-muted'
 import {makeProfileLink} from '#/lib/routes/links'
 import {type NavigationProp} from '#/lib/routes/types'
+import {getShapeStyle} from '#/lib/shapes'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {useGetConvoForMembers} from '#/state/queries/messages/get-convo-for-members'
 import {useProfileFollowMutationQueue} from '#/state/queries/profile'
@@ -81,6 +83,7 @@ function PillButton({
 }) {
   const t = useTheme()
   const suppressHover = useSuppressHover()
+  const shape = useEnableSquareButtons()
 
   return (
     <Button
@@ -92,7 +95,7 @@ function PillButton({
       onHoverIn={() => suppressHover(true)}
       onHoverOut={() => suppressHover(false)}
       style={[
-        a.rounded_full,
+        getShapeStyle(shape, a.rounded_sm, a.rounded_full),
         {height: PILL_HEIGHT, paddingHorizontal: 10, borderWidth: 1},
         muted
           ? [t.atoms.bg_contrast_50, {borderColor: 'transparent'}]

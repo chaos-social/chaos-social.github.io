@@ -2,6 +2,9 @@ import {View} from 'react-native'
 import {Image} from 'expo-image'
 import {useLingui} from '@lingui/react/macro'
 
+import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {type AtmosphereArticleCardData} from '#/screens/Atmosphere/data/exploreData'
 import {atoms as a, useTheme, web} from '#/alf'
 import {useInteractionState} from '#/components/hooks/useInteractionState'
@@ -21,6 +24,8 @@ export function ArticleCard({
 }) {
   const {t: l} = useLingui()
   const t = useTheme()
+  const shape = useEnableSquareButtons()
+  const avatarShape = useEnableSquareAvatars()
   const {
     state: interacted,
     onIn: onInteract,
@@ -32,14 +37,19 @@ export function ArticleCard({
       style={[
         a.flex_grow,
         width ? {width} : a.w_full,
-        a.rounded_md,
+        getShapeStyle(shape, a.rounded_md, a.rounded_md),
         a.border,
         interacted
           ? [t.atoms.bg_contrast_25, t.atoms.border_contrast_high]
           : [t.atoms.bg, t.atoms.border_contrast_low],
         t.atoms.shadow_xs,
       ]}>
-      <View style={[a.flex_1, a.rounded_md, a.overflow_hidden]}>
+      <View
+        style={[
+          a.flex_1,
+          getShapeStyle(shape, a.rounded_md, a.rounded_md),
+          a.overflow_hidden,
+        ]}>
         <Link
           to={article.href}
           label={l`Open ${article.title}`}
@@ -80,7 +90,13 @@ export function ArticleCard({
                   <Image
                     source={article.publisherAvatar}
                     contentFit="cover"
-                    style={[a.rounded_xs, {width: 16, height: 16}]}
+                    style={[
+                      {
+                        width: 16,
+                        height: 16,
+                        borderRadius: getShapeRadius(avatarShape, 3, 3),
+                      },
+                    ]}
                     accessible={false}
                   />
                 ) : undefined}

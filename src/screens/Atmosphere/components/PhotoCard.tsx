@@ -3,8 +3,10 @@ import {Image} from 'expo-image'
 import {moderateProfile} from '@bsky/sdk/moderation'
 import {useLingui} from '@lingui/react/macro'
 
+import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {formatCount} from '#/view/com/util/numeric/format'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
@@ -25,6 +27,7 @@ export function PhotoCard({
 }) {
   const {t: l, i18n} = useLingui()
   const t = useTheme()
+  const shape = useEnableSquareButtons()
   const {
     state: interacted,
     onIn: onInteract,
@@ -62,7 +65,7 @@ export function PhotoCard({
           a.w_full,
           a.aspect_square,
           a.overflow_hidden,
-          a.rounded_md,
+          getShapeStyle(shape, a.rounded_md, a.rounded_md),
           t.atoms.bg_contrast_25,
         ]}>
         <Image
@@ -100,7 +103,7 @@ export function PhotoCard({
                 top: 7,
                 left: 8,
                 backgroundColor: 'rgba(0, 0, 0, 0.75)',
-                borderRadius: 5,
+                borderRadius: getShapeRadius(shape, 5, 5),
               },
             ]}>
             <Heart size="xs" style={{color: 'white'}} />

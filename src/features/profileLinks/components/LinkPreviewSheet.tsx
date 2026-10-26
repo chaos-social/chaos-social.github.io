@@ -2,6 +2,8 @@ import {type GestureResponderEvent, View} from 'react-native'
 import {setStringAsync} from 'expo-clipboard'
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme, web} from '#/alf'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
@@ -54,6 +56,7 @@ function LinkPreviewSheetInner({
   const control = Dialog.useDialogContext()
   const {t: l} = useLingui()
   const t = useTheme()
+  const shape = useEnableSquareButtons()
 
   const copy = async () => {
     await setStringAsync(link.url)
@@ -70,7 +73,7 @@ function LinkPreviewSheetInner({
         <View
           style={[
             a.px_md,
-            a.rounded_sm,
+            getShapeStyle(shape, a.rounded_sm, a.rounded_sm),
             a.border,
             t.atoms.bg_contrast_25,
             t.atoms.border_contrast_low,

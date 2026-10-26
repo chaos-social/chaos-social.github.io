@@ -462,7 +462,10 @@ export function TextInput({
       ? ((style.lineHeight + 'px') as unknown as number)
       : undefined
     style.minHeight = webForceMinHeight ? 140 : undefined
-    return style
+    return {
+      ...style,
+      '--placeholder-color': t.atoms.text_contrast_low.color,
+    }
   }, [t, fonts, webForceMinHeight])
 
   return (

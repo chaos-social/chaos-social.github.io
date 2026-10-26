@@ -11,9 +11,17 @@ export function accentForeground(
 ) {
   if (theme.onAccent && valid(theme.onAccent)) return theme.onAccent
 
-  const preferred = theme.palette.white
+  return contrastForeground(background, theme.palette.white)
+}
+
+/** Chooses a readable foreground for semantic or provider-colored surfaces. */
+export function contrastForeground(
+  background: string,
+  preferred = '#ffffff',
+  minimumContrast = 4.5,
+) {
   if (!valid(background)) return preferred
-  if (valid(preferred) && contrast(preferred, background) >= 4.5) {
+  if (valid(preferred) && contrast(preferred, background) >= minimumContrast) {
     return preferred
   }
   return contrast('#000000', background) >= contrast('#ffffff', background)

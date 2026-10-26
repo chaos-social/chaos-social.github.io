@@ -1,21 +1,21 @@
 import {useTheme} from '#/alf'
+import {
+  accentForeground,
+  contrastForeground,
+} from '#/features/themes/accentForeground'
 
 /**
- * The support green, which is the same everywhere it appears so people learn
- * what it means.
- *
- * Dark themes mirror the palette scale (positive_600 becomes a light green),
- * so the button picks its step per theme to land on the same deep green. The
- * tints rely on that mirroring instead: positive_25 is a pale wash in light
- * mode and a deep one in dark mode.
+ * Shared support-link colors. Prefer the primary button's text color, falling
+ * back only when it cannot be read against the theme's support green.
  */
 export function useSupportPalette() {
   const t = useTheme()
   const light = t.name === 'light'
+  const bg = light ? t.palette.positive_600 : t.palette.positive_400
   return {
-    bg: light ? t.palette.positive_600 : t.palette.positive_400,
+    bg,
     bgHover: light ? t.palette.positive_700 : t.palette.positive_300,
-    fg: t.palette.white,
+    fg: contrastForeground(bg, accentForeground(t, t.palette.primary_500), 3),
     tintBg: t.palette.positive_25,
     tintBorder: t.palette.positive_100,
     tintText: t.palette.positive_700,

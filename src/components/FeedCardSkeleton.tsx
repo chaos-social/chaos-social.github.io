@@ -1,5 +1,7 @@
 import {type StyleProp, View, type ViewStyle} from 'react-native'
 
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {atoms as a, useTheme} from '#/alf'
 import * as Skele from '#/components/Skeleton'
 
@@ -47,6 +49,7 @@ export function FeedCardSkeleton({
   showTopBorder?: boolean
 }) {
   const t = useTheme()
+  const avatarShape = useEnableSquareAvatars()
   const even = index % 2 === 0
 
   return (
@@ -59,8 +62,9 @@ export function FeedCardSkeleton({
       ]}>
       <Skele.Row style={[a.align_center, a.gap_md]}>
         {/* A rounded square, like the real `algo` avatar */}
-        <Skele.Block
-          style={[a.rounded_sm, {width: AVATAR_SIZE, height: AVATAR_SIZE}]}
+        <Skele.Circle
+          size={AVATAR_SIZE}
+          style={getShapeStyle(avatarShape, a.rounded_sm, a.rounded_sm)}
         />
         <Skele.Col>
           <Skele.Text

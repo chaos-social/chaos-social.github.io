@@ -3,22 +3,29 @@ import {Image} from 'expo-image'
 import {LinearGradient} from 'expo-linear-gradient'
 import {useLingui} from '@lingui/react/macro'
 
+import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {type AtmosphereAppCardData} from '#/screens/Atmosphere/data/exploreData'
-import {atoms as a, utils} from '#/alf'
+import {atoms as a, useTheme, utils} from '#/alf'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
+import {contrastForeground} from '#/features/themes/accentForeground'
 
 export function AppCard({app}: {app: AtmosphereAppCardData}) {
   const {t: l} = useLingui()
+  const t = useTheme()
+  const shape = useEnableSquareButtons()
+  const avatarShape = useEnableSquareAvatars()
 
   return (
     <View
       style={[
         a.w_full,
         a.relative,
-        a.rounded_xl,
+        getShapeStyle(shape, a.rounded_xl, a.rounded_xl),
         a.overflow_hidden,
-        {backgroundColor: app.overlayColor},
+        {backgroundColor: app.overlayColor ?? t.palette.contrast_50},
       ]}>
       {app.backgroundImage ? (
         <Image
@@ -58,21 +65,47 @@ export function AppCard({app}: {app: AtmosphereAppCardData}) {
             <Image
               source={app.logo}
               contentFit="cover"
-              style={[a.rounded_md, {width: 44, height: 44}]}
+              style={[
+                {
+                  width: 44,
+                  height: 44,
+                  borderRadius: getShapeRadius(avatarShape, 8, 8),
+                },
+              ]}
               accessible={false}
             />
           ) : undefined}
           <View style={[a.flex_1, a.gap_2xs]}>
             <Text
               emoji
-              style={[a.text_md, a.font_semi_bold, {color: app.textColor}]}
+              style={[
+                a.text_md,
+                a.font_semi_bold,
+                {
+                  color:
+                    app.textColor ??
+                    (app.overlayColor
+                      ? contrastForeground(app.overlayColor)
+                      : t.atoms.text.color),
+                },
+              ]}
               numberOfLines={1}>
               {app.title}
             </Text>
             {app.description ? (
               <Text
                 emoji
-                style={[a.text_sm, a.leading_snug, {color: app.textColor}]}
+                style={[
+                  a.text_sm,
+                  a.leading_snug,
+                  {
+                    color:
+                      app.textColor ??
+                      (app.overlayColor
+                        ? contrastForeground(app.overlayColor)
+                        : t.atoms.text.color),
+                  },
+                ]}
                 numberOfLines={2}>
                 {app.description}
               </Text>

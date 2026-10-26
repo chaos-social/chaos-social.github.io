@@ -6,6 +6,9 @@ import {
   type ViewStyle,
 } from 'react-native'
 
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {type GroupedNotificationsFeed} from '#/state/queries/notifications/grouped/types'
 import {SHOW_ROW_BORDERS} from '#/screens/Notifications/rowBorders'
 import {atoms as a, useBreakpoints, useTheme} from '#/alf'
@@ -289,6 +292,7 @@ function FollowerSkeleton({
   isBadged: boolean
 }) {
   const even = index % 2 === 0
+  const avatarShape = useEnableSquareAvatars()
 
   return (
     <Row style={[a.align_center, a.py_sm]}>
@@ -296,7 +300,10 @@ function FollowerSkeleton({
         <Item.AvatarSkeleton />
       ) : (
         // The same size as `Item.Avatar`, without its slot
-        <Skele.Circle size={Item.AVATAR_SIZE} />
+        <Skele.Circle
+          size={Item.AVATAR_SIZE}
+          style={getShapeStyle(avatarShape, a.rounded_sm, a.rounded_full)}
+        />
       )}
       <Item.Content style={[a.gap_0]}>
         <Lines style={a.text_md} widths={[even ? '40%' : '55%']} />
@@ -370,12 +377,23 @@ function AvatarRowSkeleton({
   count: number
   overflow: boolean
 }) {
+  const avatarShape = useEnableSquareAvatars()
   return (
     <View style={[a.flex_row, a.align_center, a.gap_sm]}>
       {Array.from({length: count}, (_, index) => (
-        <Skele.Circle key={index} size={Item.PREVIEW_AVATAR_SIZE} />
+        <Skele.Circle
+          key={index}
+          size={Item.PREVIEW_AVATAR_SIZE}
+          style={getShapeStyle(avatarShape, a.rounded_sm, a.rounded_full)}
+        />
       ))}
-      {overflow && <Skele.Circle blend size={Item.PREVIEW_AVATAR_SIZE} />}
+      {overflow && (
+        <Skele.Circle
+          blend
+          size={Item.PREVIEW_AVATAR_SIZE}
+          style={getShapeStyle(avatarShape, a.rounded_sm, a.rounded_full)}
+        />
+      )}
     </View>
   )
 }
@@ -384,10 +402,15 @@ function AvatarRowSkeleton({
  * Stands in for a trailing `Item.InlineImages`.
  */
 function ThumbnailSkeleton() {
+  const shape = useEnableSquareButtons()
   const t = useTheme()
   return (
     <View
-      style={[a.rounded_md, t.atoms.bg_contrast_50, {width: 60, height: 60}]}
+      style={[
+        getShapeStyle(shape, a.rounded_md, a.rounded_md),
+        t.atoms.bg_contrast_50,
+        {width: 60, height: 60},
+      ]}
     />
   )
 }

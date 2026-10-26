@@ -4,8 +4,10 @@ import {moderateProfile} from '@bsky/sdk/moderation'
 import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 
+import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {type AtmosphereLivestreamCardData} from '#/screens/Atmosphere/data/exploreData'
@@ -14,6 +16,7 @@ import {Eye_Stroke2_Corner0_Rounded as EyeIcon} from '#/components/icons/Eye'
 import {Play_Filled_Corner2_Rounded as PlayIcon} from '#/components/icons/Play'
 import {Link} from '#/components/Link'
 import {Text} from '#/components/Typography'
+import {contrastForeground} from '#/features/themes/accentForeground'
 import {type ExploreGalleryFocusProps} from './ExploreGallery'
 
 export function LivestreamCard({
@@ -27,6 +30,7 @@ export function LivestreamCard({
 }) {
   const {t: l} = useLingui()
   const t = useTheme()
+  const shape = useEnableSquareButtons()
   const moderationOpts = useModerationOpts()
   const authorProfile = livestream.authorProfile
   const moderation =
@@ -45,10 +49,15 @@ export function LivestreamCard({
       style={[
         a.flex_grow,
         width ? {width} : a.w_full,
-        a.rounded_md,
+        getShapeStyle(shape, a.rounded_md, a.rounded_md),
         t.atoms.bg,
       ]}>
-      <View style={[a.flex_1, a.rounded_md, a.overflow_hidden]}>
+      <View
+        style={[
+          a.flex_1,
+          getShapeStyle(shape, a.rounded_md, a.rounded_md),
+          a.overflow_hidden,
+        ]}>
         <Link
           to={livestream.href}
           label={
@@ -74,7 +83,7 @@ export function LivestreamCard({
               a.w_full,
               a.relative,
               a.overflow_hidden,
-              a.rounded_md,
+              getShapeStyle(shape, a.rounded_md, a.rounded_md),
               t.atoms.bg_contrast_25,
               {height: 136},
             ]}>
@@ -92,7 +101,7 @@ export function LivestreamCard({
               style={[a.absolute, a.inset_0, a.align_center, a.justify_center]}>
               <View
                 style={[
-                  a.rounded_full,
+                  getShapeStyle(shape, a.rounded_xs, a.rounded_full),
                   a.align_center,
                   a.justify_center,
                   a.p_sm,
@@ -125,17 +134,19 @@ export function LivestreamCard({
                     a.py_2xs,
                     {
                       paddingRight: 6,
-                      borderRadius: 5,
+                      borderRadius: getShapeRadius(shape, 5, 5),
                       backgroundColor: t.palette.negative_500,
                     },
                   ]}>
                   <View
                     style={[
-                      a.rounded_full,
+                      getShapeStyle(shape, a.rounded_xs, a.rounded_full),
                       {
                         width: 5,
                         height: 5,
-                        backgroundColor: 'white',
+                        backgroundColor: contrastForeground(
+                          t.palette.negative_500,
+                        ),
                       },
                     ]}
                   />
@@ -143,7 +154,10 @@ export function LivestreamCard({
                     style={[
                       a.text_xs,
                       a.font_semi_bold,
-                      {color: 'white', textTransform: 'uppercase'},
+                      {
+                        color: contrastForeground(t.palette.negative_500),
+                        textTransform: 'uppercase',
+                      },
                     ]}>
                     <Trans>Live</Trans>
                   </Text>
@@ -157,7 +171,7 @@ export function LivestreamCard({
                       a.px_xs,
                       a.py_2xs,
                       {
-                        borderRadius: 5,
+                        borderRadius: getShapeRadius(shape, 5, 5),
                         backgroundColor: 'rgba(0, 0, 0, 0.75)',
                       },
                     ]}>

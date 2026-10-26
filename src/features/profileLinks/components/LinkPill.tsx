@@ -110,10 +110,10 @@ export function ProfileLinkPill({
         <ButtonFavicon
           key={faviconUrl}
           uri={faviconUrl}
-          fallback={<ButtonIcon icon={linkIcon(provider)} />}
+          fallback={<ButtonIcon icon={linkIcon(provider)} color={color} />}
         />
       ) : (
-        <ButtonIcon icon={linkIcon(provider)} />
+        <ButtonIcon icon={linkIcon(provider)} color={color} />
       )}
       <ButtonText numberOfLines={1} emoji style={{color}}>
         {link.title ? (

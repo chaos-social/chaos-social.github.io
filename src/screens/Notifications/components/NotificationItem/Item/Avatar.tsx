@@ -1,11 +1,18 @@
 import {View} from 'react-native'
 import {moderateProfile} from '@bsky/sdk/moderation'
 
+import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {PreviewableUserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import * as Skele from '#/components/Skeleton'
+import {
+  accentForeground,
+  contrastForeground,
+} from '#/features/themes/accentForeground'
 import type * as bsky from '#/types/bsky'
 import {useItemBackgroundColor} from './Root'
 
@@ -14,18 +21,6 @@ import {useItemBackgroundColor} from './Root'
  */
 export type BadgeTone =
   'like' | 'repost' | 'follow' | 'conversation' | 'activity' | 'neutral'
-
-/**
- * Activity (subscribed post) badges use an orange that isn't in the ALF
- * palette yet.
- */
-const ACTIVITY_ORANGE = '#F26022'
-
-/**
- * Reply, quote and mention badges use a purple that isn't in the ALF palette
- * yet, which sets them apart from repost green and follow blue.
- */
-const CONVERSATION_PURPLE = '#8679FC'
 
 /**
  * The size of `Item.Avatar`'s avatar, for anything that stands in for it.
@@ -72,6 +67,8 @@ export function Avatar({
   tone?: BadgeTone
 }) {
   const t = useTheme()
+  const shape = useEnableSquareButtons()
+  const badgeRadius = getShapeRadius(shape, 4, BADGE_SIZE / 2)
   const ringColor = useItemBackgroundColor()
   const moderationOpts = useModerationOpts()
   const moderation = moderationOpts
@@ -82,8 +79,8 @@ export function Avatar({
     like: t.palette.pink,
     repost: t.palette.positive_500,
     follow: t.palette.primary_500,
-    conversation: CONVERSATION_PURPLE,
-    activity: ACTIVITY_ORANGE,
+    conversation: t.palette.primary_700,
+    activity: t.palette.yellow,
     neutral: t.palette.contrast_500,
   }[tone]
 
@@ -111,7 +108,7 @@ export function Avatar({
         <View
           style={[
             a.absolute,
-            a.rounded_full,
+            {borderRadius: badgeRadius === 0 ? 0 : badgeRadius + BADGE_RING},
             {
               end: 0,
               bottom: 0,
@@ -121,7 +118,7 @@ export function Avatar({
           ]}>
           <View
             style={[
-              a.rounded_full,
+              {borderRadius: badgeRadius},
               a.align_center,
               a.justify_center,
               {
@@ -130,7 +127,14 @@ export function Avatar({
                 backgroundColor: badgeColor,
               },
             ]}>
-            <Icon width={BADGE_ICON_SIZE} fill={t.palette.white} />
+            <Icon
+              width={BADGE_ICON_SIZE}
+              fill={
+                tone === 'follow'
+                  ? accentForeground(t, badgeColor)
+                  : contrastForeground(badgeColor)
+              }
+            />
           </View>
         </View>
       )}
@@ -143,15 +147,21 @@ export function Avatar({
  * a faint circle where the badge goes.
  */
 export function AvatarSkeleton() {
+  const shape = useEnableSquareButtons()
+  const avatarShape = useEnableSquareAvatars()
+  const badgeRadius = getShapeRadius(shape, 4, BADGE_SIZE / 2)
   const ringColor = useItemBackgroundColor()
 
   return (
     <View style={SLOT_SIZE}>
-      <Skele.Circle size={AVATAR_SIZE} />
+      <Skele.Circle
+        size={AVATAR_SIZE}
+        style={getShapeStyle(avatarShape, a.rounded_sm, a.rounded_full)}
+      />
       <View
         style={[
           a.absolute,
-          a.rounded_full,
+          {borderRadius: badgeRadius === 0 ? 0 : badgeRadius + BADGE_RING},
           {
             end: 0,
             bottom: 0,
@@ -159,7 +169,11 @@ export function AvatarSkeleton() {
             backgroundColor: ringColor,
           },
         ]}>
-        <Skele.Circle blend size={BADGE_SIZE} />
+        <Skele.Circle
+          blend
+          size={BADGE_SIZE}
+          style={{borderRadius: badgeRadius}}
+        />
       </View>
     </View>
   )

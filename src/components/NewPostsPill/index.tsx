@@ -7,12 +7,15 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
-import Svg, {Circle, Defs, G, Image, Mask} from 'react-native-svg'
+import Svg, {Defs, G, Image, Mask, Rect} from 'react-native-svg'
 import {plural} from '@lingui/core/macro'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {HITSLOP_20} from '#/lib/constants'
 import {PressableScale} from '#/lib/custom-animations/PressableScale'
+import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
 import {GlassView, IS_GLASS_AVAILABLE} from '#/components/GlassView'
 import {useInteractionState} from '#/components/hooks/useInteractionState'
@@ -24,6 +27,7 @@ import {
 } from '#/components/NewPostsPill/presentation'
 import {SubtleHover} from '#/components/SubtleHover'
 import {Text} from '#/components/Typography'
+import {accentForeground} from '#/features/themes/accentForeground'
 
 export type {NewPostsPillVariant}
 
@@ -76,6 +80,7 @@ export function NewPostsPill({
   onPress: () => void
 }) {
   const t = useTheme()
+  const shape = useEnableSquareButtons()
   const {t: l} = useLingui()
   const reducedMotion = useReducedMotion()
   const {
@@ -193,7 +198,7 @@ export function NewPostsPill({
           onPointerLeave={onHoverOut}>
           <View
             style={[
-              a.rounded_full,
+              getShapeStyle(shape, a.rounded_sm, a.rounded_full),
               {
                 minHeight:
                   presentation === 'facepile'
@@ -207,7 +212,11 @@ export function NewPostsPill({
               isInteractive
               glassEffectStyle="regular"
               tintColor={t.palette.primary_500}
-              style={[a.absolute, a.inset_0, a.rounded_full]}
+              style={[
+                a.absolute,
+                a.inset_0,
+                getShapeStyle(shape, a.rounded_sm, a.rounded_full),
+              ]}
               fallbackStyle={[
                 t.atoms.shadow_md,
                 {backgroundColor: t.palette.primary_500},
@@ -221,11 +230,14 @@ export function NewPostsPill({
                 a.px_md,
                 {minHeight: presentation === 'facepile' ? 40 : 32},
               ]}>
-              <SubtleHover hover={hovered} style={[a.rounded_full]} />
+              <SubtleHover
+                hover={hovered}
+                style={[getShapeStyle(shape, a.rounded_sm, a.rounded_full)]}
+              />
               {hasArrow && (
                 <ArrowTopIcon
                   size={presentation === 'facepile' ? 'sm' : 'xs'}
-                  fill={t.palette.white}
+                  fill={accentForeground(t, t.palette.primary_500)}
                   style={[a.z_10]}
                 />
               )}
@@ -257,7 +269,13 @@ export function NewPostsPill({
 function PillLabelText({children}: {children: React.ReactNode}) {
   const t = useTheme()
   return (
-    <Text style={[a.z_10, a.text_xs, a.font_bold, {color: t.palette.white}]}>
+    <Text
+      style={[
+        a.z_10,
+        a.text_xs,
+        a.font_bold,
+        {color: accentForeground(t, t.palette.primary_500)},
+      ]}>
       {children}
     </Text>
   )
@@ -266,8 +284,9 @@ function PillLabelText({children}: {children: React.ReactNode}) {
 /** SVG masks leave actual transparent gaps between the faces over glass. */
 function Facepile({authors}: {authors: NewPostsPillAuthor[]}) {
   const t = useTheme()
+  const avatarShape = useEnableSquareAvatars()
   const instance = useId().replace(/[^a-zA-Z0-9]/g, '')
-  const radius = AVATAR_SIZE / 2
+  const radius = getShapeRadius(avatarShape, 3, AVATAR_SIZE / 2)
   const step = AVATAR_SIZE - AVATAR_OVERLAP
   const width = AVATAR_SIZE + (authors.length - 1) * step
 
@@ -283,17 +302,21 @@ function Facepile({authors}: {authors: NewPostsPillAuthor[]}) {
             y={0}
             width={width}
             height={AVATAR_SIZE}>
-            <Circle
-              cx={index * step + radius}
-              cy={radius}
-              r={radius}
+            <Rect
+              x={index * step}
+              y={0}
+              width={AVATAR_SIZE}
+              height={AVATAR_SIZE}
+              rx={radius}
               fill="white"
             />
             {index > 0 && (
-              <Circle
-                cx={(index - 1) * step + radius}
-                cy={radius}
-                r={radius + FACE_GAP}
+              <Rect
+                x={(index - 1) * step - FACE_GAP}
+                y={-FACE_GAP}
+                width={AVATAR_SIZE + FACE_GAP * 2}
+                height={AVATAR_SIZE + FACE_GAP * 2}
+                rx={radius === 0 ? 0 : radius + FACE_GAP}
                 fill="black"
               />
             )}
@@ -302,10 +325,12 @@ function Facepile({authors}: {authors: NewPostsPillAuthor[]}) {
       </Defs>
       {authors.map((author, index) => (
         <G key={author.did} mask={`url(#${instance}-${index})`}>
-          <Circle
-            cx={index * step + radius}
-            cy={radius}
-            r={radius}
+          <Rect
+            x={index * step}
+            y={0}
+            width={AVATAR_SIZE}
+            height={AVATAR_SIZE}
+            rx={radius}
             fill={t.atoms.bg_contrast_25.backgroundColor}
           />
           <Image

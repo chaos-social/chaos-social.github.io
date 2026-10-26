@@ -3,6 +3,8 @@ import {type StyleProp, View, type ViewStyle} from 'react-native'
 import {Image} from 'expo-image'
 import {getBlobCidString} from '@atproto/lex'
 
+import {getShapeRadius} from '#/lib/shapes'
+import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {atoms as a} from '#/alf'
 import {ButtonIcon} from '#/components/Button'
 import {Globe_Stroke2_Corner0_Rounded as GlobeIcon} from '#/components/icons/Globe'
@@ -37,6 +39,7 @@ export function LinkFavicon({
   fallback: React.ReactNode
   style?: StyleProp<ViewStyle>
 }) {
+  const avatarShape = useEnableSquareAvatars()
   const [failed, setFailed] = useState(false)
   if (failed) return fallback
   return (
@@ -44,7 +47,11 @@ export function LinkFavicon({
       <Image
         source={{uri}}
         contentFit="contain"
-        style={{width: size, height: size, borderRadius: size / 6}}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: getShapeRadius(avatarShape, size / 6, size / 6),
+        }}
         accessibilityIgnoresInvertColors
         onError={() => setFailed(true)}
       />
