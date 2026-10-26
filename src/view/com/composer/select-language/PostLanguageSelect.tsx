@@ -6,15 +6,15 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
-import {msg} from '@lingui/core/macro'
-import {useLingui} from '@lingui/react'
-import {Trans} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 
 import {LANG_DROPDOWN_HITSLOP} from '#/lib/constants'
 import {codeToLanguageName} from '#/locale/helpers'
 import {
   fromPostLanguages,
+  toPostLanguages,
   useLanguagePrefs,
+  useLanguagePrefsApi,
 } from '#/state/preferences/languages'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, type ButtonProps} from '#/components/Button'
@@ -42,53 +42,31 @@ export function PostLanguageSelect({
    */
   nudgeAt?: number
 }) {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const langPrefs = useLanguagePrefs()
+  const {setPostLanguage} = useLanguagePrefsApi()
   const languageDialogControl = Dialog.useDialogControl()
+  const defaultLanguages = toPostLanguages(langPrefs.postLanguage)
+  const currentLanguages = currentLanguagesProp ?? defaultLanguages
 
   const dedupedHistory = Array.from(
-    new Set([...langPrefs.postLanguageHistory, langPrefs.primaryLanguage]),
-  )
-
-  const currentLanguages = currentLanguagesProp ?? [langPrefs.primaryLanguage]
+    new Set([
+      langPrefs.postLanguage,
+      fromPostLanguages(currentLanguages),
+      ...langPrefs.postLanguageHistory,
+    ]),
+  ).filter(Boolean)
 
   const onSelectLanguages = (languages: string[]) => {
-    let langsString = languages.join(',')
-    if (!langsString) {
-      langsString = langPrefs.primaryLanguage
+    if (languages.length > 0) {
+      onSelectLanguage(fromPostLanguages(languages))
     }
-    onSelectLanguage(langsString)
-  }
-
-  if (
-    dedupedHistory.length === 1 &&
-    dedupedHistory[0] === langPrefs.primaryLanguage
-  ) {
-    return (
-      <>
-        <LanguageBtn
-          currentLanguages={currentLanguages}
-          onPress={languageDialogControl.open}
-          nudgeAt={nudgeAt}
-        />
-        <LanguageSelectDialog
-          titleText={<Trans>Choose post languages</Trans>}
-          subtitleText={
-            <Trans>Select up to 3 languages used in this post</Trans>
-          }
-          control={languageDialogControl}
-          currentLanguages={currentLanguages}
-          onSelectLanguages={onSelectLanguages}
-          maxLanguages={3}
-        />
-      </>
-    )
   }
 
   return (
     <>
       <Menu.Root>
-        <Menu.Trigger label={_(msg`Select post language`)}>
+        <Menu.Trigger label={l`Select post language`}>
           {({props}) => (
             <LanguageBtn
               currentLanguages={currentLanguages}
@@ -107,9 +85,15 @@ export function PostLanguageSelect({
               return (
                 <Menu.Item
                   key={historyItem}
-                  label={_(msg`Select ${langName}`)}
+                  label={l`Select ${langName}`}
                   onPress={() => onSelectLanguage(historyItem)}>
-                  <Menu.ItemText>{langName}</Menu.ItemText>
+                  <Menu.ItemText>
+                    {historyItem === langPrefs.postLanguage ? (
+                      <Trans>{langName} (default)</Trans>
+                    ) : (
+                      langName
+                    )}
+                  </Menu.ItemText>
                   <Menu.ItemRadio
                     selected={
                       fromPostLanguages(currentLanguages) === historyItem
@@ -121,10 +105,10 @@ export function PostLanguageSelect({
           </Menu.Group>
           <Menu.Divider />
           <Menu.Item
-            label={_(msg`More languages...`)}
+            label={l`More languages…`}
             onPress={languageDialogControl.open}>
             <Menu.ItemText>
-              <Trans>More languages...</Trans>
+              <Trans>More languages…</Trans>
             </Menu.ItemText>
             <Menu.ItemIcon icon={ChevronRightIcon} />
           </Menu.Item>
@@ -132,11 +116,16 @@ export function PostLanguageSelect({
       </Menu.Root>
 
       <LanguageSelectDialog
-        titleText={<Trans>Choose post languages</Trans>}
+        titleText={<Trans>Choose posting languages</Trans>}
         subtitleText={<Trans>Select up to 3 languages used in this post</Trans>}
         control={languageDialogControl}
         currentLanguages={currentLanguages}
         onSelectLanguages={onSelectLanguages}
+        defaultLanguages={defaultLanguages}
+        onSetDefaultLanguages={languages => {
+          setPostLanguage(fromPostLanguages(languages))
+        }}
+        minLanguages={1}
         maxLanguages={3}
       />
     </>
@@ -156,10 +145,11 @@ function LanguageBtn({
 }) {
   const t = useTheme()
   const ax = useAnalytics()
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const langPrefs = useLanguagePrefs()
 
-  const currentLanguages = currentLanguagesProp ?? [langPrefs.primaryLanguage]
+  const currentLanguages =
+    currentLanguagesProp ?? toPostLanguages(langPrefs.postLanguage)
 
   /*
    * Stays at 0 when idle; each nudge runs two pulses with a faster
@@ -189,13 +179,12 @@ function LanguageBtn({
       testID="selectLangBtn"
       size="small"
       hitSlop={LANG_DROPDOWN_HITSLOP}
-      label={_(
-        msg({
-          message: `Post language selection`,
-          comment: `Accessibility label for button that opens dialog to choose post language settings`,
-        }),
-      )}
-      accessibilityHint={_(msg`Opens post language settings`)}
+      label={l({
+        message: 'Post language selection',
+        comment:
+          'Accessibility label for button that opens the post language menu',
+      })}
+      accessibilityHint={l`Opens post language settings`}
       style={[a.mr_xs, a.overflow_hidden]}
       {...props}
       onPress={e => {

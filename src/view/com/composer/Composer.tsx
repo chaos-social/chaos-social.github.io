@@ -426,15 +426,15 @@ export const ComposePost = ({
   }
 
   /**
-   * Default to the primary language, ignoring the legacy sticky post language
-   * preference. Manual selections and accepted suggestions apply locally.
+   * Manual selections and accepted suggestions override the saved post language
+   * default for this composition only.
    */
   const currentLanguages = useMemo(
     () =>
       selectedPostLanguage
         ? toPostLanguages(selectedPostLanguage)
-        : [langPrefs.primaryLanguage],
-    [selectedPostLanguage, langPrefs.primaryLanguage],
+        : toPostLanguages(langPrefs.postLanguage),
+    [selectedPostLanguage, langPrefs.postLanguage],
   )
 
   /**

@@ -1,8 +1,6 @@
 import {useCallback, useMemo, useState} from 'react'
 import {View} from 'react-native'
-import {msg} from '@lingui/core/macro'
-import {useLingui} from '@lingui/react'
-import {Trans} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 
 import {languageName} from '#/locale/helpers'
 import {type Language, LANGUAGES, LANGUAGES_MAP_CODE2} from '#/locale/languages'
@@ -39,6 +37,9 @@ export function LanguageSelectDialog({
    */
   currentLanguages,
   onSelectLanguages,
+  defaultLanguages,
+  onSetDefaultLanguages,
+  minLanguages = 0,
   maxLanguages,
 }: {
   control: Dialog.DialogControlProps
@@ -49,6 +50,9 @@ export function LanguageSelectDialog({
    */
   currentLanguages?: string[]
   onSelectLanguages: (languages: string[]) => void
+  defaultLanguages?: string[]
+  onSetDefaultLanguages?: (languages: string[]) => void
+  minLanguages?: number
   maxLanguages?: number
 }) {
   const renderErrorBoundary = useCallback(
@@ -65,6 +69,9 @@ export function LanguageSelectDialog({
           subtitleText={subtitleText}
           currentLanguages={currentLanguages}
           onSelectLanguages={onSelectLanguages}
+          defaultLanguages={defaultLanguages}
+          onSetDefaultLanguages={onSetDefaultLanguages}
+          minLanguages={minLanguages}
           maxLanguages={maxLanguages}
         />
       </ErrorBoundary>
@@ -77,12 +84,18 @@ export function DialogInner({
   subtitleText,
   currentLanguages,
   onSelectLanguages,
+  defaultLanguages,
+  onSetDefaultLanguages,
+  minLanguages = 0,
   maxLanguages,
 }: {
   titleText?: React.ReactNode
   subtitleText?: React.ReactNode
   currentLanguages?: string[]
   onSelectLanguages?: (languages: string[]) => void
+  defaultLanguages?: string[]
+  onSetDefaultLanguages?: (languages: string[]) => void
+  minLanguages?: number
   maxLanguages?: number
 }) {
   const control = Dialog.useDialogContext()
@@ -105,10 +118,13 @@ export function DialogInner({
   const [checkedLanguagesCode2, setCheckedLanguagesCode2] = useState<string[]>(
     currentLanguages || [langPrefs.primaryLanguage],
   )
+  const isDefault =
+    defaultLanguages?.length === checkedLanguagesCode2.length &&
+    checkedLanguagesCode2.every(language => defaultLanguages.includes(language))
   const [search, setSearch] = useState('')
 
   const t = useTheme()
-  const {_} = useLingui()
+  const {t: l} = useLingui()
 
   const enableSquareButtons = useEnableSquareButtons()
 
@@ -221,7 +237,7 @@ export function DialogInner({
             size="small"
             color="secondary"
             shape={enableSquareButtons ? 'square' : 'round'}
-            label={_(msg`Close dialog`)}
+            label={l`Close dialog`}
             onPress={handleClose}>
             <ButtonIcon icon={XIcon} />
           </Button>
@@ -232,8 +248,8 @@ export function DialogInner({
         <SearchInput
           value={search}
           onChangeText={setSearch}
-          placeholder={_(msg`Search languages`)}
-          label={_(msg`Search languages`)}
+          placeholder={l`Search languages`}
+          label={l`Search languages`}
           maxLength={50}
           onClearText={() => setSearch('')}
         />
@@ -249,13 +265,13 @@ export function DialogInner({
 
   const flatListData = [
     ...(isCheckedRecentEmpty
-      ? [{type: 'header', label: _(msg`Recently used`)}]
+      ? [{type: 'header', label: l`Recently used`}]
       : []),
     ...displayedLanguages.checkedRecent.map(lang => ({type: 'item', lang})),
     ...displayedLanguages.uncheckedRecent.map(lang => ({type: 'item', lang})),
     ...(isDisplayedLanguagesEmpty
       ? []
-      : [{type: 'header', label: _(msg`All languages`)}]),
+      : [{type: 'header', label: l`All languages`}]),
     ...displayedLanguages.all.map(lang => ({type: 'item', lang})),
   ]
 
@@ -264,10 +280,14 @@ export function DialogInner({
   return (
     <Toggle.Group
       values={checkedLanguagesCode2}
-      onChange={setCheckedLanguagesCode2}
+      onChange={languages => {
+        if (languages.length >= minLanguages) {
+          setCheckedLanguagesCode2(languages)
+        }
+      }}
       type="checkbox"
       maxSelections={maxLanguages}
-      label={_(msg`Select languages`)}
+      label={l`Select languages`}
       style={web([a.contents])}>
       <Dialog.InnerFlatList
         data={flatListData}
@@ -321,15 +341,37 @@ export function DialogInner({
         footer={
           <Dialog.FlatListFooter
             onLayout={evt => setFooterHeight(evt.nativeEvent.layout.height)}>
-            <Button
-              label={_(msg`Close dialog`)}
-              onPress={handleClose}
-              color="primary"
-              size="large">
-              <ButtonText>
-                <Trans>Done</Trans>
-              </ButtonText>
-            </Button>
+            <View style={[a.flex_row, a.flex_wrap, a.gap_sm]}>
+              {onSetDefaultLanguages && (
+                <Button
+                  testID="usePostLanguagesAsDefault"
+                  label={l`Use as default`}
+                  onPress={() => {
+                    control.close(() => {
+                      onSelectLanguages?.(checkedLanguagesCode2)
+                      onSetDefaultLanguages(checkedLanguagesCode2)
+                    })
+                  }}
+                  disabled={isDefault || checkedLanguagesCode2.length === 0}
+                  color="secondary"
+                  size="large"
+                  style={[a.flex_1]}>
+                  <ButtonText>
+                    <Trans>Use as default</Trans>
+                  </ButtonText>
+                </Button>
+              )}
+              <Button
+                label={l`Done`}
+                onPress={handleClose}
+                color="primary"
+                size="large"
+                style={[a.flex_1]}>
+                <ButtonText>
+                  <Trans>Done</Trans>
+                </ButtonText>
+              </Button>
+            </View>
           </Dialog.FlatListFooter>
         }
       />
@@ -338,23 +380,19 @@ export function DialogInner({
 }
 
 function DialogError({details}: {details?: string}) {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
   const control = Dialog.useDialogContext()
 
   return (
-    <Dialog.ScrollableInner
-      style={a.gap_md}
-      label={_(msg`An error has occurred`)}>
+    <Dialog.ScrollableInner style={a.gap_md} label={l`An error has occurred`}>
       <Dialog.Close />
       <ErrorScreen
-        title={_(msg`Oh no!`)}
-        message={_(
-          msg`There was an unexpected issue in the application. Please let us know if this happened to you!`,
-        )}
+        title={l`Oh no!`}
+        message={l`There was an unexpected issue in the application. Please let us know if this happened to you!`}
         details={details}
       />
       <Button
-        label={_(msg`Close dialog`)}
+        label={l`Close dialog`}
         onPress={() => control.close()}
         color="primary"
         size="large">

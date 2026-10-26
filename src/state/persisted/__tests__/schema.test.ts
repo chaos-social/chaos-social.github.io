@@ -22,6 +22,39 @@ describe('persisted schema helpers', () => {
     },
   }
 
+  it.each(['en,fil', 'en,fil,ja'])(
+    'preserves the multilingual post default %s across restarts',
+    postLanguage => {
+      const parsed = tryParse(
+        JSON.stringify({
+          ...partialState,
+          languagePrefs: {
+            ...defaults.languagePrefs,
+            primaryLanguage: 'fr',
+            postLanguage,
+          },
+        }),
+      )
+      const raw = tryStringify(normalizeData(parsed!))
+      const restored = normalizeData(tryParse(raw!)!)
+
+      expect(restored.languagePrefs.postLanguage).toBe(postLanguage)
+      expect(restored.languagePrefs.primaryLanguage).toBe('fr')
+    },
+  )
+
+  it.each([
+    ['en-US,fil,en-GB,ja,de', 'en,fil,ja'],
+    ['', defaults.languagePrefs.postLanguage],
+  ])('normalizes the legacy post default %s to %s', (saved, expected) => {
+    const restored = normalizeData({
+      ...defaults,
+      languagePrefs: {...defaults.languagePrefs, postLanguage: saved},
+    })
+
+    expect(restored.languagePrefs.postLanguage).toBe(expected)
+  })
+
   it('applies schema defaults when reading partial data', () => {
     const parsed = tryParse(JSON.stringify(partialState))
 

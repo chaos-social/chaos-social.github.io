@@ -190,11 +190,15 @@ export function normalizeData(data: Schema) {
         normalizeLanguageTagToTwoLetterCode(lang),
       ),
     )
-    langPrefs.postLanguage = langPrefs.postLanguage
-      .split(',')
-      .map(lang => normalizeLanguageTagToTwoLetterCode(lang))
-      .filter(Boolean)
-      .join(',')
+    langPrefs.postLanguage =
+      dedupArray(
+        langPrefs.postLanguage
+          .split(',')
+          .map(lang => normalizeLanguageTagToTwoLetterCode(lang))
+          .filter(Boolean),
+      )
+        .slice(0, 3)
+        .join(',') || defaults.languagePrefs.postLanguage
     langPrefs.postLanguageHistory = dedupArray(
       langPrefs.postLanguageHistory.map(postLanguage => {
         return postLanguage

@@ -1,14 +1,16 @@
 import {useCallback, useMemo, useState} from 'react'
 import {View} from 'react-native'
-import {msg} from '@lingui/core/macro'
-import {useLingui} from '@lingui/react'
-import {Trans} from '@lingui/react/macro'
+import {Trans, useLingui} from '@lingui/react/macro'
 
 import {
   type CommonNavigatorParams,
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
-import {languageName, sanitizeAppLanguageSetting} from '#/locale/helpers'
+import {
+  codeToLanguageName,
+  languageName,
+  sanitizeAppLanguageSetting,
+} from '#/locale/helpers'
 import {APP_LANGUAGES, LANGUAGES} from '#/locale/languages'
 import {
   useLanguagePrefs,
@@ -16,13 +18,15 @@ import {
   useSetTranslationServicePreference,
   useTranslationServicePreference,
 } from '#/state/preferences'
+import {fromPostLanguages, toPostLanguages} from '#/state/preferences/languages'
 import {LibreTranslateInstanceDialog} from '#/screens/Settings/components/LibreTranslateInstanceDialog'
-import {atoms as a, web} from '#/alf'
+import {atoms as a, native, useTheme, web} from '#/alf'
 import {Admonition} from '#/components/Admonition'
 import {Button} from '#/components/Button'
 import {useDialogControl} from '#/components/Dialog'
 import {LanguageSelectDialog} from '#/components/dialogs/LanguageSelectDialog'
 import * as Toggle from '#/components/forms/Toggle'
+import {ChevronBottom_Stroke2_Corner0_Rounded as ChevronBottomIcon} from '#/components/icons/Chevron'
 import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
 import * as Layout from '#/components/Layout'
 import {createStaticClick, InlineLinkText} from '#/components/Link'
@@ -37,7 +41,9 @@ const DEDUPED_LANGUAGES = LANGUAGES.filter(
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'LanguageSettings'>
 export function LanguageSettingsScreen({}: Props) {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
+  const t = useTheme()
+  const [postLanguagesFocused, setPostLanguagesFocused] = useState(false)
   const langPrefs = useLanguagePrefs()
   const setLangPrefs = useLanguagePrefsApi()
   const translationServicePreference = useTranslationServicePreference()
@@ -45,10 +51,10 @@ export function LanguageSettingsScreen({}: Props) {
   const libreTranslateInstanceControl = useDialogControl()
 
   const translationProviderItems = [
-    {value: 'google', label: _(msg`Google Translate`)},
-    {value: 'kagi', label: _(msg`Kagi Translate`)},
-    {value: 'papago', label: _(msg`Naver Papago`)},
-    {value: 'libreTranslate', label: _(msg`LibreTranslate`)},
+    {value: 'google', label: l`Google Translate`},
+    {value: 'kagi', label: l`Kagi Translate`},
+    {value: 'papago', label: l`Naver Papago`},
+    {value: 'libreTranslate', label: l`LibreTranslate`},
   ] as const
 
   // changing langPrefs causes a slow re-render, so we use a local state copy
@@ -69,6 +75,8 @@ export function LanguageSettingsScreen({}: Props) {
   )
 
   const contentLanguagePrefsControl = useDialogControl()
+  const postLanguagePrefsControl = useDialogControl()
+  const defaultPostLanguages = toPostLanguages(langPrefs.postLanguage)
 
   const onChangePrimaryLanguage = useCallback(
     (value: string) => {
@@ -132,12 +140,12 @@ export function LanguageSettingsScreen({}: Props) {
               <Select.Root
                 value={sanitizeAppLanguageSetting(langPrefs.appLanguage)}
                 onValueChange={onChangeAppLanguage}>
-                <Select.Trigger label={_(msg`Select app language`)}>
+                <Select.Trigger label={l`Select app language`}>
                   <Select.ValueText />
                   <Select.Icon />
                 </Select.Trigger>
                 <Select.Content
-                  label={_(msg`App language`)}
+                  label={l`App language`}
                   renderItem={({label, value}) => (
                     <Select.Item value={value} label={label}>
                       <Select.ItemIndicator />
@@ -155,37 +163,69 @@ export function LanguageSettingsScreen({}: Props) {
           <SettingsList.Divider />
           <SettingsList.Group iconInset={false}>
             <SettingsList.ItemText>
-              <Trans>Primary language</Trans>
+              <Trans>Default posting languages</Trans>
             </SettingsList.ItemText>
             <View style={[a.gap_md, a.w_full]}>
               <Text style={[a.leading_snug]}>
                 <Trans>
-                  Select your preferred language for translations in your feed.
+                  Select up to 3 languages for new posts and replies.
                 </Trans>
               </Text>
-              <Select.Root
-                value={langPrefs.primaryLanguage}
-                onValueChange={onChangePrimaryLanguage}>
-                <Select.Trigger label={_(msg`Select primary language`)}>
-                  <Select.ValueText />
-                  <Select.Icon />
-                </Select.Trigger>
-                <Select.Content
-                  label={_(msg`Primary language`)}
-                  renderItem={({label, value}) => (
-                    <Select.Item value={value} label={label}>
-                      <Select.ItemIndicator />
-                      <Select.ItemText>{label}</Select.ItemText>
-                    </Select.Item>
-                  )}
-                  items={DEDUPED_LANGUAGES.map(l => ({
-                    label: languageName(l, langPrefs.appLanguage),
-                    value: l.code2,
-                  })).sort((a, b) =>
-                    a.label.localeCompare(b.label, langPrefs.appLanguage),
-                  )}
-                />
-              </Select.Root>
+              <Button
+                testID="defaultPostLanguagesBtn"
+                color="secondary"
+                size="large"
+                shape="rectangular"
+                style={[
+                  a.w_full,
+                  a.justify_between,
+                  a.pl_lg,
+                  a.pr_md,
+                  web([
+                    a.gap_sm,
+                    a.py_sm,
+                    a.px_md,
+                    t.atoms.bg_contrast_50,
+                    {
+                      maxWidth: 400,
+                      borderWidth: 1,
+                      borderColor: postLanguagesFocused
+                        ? t.palette.primary_500
+                        : t.palette.contrast_50,
+                    },
+                  ]),
+                ]}
+                hoverStyle={web(t.atoms.bg_contrast_50)}
+                label={l`Choose default posting languages`}
+                onFocus={() => setPostLanguagesFocused(true)}
+                onBlur={() => setPostLanguagesFocused(false)}
+                onPress={postLanguagePrefsControl.open}>
+                <Text style={[a.flex_1, native(a.text_md)]}>
+                  {defaultPostLanguages
+                    .map(language =>
+                      codeToLanguageName(language, langPrefs.appLanguage),
+                    )
+                    .join(' + ')}
+                </Text>
+                <ChevronBottomIcon size="xs" style={t.atoms.text} />
+              </Button>
+              <LanguageSelectDialog
+                control={postLanguagePrefsControl}
+                titleText={<Trans>Default posting languages</Trans>}
+                subtitleText={
+                  <Trans>
+                    Select up to 3 languages for new posts and replies
+                  </Trans>
+                }
+                currentLanguages={defaultPostLanguages}
+                minLanguages={1}
+                maxLanguages={3}
+                onSelectLanguages={languages => {
+                  if (languages.length > 0) {
+                    setLangPrefs.setPostLanguage(fromPostLanguages(languages))
+                  }
+                }}
+              />
             </View>
           </SettingsList.Group>
           <SettingsList.Divider />
@@ -209,7 +249,7 @@ export function LanguageSettingsScreen({}: Props) {
 
               <View style={[a.w_full, web({maxWidth: 400})]}>
                 <Toggle.Group
-                  label={_(msg`Select content languages`)}
+                  label={l`Select content languages`}
                   values={contentLanguages}
                   onChange={setContentLanguages}>
                   <Toggle.PanelGroup>
@@ -232,9 +272,12 @@ export function LanguageSettingsScreen({}: Props) {
                       )
                     })}
                     <Button
-                      label={_(msg`Add more languages…`)}
+                      label={l`Add more languages…`}
                       onPress={contentLanguagePrefsControl.open}>
-                      <Toggle.Panel adjacent={possibleLanguages.length === 0 ? undefined : "leading"}>
+                      <Toggle.Panel
+                        adjacent={
+                          possibleLanguages.length === 0 ? undefined : 'leading'
+                        }>
                         <Toggle.PanelIcon icon={PlusIcon} />
                         <Toggle.PanelText>
                           <Trans>Add more languages…</Trans>
@@ -267,6 +310,42 @@ export function LanguageSettingsScreen({}: Props) {
           <SettingsList.Divider />
           <SettingsList.Group iconInset={false}>
             <SettingsList.ItemText>
+              <Trans>Translation language</Trans>
+            </SettingsList.ItemText>
+            <View style={[a.gap_md, a.w_full]}>
+              <Text style={[a.leading_snug]}>
+                <Trans>
+                  Select your preferred language for translations in your feed.
+                </Trans>
+              </Text>
+              <Select.Root
+                value={langPrefs.primaryLanguage}
+                onValueChange={onChangePrimaryLanguage}>
+                <Select.Trigger label={l`Select translation language`}>
+                  <Select.ValueText />
+                  <Select.Icon />
+                </Select.Trigger>
+                <Select.Content
+                  label={l`Translation language`}
+                  renderItem={({label, value}) => (
+                    <Select.Item value={value} label={label}>
+                      <Select.ItemIndicator />
+                      <Select.ItemText>{label}</Select.ItemText>
+                    </Select.Item>
+                  )}
+                  items={DEDUPED_LANGUAGES.map(l => ({
+                    label: languageName(l, langPrefs.appLanguage),
+                    value: l.code2,
+                  })).sort((a, b) =>
+                    a.label.localeCompare(b.label, langPrefs.appLanguage),
+                  )}
+                />
+              </Select.Root>
+            </View>
+          </SettingsList.Group>
+          <SettingsList.Divider />
+          <SettingsList.Group iconInset={false}>
+            <SettingsList.ItemText>
               <Trans>Post translation provider</Trans>
             </SettingsList.ItemText>
             <View style={[a.gap_md, a.w_full]}>
@@ -282,13 +361,12 @@ export function LanguageSettingsScreen({}: Props) {
                     value as typeof translationServicePreference,
                   )
                 }}>
-                <Select.Trigger
-                  label={_(msg`Select post translation provider`)}>
+                <Select.Trigger label={l`Select post translation provider`}>
                   <Select.ValueText />
                   <Select.Icon />
                 </Select.Trigger>
                 <Select.Content
-                  label={_(msg`Post translation provider`)}
+                  label={l`Post translation provider`}
                   renderItem={({label, value}) => (
                     <Select.Item value={value} label={label}>
                       <Select.ItemIndicator />
@@ -301,7 +379,7 @@ export function LanguageSettingsScreen({}: Props) {
               {translationServicePreference === 'libreTranslate' && (
                 <View style={[a.w_full, a.align_start]}>
                   <InlineLinkText
-                    label={_(msg`Change instance`)}
+                    label={l`Change instance`}
                     {...createStaticClick(() =>
                       libreTranslateInstanceControl.open(),
                     )}>
