@@ -6,7 +6,11 @@ import type Hls from 'hls.js'
 import {formatTime} from '#/lib/media/video/formatTime'
 import {clamp} from '#/lib/numbers'
 import {SHARP_CORNERS} from '#/lib/shapes'
-import {useAutoplayDisabled, useSubtitlesEnabled} from '#/state/preferences'
+import {
+  useAutoplayDisabled,
+  useSetSubtitlesEnabled,
+  useSubtitlesEnabled,
+} from '#/state/preferences'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme, web} from '#/alf'
 import {useIsWithinMessage} from '#/components/dms/MessageContext'
@@ -20,6 +24,10 @@ import {
   ArrowsDiagonalIn_Stroke2_Corner0_Rounded as ArrowsInIcon,
   ArrowsDiagonalOut_Stroke2_Corner0_Rounded as ArrowsOutIcon,
 } from '#/components/icons/ArrowsDiagonal'
+import {
+  CC_Filled_Corner0_Rounded as CaptionsEnabledIcon,
+  CC_Stroke2_Corner0_Rounded as CaptionsIcon,
+} from '#/components/icons/CC'
 import {Clock_Stroke2_Corner0_Rounded as ClockIcon} from '#/components/icons/Clock'
 import {Mute_Stroke2_Corner0_Rounded as MuteIcon} from '#/components/icons/Mute'
 import {Pause_Filled_Corner0_Rounded as PauseIcon} from '#/components/icons/Pause'
@@ -150,6 +158,7 @@ export function Controls({
   )
 
   const subtitlesEnabled = useSubtitlesEnabled()
+  const setSubtitlesEnabled = useSetSubtitlesEnabled()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [selectedSubtitle, setSelectedSubtitle] = useState(0)
   const {
@@ -389,7 +398,7 @@ export function Controls({
       if (
         isGif ||
         event.defaultPrevented ||
-        (event.repeat && (key === 'f' || key === 'm')) ||
+        (event.repeat && (key === 'f' || key === 'm' || key === 'c')) ||
         event.isComposing ||
         (event.shiftKey && !isSpeedChange) ||
         event.ctrlKey ||
@@ -397,6 +406,7 @@ export function Controls({
         event.altKey ||
         (key !== 'f' &&
           key !== 'm' &&
+          key !== 'c' &&
           !isSeek &&
           !isSpeedChange &&
           !isVolumeChange &&
@@ -423,12 +433,16 @@ export function Controls({
       )
         return
       const video = videoRef.current
+      if (key === 'c' && !hasSubtitleTrack) return
       if (isSpeedChange && !video) return
       if (isSeek && (!video || !Number.isFinite(video.duration))) return
       event.preventDefault()
       event.stopPropagation()
       if (key === 'f') {
         onPressFullscreen()
+      } else if (key === 'c') {
+        drawFocus()
+        setSubtitlesEnabled(!subtitlesEnabled)
       } else if (key === 'm') {
         drawFocus()
         changeMuted(value => !value)
@@ -503,6 +517,9 @@ export function Controls({
     fullscreenRef,
     isGif,
     onPressFullscreen,
+    hasSubtitleTrack,
+    subtitlesEnabled,
+    setSubtitlesEnabled,
     changeMuted,
     settingsOpen,
     videoRef,
@@ -759,6 +776,20 @@ export function Controls({
             drawFocus={drawFocus}
             onKeyboardVolumeChange={showVolumeFeedback}
           />
+          {hasSubtitleTrack && (
+            <ControlButton
+              testID="videoCaptionsButton"
+              active={subtitlesEnabled}
+              activeLabel={l`Disable captions`}
+              inactiveLabel={l`Enable captions`}
+              activeIcon={CaptionsEnabledIcon}
+              inactiveIcon={CaptionsIcon}
+              onPress={() => {
+                drawFocus()
+                setSubtitlesEnabled(!subtitlesEnabled)
+              }}
+            />
+          )}
           {typeof document !== 'undefined' &&
             document.pictureInPictureEnabled && (
               <ControlButton

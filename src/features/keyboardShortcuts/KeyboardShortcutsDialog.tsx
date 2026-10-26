@@ -68,28 +68,6 @@ function KeyboardShortcutsDialogInner() {
           <ShortcutRow shortcut="Esc" label={l`Clear selection`} />
         </ShortcutGroup>
 
-        <ShortcutGroup title={l`Focused video`}>
-          <ShortcutRow shortcut={l`Space`} label={l`Play or pause video`} />
-          <ShortcutRow
-            shortcut={l`Hold Space`}
-            label={l`Temporarily play at 2× speed`}
-          />
-          <ShortcutRow shortcut="F" label={l`Toggle fullscreen`} />
-          <ShortcutRow shortcut="M" label={l`Mute or unmute video`} />
-          <ShortcutRow
-            shortcut="← / →"
-            label={l`Seek backward or forward 5 seconds`}
-          />
-          <ShortcutRow
-            shortcut=", / ."
-            label={l`Step backward or forward one frame`}
-          />
-          <ShortcutRow
-            shortcut="< / >"
-            label={l`Decrease or increase video playback speed`}
-          />
-        </ShortcutGroup>
-
         <ShortcutGroup title={l`Composer`}>
           <ShortcutRow
             shortcut="Cmd/Ctrl Enter"
@@ -158,6 +136,29 @@ function KeyboardShortcutsDialogInner() {
           <ShortcutRow
             shortcut="Alt/⌥ + T / Q / L"
             label={l`View reposts, quotes, or likes`}
+          />
+        </ShortcutGroup>
+
+        <ShortcutGroup title={l`Focused video`}>
+          <ShortcutRow shortcut={l`Space`} label={l`Play or pause video`} />
+          <ShortcutRow
+            shortcut={l`Hold Space`}
+            label={l`Temporarily play at 2× speed`}
+          />
+          <ShortcutRow shortcut="C" label={l`Toggle captions`} />
+          <ShortcutRow shortcut="F" label={l`Toggle fullscreen`} />
+          <ShortcutRow shortcut="M" label={l`Mute or unmute video`} />
+          <ShortcutRow
+            shortcut="← / →"
+            label={l`Seek backward or forward 5 seconds`}
+          />
+          <ShortcutRow
+            shortcut=", / ."
+            label={l`Step backward or forward one frame`}
+          />
+          <ShortcutRow
+            shortcut="< / >"
+            label={l`Decrease or increase video playback speed`}
           />
         </ShortcutGroup>
 

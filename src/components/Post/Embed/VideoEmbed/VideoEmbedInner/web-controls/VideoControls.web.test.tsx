@@ -5,6 +5,7 @@ import {i18n} from '@lingui/core'
 import {I18nProvider} from '@lingui/react'
 import {createRoot} from 'react-dom/client'
 
+import {useSetSubtitlesEnabled} from '#/state/preferences'
 import {Controls} from './VideoControls'
 
 jest.mock('#/components/icons/TEMPLATE', () => ({
@@ -28,6 +29,7 @@ jest.mock('#/alf', () => ({
 jest.mock('#/state/preferences', () => ({
   useAutoplayDisabled: () => true,
   useSubtitlesEnabled: () => false,
+  useSetSubtitlesEnabled: jest.fn(),
 }))
 jest.mock('#/state/preferences/enable-square-buttons', () => ({
   useEnableSquareButtons: () => 'round',
@@ -63,6 +65,8 @@ jest.mock('../../GifPresentationControls', () => ({
 
 it('shows keyboard actions, refreshes the timeout, and ignores editable targets', () => {
   jest.useFakeTimers()
+  const setSubtitlesEnabled = jest.fn()
+  jest.mocked(useSetSubtitlesEnabled).mockReturnValue(setSubtitlesEnabled)
   const container = document.createElement('div')
   const video = document.createElement('video')
   const input = document.createElement('input')
@@ -106,7 +110,7 @@ it('shows keyboard actions, refreshes the timeout, and ignores editable targets'
             onScreen
             fullscreenRef={{current: container}}
             hlsLoading={false}
-            hasSubtitleTrack={false}
+            hasSubtitleTrack
             isGif={false}
             updateCuePositions={() => {}}
           />
@@ -137,6 +141,16 @@ it('shows keyboard actions, refreshes the timeout, and ignores editable targets'
     expect(
       rootContainer.querySelector('[data-testid="videoKeyboardFeedback"]'),
     ).toBeNull()
+
+    press('c')
+    expect(setSubtitlesEnabled).toHaveBeenCalledWith(true)
+    press('c', input)
+    act(() => {
+      document.body.dispatchEvent(
+        new KeyboardEvent('keydown', {key: 'c', repeat: true, bubbles: true}),
+      )
+    })
+    expect(setSubtitlesEnabled).toHaveBeenCalledTimes(1)
 
     press('m')
     expect(video.muted).toBe(true)
