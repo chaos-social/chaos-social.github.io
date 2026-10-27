@@ -15,15 +15,28 @@ export function useDeferredEnable(enabled: boolean): boolean {
     }
 
     let cancelled = false
-    const handle = requestIdleCallback(() => {
+    const enable = () => {
       if (!cancelled) {
         setReady(true)
       }
-    })
+    }
+
+    let cancel: () => void
+    if (
+      typeof requestIdleCallback === 'function' &&
+      typeof cancelIdleCallback === 'function'
+    ) {
+      const handle = requestIdleCallback(enable)
+      cancel = () => cancelIdleCallback(handle)
+    } else {
+      // Safari does not provide idle callbacks, so yield using a timer instead.
+      const handle = setTimeout(enable, 100)
+      cancel = () => clearTimeout(handle)
+    }
 
     return () => {
       cancelled = true
-      cancelIdleCallback(handle)
+      cancel()
     }
   }, [enabled])
 
