@@ -1,5 +1,4 @@
 import {useCallback} from 'react'
-import {type AppBskyFeedDefs} from '@atproto/api'
 import {type Client} from '@atproto/lex'
 import {AtUri, type AtUriString, type HandleString} from '@atproto/syntax'
 import {deleteLike, deletePost, deleteRepost, like, repost} from '@bsky/sdk'
@@ -22,6 +21,7 @@ import {maybeCelebrateSixSevenLike} from '#/features/sixSeven'
 import {app, com} from '#/lexicons'
 import {useIsThreadMuted, useSetThreadMute} from '../cache/thread-mutes'
 import {findProfileQueryData} from './profile'
+import {didOrHandleUriMatches} from './util'
 
 const RQKEY_ROOT = 'post'
 export const RQKEY = (postUri: string) => [RQKEY_ROOT, postUri]
@@ -81,10 +81,21 @@ export function precachePost(
 export function* findAllPostsInQueryData(
   queryClient: QueryClient,
   uri: string,
-): Generator<AppBskyFeedDefs.PostView, void> {
-  const post = queryClient.getQueryData<AppBskyFeedDefs.PostView>(RQKEY(uri))
-  if (post) {
-    yield post
+): Generator<app.bsky.feed.defs.PostView, void> {
+  const atUri = new AtUri(uri)
+  const queryDatas = queryClient.getQueriesData<
+    app.bsky.feed.defs.PostView | app.bsky.feed.defs.PostView[]
+  >({queryKey: [RQKEY_ROOT]})
+
+  /* A handle-keyed query still contains a post whose URI uses its DID. */
+  for (const [_queryKey, queryData] of queryDatas) {
+    if (!queryData) continue
+    const posts = Array.isArray(queryData) ? queryData : [queryData]
+    for (const post of posts) {
+      if (didOrHandleUriMatches(atUri, post)) {
+        yield post
+      }
+    }
   }
 }
 

@@ -203,7 +203,7 @@ function* findPostsInCache(
     yield post
   }
   for (let post of findAllPostsInPostQueryData(queryClient, uri)) {
-    yield post as unknown as app.bsky.feed.defs.PostView
+    yield post
   }
   for (let post of findAllPostsInQuoteQueryData(queryClient, uri)) {
     yield post
