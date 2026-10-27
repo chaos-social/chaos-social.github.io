@@ -97,12 +97,14 @@ export function Controls({
   const isPictureInPicture =
     pictureInPictureElement !== null &&
     pictureInPictureElement === videoRef.current
-  const [spaceHeld, setSpaceHeld] = useState(false)
-  const spaceHoldRef = useRef<{
+  const [speedHeld, setSpeedHeld] = useState(false)
+  const speedHoldRef = useRef<{
     video: HTMLVideoElement
     rate: number
     paused: boolean
     boosted: boolean
+    source: 'keyboard' | 'pointer'
+    pointerId?: number
     timeout?: ReturnType<typeof setTimeout>
   } | null>(null)
   const [playbackSpeed, setPlaybackSpeed] = useVideoPlaybackSpeed()
@@ -112,7 +114,7 @@ export function Controls({
     const applySpeed = () => {
       const rate = isGif ? 1 : playbackSpeed
       video.defaultPlaybackRate = rate
-      video.playbackRate = spaceHoldRef.current?.boosted ? 2 : rate
+      video.playbackRate = speedHoldRef.current?.boosted ? 2 : rate
     }
     applySpeed()
     video.addEventListener('loadedmetadata', applySpeed)
@@ -277,6 +279,8 @@ export function Controls({
     setFocused(true)
   }, [active, setActive, setFocused, videoRef])
 
+  const suppressPointerClickRef = useRef(false)
+  const suppressDoubleClickRef = useRef(false)
   const playingBeforeClickRef = useRef<boolean | null>(null)
   const emptySpaceRef = useRef<HTMLDivElement>(null)
 
@@ -305,6 +309,10 @@ export function Controls({
       if (!emptySpaceRef.current?.contains(evt.target as Node)) return
 
       evt.stopPropagation()
+      if (suppressDoubleClickRef.current) {
+        suppressDoubleClickRef.current = false
+        return
+      }
       toggleFullscreen()
       // Undo the first click's playback toggle without delaying single clicks.
       if (playingBeforeClickRef.current !== null) {
@@ -337,48 +345,110 @@ export function Controls({
     }
   }
 
-  const stopSpaceHold = useCallback(
+  const stopSpeedHold = useCallback(
     (toggleOnTap = false) => {
-      const hold = spaceHoldRef.current
+      const hold = speedHoldRef.current
       if (!hold) return
-      spaceHoldRef.current = null
+      speedHoldRef.current = null
       clearTimeout(hold.timeout)
       if (hold.boosted) {
+        if (hold.source === 'pointer') suppressPointerClickRef.current = true
         hold.video.playbackRate = hold.rate
         if (hold.paused) pause()
-        setSpaceHeld(false)
-      } else if (toggleOnTap) {
+        setSpeedHeld(false)
+      } else if (toggleOnTap && hold.source === 'keyboard') {
         togglePlayPause()
       }
     },
     [pause, togglePlayPause],
   )
 
+  const startSpeedHold = useCallback(
+    (source: 'keyboard' | 'pointer', pointerId?: number) => {
+      const video = videoRef.current
+      if (!video || speedHoldRef.current || isGif || settingsOpen) return
+      if (source === 'keyboard') drawFocus()
+      const hold = {
+        video,
+        rate: video.playbackRate,
+        paused: video.paused,
+        boosted: false,
+        source,
+        pointerId,
+        timeout: undefined as ReturnType<typeof setTimeout> | undefined,
+      }
+      speedHoldRef.current = hold
+      hold.timeout = setTimeout(() => {
+        hold.boosted = true
+        if (source === 'pointer') {
+          drawFocus()
+          suppressPointerClickRef.current = true
+          playingBeforeClickRef.current = null
+        }
+        video.playbackRate = 2
+        play()
+        setSpeedHeld(true)
+      }, 300)
+    },
+    [videoRef, isGif, settingsOpen, drawFocus, play],
+  )
+
+  const onPointerDownEmptySpace = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    suppressPointerClickRef.current = false
+    if (event.pointerType !== 'mouse' || event.button !== 0) return
+    startSpeedHold('pointer', event.pointerId)
+  }
+
+  const onClickEmptySpaceCapture = (
+    event: React.MouseEvent<HTMLDivElement>,
+  ) => {
+    if (event.detail === 1) suppressDoubleClickRef.current = false
+    if (!suppressPointerClickRef.current) return
+    suppressPointerClickRef.current = false
+    if (event.detail === 0) return
+    suppressDoubleClickRef.current = true
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
   useEffect(() => {
     const onKeyUp = (event: KeyboardEvent) => {
-      if (event.key !== ' ' || !spaceHoldRef.current) return
+      if (event.key !== ' ' || speedHoldRef.current?.source !== 'keyboard')
+        return
       event.preventDefault()
       event.stopPropagation()
-      stopSpaceHold(true)
+      stopSpeedHold(true)
     }
-    const cancelHold = () => stopSpaceHold()
+    const onPointerUp = (event: PointerEvent) => {
+      const hold = speedHoldRef.current
+      if (hold?.source !== 'pointer' || hold.pointerId !== event.pointerId)
+        return
+      stopSpeedHold()
+    }
+    const cancelHold = () => stopSpeedHold()
     const onVisibilityChange = () => {
       if (document.hidden) cancelHold()
     }
     document.addEventListener('keyup', onKeyUp)
+    document.addEventListener('pointerup', onPointerUp, true)
+    document.addEventListener('pointercancel', onPointerUp, true)
     window.addEventListener('blur', cancelHold)
     document.addEventListener('visibilitychange', onVisibilityChange)
     return () => {
       document.removeEventListener('keyup', onKeyUp)
+      document.removeEventListener('pointerup', onPointerUp, true)
+      document.removeEventListener('pointercancel', onPointerUp, true)
       window.removeEventListener('blur', cancelHold)
       document.removeEventListener('visibilitychange', onVisibilityChange)
       cancelHold()
     }
-  }, [stopSpaceHold])
+  }, [stopSpeedHold])
 
   useEffect(() => {
-    if (!active || !focused || isGif || settingsOpen) stopSpaceHold()
-  }, [active, focused, isGif, settingsOpen, stopSpaceHold])
+    if (!active || !focused || isGif || settingsOpen) stopSpeedHold()
+  }, [active, focused, isGif, settingsOpen, stopSpeedHold])
 
   const onPressFullscreen = useCallback(() => {
     drawFocus()
@@ -425,11 +495,12 @@ export function Controls({
         : container.contains(document.activeElement) ||
           (active && focused && document.activeElement === document.body)
       if (!ownsKeyboard) return
-      // Let focused buttons handle their own Space activation.
+      // The video surface uses hold-to-speed; other buttons keep native activation.
       if (
         key === ' ' &&
         target instanceof Element &&
-        target.closest('button, [role="button"], a[href]')
+        target.closest('button, [role="button"], a[href]') &&
+        !emptySpaceRef.current?.contains(target)
       )
         return
       const video = videoRef.current
@@ -451,21 +522,7 @@ export function Controls({
         if (event.repeat) return
         drawFocus()
         if (key === ' ') {
-          if (spaceHoldRef.current) return
-          const hold = {
-            video,
-            rate: video.playbackRate,
-            paused: video.paused,
-            boosted: false,
-            timeout: undefined as ReturnType<typeof setTimeout> | undefined,
-          }
-          spaceHoldRef.current = hold
-          hold.timeout = setTimeout(() => {
-            hold.boosted = true
-            video.playbackRate = 2
-            play()
-            setSpaceHeld(true)
-          }, 300)
+          startSpeedHold('keyboard')
         } else {
           togglePlayPause()
         }
@@ -483,7 +540,7 @@ export function Controls({
         changeMuted(percent === 0)
         showVolumeFeedback(volume, percent === 0)
       } else if (isSpeedChange && video) {
-        if (spaceHoldRef.current) return
+        if (speedHoldRef.current) return
         drawFocus()
         const direction = key === '<' ? -1 : 1
         const speed = clamp(video.playbackRate + direction * 0.25, 0.25, 2)
@@ -509,8 +566,22 @@ export function Controls({
         )
       }
     }
+    const onVideoSurfaceKey = (event: KeyboardEvent) => {
+      if (
+        event.key === ' ' &&
+        event.target instanceof Node &&
+        emptySpaceRef.current?.contains(event.target)
+      ) {
+        onVideoKey(event)
+      }
+    }
+    // Capture Space before the surface's Pressable consumes keyboard activation.
+    document.addEventListener('keydown', onVideoSurfaceKey, true)
     document.addEventListener('keydown', onVideoKey)
-    return () => document.removeEventListener('keydown', onVideoKey)
+    return () => {
+      document.removeEventListener('keydown', onVideoSurfaceKey, true)
+      document.removeEventListener('keydown', onVideoKey)
+    }
   }, [
     active,
     focused,
@@ -530,7 +601,7 @@ export function Controls({
     setVolume,
     showVolumeFeedback,
     togglePlayPause,
-    play,
+    startSpeedHold,
   ])
 
   const onSeek = useCallback(
@@ -637,9 +708,10 @@ export function Controls({
   )
 
   const showControls =
-    settingsOpen ||
-    ((focused || autoplayDisabled) && !playing) ||
-    (interactingViaKeypress ? hasFocus : hovered)
+    !speedHeld &&
+    (settingsOpen ||
+      ((focused || autoplayDisabled) && !playing) ||
+      (interactingViaKeypress ? hasFocus : hovered))
 
   // adjust subtitle cue positioning to avoid occlusion by controls
   // uses percentage-based positioning (snapToLines=false) so wrapped
@@ -691,7 +763,11 @@ export function Controls({
       }}
       onBlur={onBlur}
       onKeyDown={onKeyDown}>
-      <div ref={emptySpaceRef} style={{display: 'flex', flex: 1, minHeight: 0}}>
+      <div
+        ref={emptySpaceRef}
+        style={{display: 'flex', flex: 1, minHeight: 0}}
+        onPointerDownCapture={onPointerDownEmptySpace}
+        onClickCapture={onClickEmptySpaceCapture}>
         <Pressable
           testID="postMediaOpenBtn"
           accessibilityRole="button"
@@ -717,6 +793,9 @@ export function Controls({
         <TimeIndicator time={Math.floor(duration - currentTime)} />
       )}
       <View
+        testID="videoPlaybackControls"
+        pointerEvents={speedHeld ? 'none' : 'auto'}
+        aria-hidden={speedHeld}
         style={[
           a.flex_shrink_0,
           a.w_full,
@@ -828,7 +907,7 @@ export function Controls({
           )}
         </View>
       </View>
-      {spaceHeld && (
+      {speedHeld && (
         <View
           pointerEvents="none"
           style={[a.absolute, a.inset_0, a.align_center, a.pt_sm]}>

@@ -1,11 +1,12 @@
 /** @jest-environment jsdom */
 
-import {act} from 'react'
+import {act, useState} from 'react'
 import {i18n} from '@lingui/core'
 import {I18nProvider} from '@lingui/react'
 import {createRoot} from 'react-dom/client'
 
 import {useSetSubtitlesEnabled} from '#/state/preferences'
+import {useFullscreen} from '#/components/hooks/useFullscreen'
 import {Controls} from './VideoControls'
 
 jest.mock('#/components/icons/TEMPLATE', () => ({
@@ -38,7 +39,7 @@ jest.mock('#/components/dms/MessageContext', () => ({
   useIsWithinMessage: () => false,
 }))
 jest.mock('#/components/hooks/useFullscreen', () => ({
-  useFullscreen: () => [false, jest.fn()],
+  useFullscreen: jest.fn(() => [false, jest.fn()]),
 }))
 jest.mock('#/components/Post/Embed/VideoEmbed/VideoVolumeContext', () => ({
   useVideoVolumeState: () => [1, jest.fn()],
@@ -237,14 +238,194 @@ it('shows keyboard actions, refreshes the timeout, and ignores editable targets'
     releaseSpace()
     expect(video.paused).toBe(false)
 
+    const surface = rootContainer.querySelector<HTMLButtonElement>(
+      '[data-testid="postMediaOpenBtn"]',
+    )!
+    act(() => surface.click())
+    act(() => surface.focus())
+    expect(video.paused).toBe(true)
+    press(' ', surface)
+    act(() => jest.advanceTimersByTime(300))
+    expect(video.playbackRate).toBe(2)
+    expect(video.paused).toBe(false)
+    releaseSpace()
+    expect(video.playbackRate).toBe(1.25)
+    expect(video.paused).toBe(true)
+    press(' ', surface)
+    releaseSpace()
+    expect(video.paused).toBe(false)
+
     otherPlayer.tabIndex = 0
-    otherPlayer.focus()
+    act(() => otherPlayer.focus())
     press('ArrowRight')
     expect(video.currentTime).toBeCloseTo(0)
   } finally {
     act(() => root.unmount())
     container.remove()
     otherPlayer.remove()
+    jest.restoreAllMocks()
+    jest.useRealTimers()
+  }
+})
+
+it('boosts only mouse holds and restores playback without toggling on release', () => {
+  jest.useFakeTimers()
+  jest.mocked(useSetSubtitlesEnabled).mockReturnValue(jest.fn())
+  const toggleFullscreen = jest.fn()
+  jest.mocked(useFullscreen).mockReturnValue([false, toggleFullscreen])
+  const container = document.createElement('div')
+  const video = document.createElement('video')
+  document.body.append(container)
+  const videoRef = {current: video}
+  const fullscreenRef = {current: container}
+  const hlsRef = {current: null}
+  Object.defineProperty(video, 'duration', {value: 60})
+  Object.defineProperty(video, 'readyState', {value: 4})
+  let paused = true
+  Object.defineProperty(video, 'paused', {get: () => paused})
+  jest.spyOn(video, 'play').mockImplementation(() => {
+    paused = false
+    video.dispatchEvent(new Event('play'))
+    return Promise.resolve()
+  })
+  jest.spyOn(video, 'pause').mockImplementation(() => {
+    paused = true
+    video.dispatchEvent(new Event('pause'))
+  })
+  const root = createRoot(container)
+  function Player() {
+    const [focused, setFocused] = useState(false)
+    return (
+      <I18nProvider i18n={i18n}>
+        <Controls
+          videoRef={videoRef}
+          hlsRef={hlsRef}
+          active
+          setActive={() => {}}
+          focused={focused}
+          setFocused={setFocused}
+          onScreen
+          fullscreenRef={fullscreenRef}
+          hlsLoading={false}
+          hasSubtitleTrack={false}
+          isGif={false}
+          updateCuePositions={() => {}}
+        />
+      </I18nProvider>
+    )
+  }
+  const pointer = (
+    type: string,
+    target: EventTarget,
+    options: {pointerType?: string; button?: number; pointerId?: number} = {},
+  ) => {
+    act(() => {
+      const event = new Event(type, {bubbles: true, cancelable: true})
+      Object.assign(event, {
+        pointerType: 'mouse',
+        button: 0,
+        pointerId: 1,
+        ...options,
+      })
+      target.dispatchEvent(event)
+    })
+  }
+  const click = (target: HTMLElement, detail = 1) => {
+    act(() => {
+      target.dispatchEvent(
+        new MouseEvent('click', {bubbles: true, cancelable: true, detail}),
+      )
+    })
+  }
+  try {
+    act(() => root.render(<Player />))
+    const surface = container.querySelector<HTMLButtonElement>(
+      '[data-testid="postMediaOpenBtn"]',
+    )!
+    const badge = () =>
+      container.querySelector('[data-testid="videoHoldSpeedFeedback"]')
+    const controls = container.querySelector<HTMLElement>(
+      '[data-testid="videoPlaybackControls"]',
+    )!
+    pointer('pointerover', surface)
+    video.playbackRate = 1.5
+
+    pointer('pointerdown', surface)
+    act(() => jest.advanceTimersByTime(100))
+    pointer('pointerup', surface)
+    click(surface)
+    expect(video.paused).toBe(false)
+    expect(video.playbackRate).toBe(1.5)
+    expect(badge()).toBeNull()
+
+    pointer('pointerdown', surface)
+    act(() => jest.advanceTimersByTime(300))
+    expect(video.playbackRate).toBe(2)
+    expect(badge()?.textContent).toBe('2×')
+    expect(controls.style.opacity).toBe('0')
+    expect(controls.getAttribute('aria-hidden')).toBe('true')
+    pointer('pointerup', surface)
+    click(surface)
+    expect(video.playbackRate).toBe(1.5)
+    expect(video.paused).toBe(false)
+    expect(badge()).toBeNull()
+    expect(controls.style.opacity).toBe('1')
+    expect(controls.getAttribute('aria-hidden')).toBeNull()
+    act(() => {
+      surface.dispatchEvent(
+        new MouseEvent('dblclick', {bubbles: true, detail: 2}),
+      )
+    })
+    expect(toggleFullscreen).not.toHaveBeenCalled()
+
+    pointer('pointerdown', surface)
+    act(() => jest.advanceTimersByTime(300))
+    pointer('pointerup', document.body)
+    expect(video.playbackRate).toBe(1.5)
+    pointer('pointerdown', surface)
+    pointer('pointerup', surface)
+    click(surface)
+    expect(video.paused).toBe(true)
+
+    pointer('pointerdown', surface)
+    act(() => jest.advanceTimersByTime(300))
+    expect(video.paused).toBe(false)
+    pointer('pointercancel', surface)
+    expect(video.playbackRate).toBe(1.5)
+    expect(video.paused).toBe(true)
+    expect(badge()).toBeNull()
+
+    pointer('pointerdown', surface, {pointerType: 'touch'})
+    act(() => jest.advanceTimersByTime(400))
+    expect(video.playbackRate).toBe(1.5)
+    expect(badge()).toBeNull()
+    pointer('pointerdown', surface, {button: 2})
+    act(() => jest.advanceTimersByTime(400))
+    expect(video.playbackRate).toBe(1.5)
+    expect(badge()).toBeNull()
+
+    pointer('pointerdown', surface)
+    pointer('pointerup', surface)
+    click(surface)
+    pointer('pointerdown', surface)
+    pointer('pointerup', surface)
+    click(surface, 2)
+    act(() => {
+      surface.dispatchEvent(
+        new MouseEvent('dblclick', {bubbles: true, detail: 2}),
+      )
+    })
+    expect(toggleFullscreen).toHaveBeenCalledTimes(1)
+    expect(video.paused).toBe(true)
+
+    pointer('pointerdown', surface)
+    act(() => jest.advanceTimersByTime(300))
+    act(() => root.unmount())
+    expect(video.playbackRate).toBe(1.5)
+    expect(video.paused).toBe(true)
+  } finally {
+    act(() => root.unmount())
+    container.remove()
     jest.restoreAllMocks()
     jest.useRealTimers()
   }
