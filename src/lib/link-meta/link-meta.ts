@@ -1,4 +1,3 @@
-
 import {LINK_META_PROXY} from '#/lib/constants'
 import {getGiphyMetaUri} from '#/lib/strings/embed-player'
 import {parseStarterPackUri} from '#/lib/strings/starter-pack'
@@ -46,8 +45,14 @@ type CardybLinkMetaResponse = {
 export async function getLinkMeta(
   url: string,
   timeout = 15e3,
+  {
+    fetchAppMetadata = false,
+  }: {
+    /** Fetch page metadata even for links that normally render as in-app embeds. */
+    fetchAppMetadata?: boolean
+  } = {},
 ): Promise<LinkMeta> {
-  if (isBskyAppUrl(url) && !parseStarterPackUri(url)) {
+  if (!fetchAppMetadata && isBskyAppUrl(url) && !parseStarterPackUri(url)) {
     return {
       likelyType: LikelyType.AtpData,
       url,
