@@ -51,6 +51,7 @@ export function GapRow({
       {isOpen && (
         <Button
           testID="followingGapBtn"
+          {...{dataSet: {keyboardNavigationItem: 'true'}}}
           label={
             isFilling
               ? l`Loading more posts`

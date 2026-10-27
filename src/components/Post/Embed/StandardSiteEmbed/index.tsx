@@ -331,7 +331,7 @@ export function PublicationCard({
      * primary link only; the subscribe link receives just `tabIndex` and
      * `onFocus`.
      */
-    linkProps?: Pick<LinkProps, 'ref' | 'tabIndex' | 'onFocus'>
+    linkProps?: Pick<LinkProps, 'ref' | 'tabIndex' | 'onFocus' | 'dataSet'>
     hideSubscribe?: boolean
   }) {
   const shapePreference = useEnableSquareButtons()
@@ -379,6 +379,7 @@ export function PublicationCard({
           onMouseEnter: onInteract,
           onMouseLeave: onInteractOut,
         })}
+        dataSet={linkProps?.dataSet}
         ref={linkProps?.ref}
         tabIndex={linkProps?.tabIndex}
         onFocus={e => {

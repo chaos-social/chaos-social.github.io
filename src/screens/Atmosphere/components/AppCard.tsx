@@ -49,6 +49,7 @@ export function AppCard({app}: {app: AtmosphereAppCardData}) {
       ) : undefined}
       <Link
         to={app.href}
+        dataSet={{keyboardNavigationItem: 'true'}}
         label={l`Open ${app.title}`}
         accessibilityHint=""
         style={[a.w_full]}>

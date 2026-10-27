@@ -152,7 +152,10 @@ export function getPostHref(element: HTMLElement) {
 }
 
 export function getPostAnnouncement(element: HTMLElement) {
-  return (element.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 240)
+  return (element.getAttribute('aria-label') || element.textContent || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 240)
 }
 
 export type PostMediaTarget = {

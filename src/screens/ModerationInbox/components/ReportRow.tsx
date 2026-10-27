@@ -29,6 +29,7 @@ export function ReportRow({
 
   return (
     <Link
+      dataSet={{keyboardNavigationItem: 'true'}}
       label={l`View report details: ${subject}`}
       to={to}
       hoverStyle={

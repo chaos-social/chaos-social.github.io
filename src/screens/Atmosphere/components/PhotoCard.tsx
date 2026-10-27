@@ -46,6 +46,7 @@ export function PhotoCard({
   return (
     <Link
       to={photo.href}
+      dataSet={{keyboardNavigationItem: 'true'}}
       label={l`Open ${photo.title}`}
       accessibilityHint=""
       ref={galleryFocus?.focusRef}

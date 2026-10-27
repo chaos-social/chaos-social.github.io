@@ -128,7 +128,7 @@ function EmbedInner({embed: rawEmbed, ...rest}: EmbedProps) {
 }
 
 /** Keep each top-level attachment separate from media nested in quoted posts. */
-function EmbedTarget({
+export function EmbedTarget({
   kind,
   children,
 }: {

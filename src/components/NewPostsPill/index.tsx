@@ -187,6 +187,7 @@ export function NewPostsPill({
         style={slide}>
         <PressableScale
           testID={testID}
+          {...{dataSet: {keyboardNavigationItem: 'true'}}}
           disabled={!visible}
           accessibilityRole="button"
           accessibilityLabel={content.label ?? defaultLabel}

@@ -55,6 +55,7 @@ export function AnnouncementBanner({
         ) : undefined}
         <Link
           to={banner.href}
+          dataSet={{keyboardNavigationItem: 'true'}}
           label={l`Open announcement: ${banner.title}`}
           accessibilityHint=""
           style={[

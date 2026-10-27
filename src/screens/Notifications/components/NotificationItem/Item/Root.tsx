@@ -58,6 +58,7 @@ export function useItemBackgroundColor() {
  */
 export function Root({
   href,
+  postUri,
   isRead,
   label,
   hint,
@@ -73,6 +74,8 @@ export function Root({
   children,
 }: {
   href: string
+  /** The post whose actions are rendered in this row. */
+  postUri?: string
   isRead: boolean
   /**
    * A single plain-text description of the whole row, read by screen readers
@@ -118,6 +121,14 @@ export function Root({
         <WebAuxClickWrapper>
           <Pressable
             testID={testID}
+            {...{
+              dataSet: {
+                keyboardNavigationItem: 'true',
+                keyboardNavigationPost: postUri,
+                keyboardNavigationHref: href,
+                keyboardNavigationClickable: 'true',
+              },
+            }}
             accessible={accessible}
             accessibilityRole={accessibilityRole}
             accessibilityLabel={label}

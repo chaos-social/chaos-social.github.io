@@ -38,13 +38,12 @@ export function PublicationCard({
       view={publication.view}
       themeColors={themeColors}
       style={[a.flex_grow, width ? {width} : undefined]}
-      linkProps={
-        galleryFocus && {
-          ref: galleryFocus.focusRef,
-          tabIndex: galleryFocus.tabIndex,
-          onFocus: galleryFocus.onFocus,
-        }
-      }
+      linkProps={{
+        dataSet: {keyboardNavigationItem: 'true'},
+        ref: galleryFocus?.focusRef,
+        tabIndex: galleryFocus?.tabIndex,
+        onFocus: galleryFocus?.onFocus,
+      }}
     />
   )
 }

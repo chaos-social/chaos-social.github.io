@@ -91,6 +91,7 @@ function PostNotification({
   return (
     <Item.Root
       href={makePostLink(post)}
+      postUri={post.uri}
       isRead={notification.isRead}
       // Actions in the row need to be individually reachable
       accessible={false}

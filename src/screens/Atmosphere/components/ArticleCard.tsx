@@ -52,6 +52,7 @@ export function ArticleCard({
         ]}>
         <Link
           to={article.href}
+          dataSet={{keyboardNavigationItem: 'true'}}
           label={l`Open ${article.title}`}
           ref={galleryFocus?.focusRef}
           tabIndex={galleryFocus?.tabIndex}

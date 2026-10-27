@@ -14,6 +14,7 @@ import {
   getNavigablePosts,
   getPostActivityRoute,
   getPostActivityShortcut,
+  getPostAnnouncement,
   getPostAuthorRoute,
   getPostMediaTargets,
   getRevealedPostWarning,
@@ -995,4 +996,13 @@ it('opens a revealed quote before reaching warnings inside that quote', () => {
   expect(getPostMediaTargets(post).map(target => target.control)).toEqual([
     post.querySelector('[data-testid="quotedPostOpenBtn"]'),
   ])
+})
+
+it('announces an Atmosphere publication whose primary link has no text children', () => {
+  const card = createPost({top: 20})
+  card.setAttribute('aria-label', 'View publication')
+  expect(getPostAnnouncement(card)).toBe('View publication')
+  card.removeAttribute('aria-label')
+  card.textContent = '  Example   post  '
+  expect(getPostAnnouncement(card)).toBe('Example post')
 })

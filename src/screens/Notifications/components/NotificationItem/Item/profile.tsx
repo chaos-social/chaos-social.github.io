@@ -521,6 +521,7 @@ export function ShowMoreActorsButton({
   return (
     <Button
       label={l`Show more`}
+      {...{dataSet: {keyboardNavigationItem: 'true'}}}
       accessibilityHint={l`Loads more people into this list`}
       aria-busy={isLoading}
       disabled={isLoading}
@@ -608,6 +609,7 @@ export function ActorListItem({
         <SubtleHover hover={hover} />
         <Pressable
           accessibilityRole="link"
+          {...{dataSet: {keyboardNavigationItem: 'true'}}}
           accessibilityLabel={l`Go to ${name}’s profile`}
           accessibilityHint=""
           onPress={event => {

@@ -172,6 +172,7 @@ export function ModerationInboxNoticeDetailsScreen({
           <View style={[a.p_lg, a.align_start]}>
             <Button
               testID="moderationInboxOlderActionsBtn"
+              {...{dataSet: {keyboardNavigationItem: 'true'}}}
               label={l`Load older actions`}
               size="small"
               color="secondary"
@@ -312,6 +313,7 @@ function NoticeDetails({
               <View style={[a.align_start, a.mt_2xs]}>
                 <Button
                   testID="moderationInboxAppealBtn"
+                  {...{dataSet: {keyboardNavigationItem: 'true'}}}
                   label={l`Appeal this decision`}
                   size="tiny"
                   variant="outline"

@@ -1,6 +1,9 @@
+import {createElement} from 'react'
 import {describe, expect, it, jest} from '@jest/globals'
+import {fireEvent, render} from '@testing-library/react-native'
 
 import {type NotificationView} from '#/state/queries/notifications/grouped/types'
+import {Root} from '#/screens/Notifications/components/NotificationItem/Item/Root'
 import {
   buildRows,
   getBorderColor,
@@ -17,7 +20,9 @@ jest.mock('#/view/com/util/List', () => ({}))
 jest.mock('#/screens/Notifications/components/NotificationItem', () => ({}))
 jest.mock('#/screens/Notifications/components/PagerView', () => ({}))
 jest.mock('#/screens/Notifications/components/RefreshPill', () => ({}))
-jest.mock('#/components/Link', () => ({}))
+jest.mock('#/components/Link', () => ({
+  useLink: () => ({onPress: mockFollowLink}),
+}))
 jest.mock('#/analytics', () => ({}))
 
 describe('getPlaceholderRow', () => {
@@ -160,4 +165,50 @@ describe('getBorderColor', () => {
       ),
     ).toEqual({borderTopColor: UNREAD, borderBottomColor: READ})
   })
+})
+
+const mockFollowLink = jest.fn()
+
+it('exposes post notification actions without losing the row navigation callback', () => {
+  const beforePress = jest.fn()
+  const href = '/profile/did:plc:author/post/abc'
+  const postUri = 'at://did:plc:author/app.bsky.feed.post/abc'
+  const rootProps: React.ComponentProps<typeof Root> = {
+    href,
+    postUri,
+    isRead: false,
+    accessible: false,
+    onBeforePress: beforePress,
+    testID: 'notification',
+    children: null,
+  }
+  const {getByTestId} = render(createElement(Root, rootProps))
+  const row = getByTestId('notification')
+  expect(row.props.dataSet).toEqual({
+    keyboardNavigationItem: 'true',
+    keyboardNavigationPost: postUri,
+    keyboardNavigationHref: href,
+    keyboardNavigationClickable: 'true',
+  })
+  fireEvent.press(row, {type: 'press'})
+  expect(beforePress).toHaveBeenCalledTimes(1)
+  expect(mockFollowLink).toHaveBeenCalledWith({type: 'press'})
+})
+
+it('keeps expandable notification row activation separate from opening its link', () => {
+  mockFollowLink.mockClear()
+  const expand = jest.fn()
+  const rootProps: React.ComponentProps<typeof Root> = {
+    href: '/profile/did:plc:author',
+    isRead: true,
+    onPress: expand,
+    testID: 'notification-group',
+    children: null,
+  }
+  const {getByTestId} = render(createElement(Root, rootProps))
+  const row = getByTestId('notification-group')
+  expect(row.props.dataSet).toMatchObject({keyboardNavigationPost: undefined})
+  fireEvent.press(row, {type: 'press'})
+  expect(expand).toHaveBeenCalledTimes(1)
+  expect(mockFollowLink).not.toHaveBeenCalled()
 })

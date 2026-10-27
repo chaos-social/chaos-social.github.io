@@ -230,6 +230,8 @@ export function TabPills({
           scrollEventThrottle={IS_WEB ? 16 : undefined}>
           <View
             ref={contentRef}
+            {...{dataSet: {keyboardNavigationTabs: 'true'}}}
+            accessibilityRole="tablist"
             style={[
               a.flex_row,
               a.gap_sm,
@@ -403,7 +405,7 @@ function TabPill({
         }
         accessibilityHint={l`Shows ${tab.label} notifications`}
         accessibilityRole="tab"
-        accessibilityState={{selected: active}}
+        aria-selected={active}
         onPress={() => onSelectTab(index)}
         style={[
           getShapeStyle(shape, a.rounded_sm, a.rounded_full),

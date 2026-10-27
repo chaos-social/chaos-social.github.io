@@ -60,6 +60,7 @@ export function LivestreamCard({
         ]}>
         <Link
           to={livestream.href}
+          dataSet={{keyboardNavigationItem: 'true'}}
           label={
             livestream.active
               ? livestream.activeCount

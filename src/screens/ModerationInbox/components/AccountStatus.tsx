@@ -62,6 +62,7 @@ export function AccountStatus({
   return (
     <>
       <Pressable
+        {...{dataSet: {keyboardNavigationItem: 'true'}}}
         accessibilityRole="button"
         accessibilityLabel={l`Show account status`}
         accessibilityHint=""
