@@ -513,7 +513,7 @@ function LinkFormInner({
             hoverStyle={
               provider ? {backgroundColor: palette.bgHover} : undefined
             }>
-            <ButtonText>
+            <ButtonText style={provider ? {color: palette.fg} : undefined}>
               {reachability === 'unreachable' ? (
                 <Trans>Save anyway</Trans>
               ) : isEditing ? (
@@ -522,7 +522,12 @@ function LinkFormInner({
                 <Trans>Add link</Trans>
               )}
             </ButtonText>
-            {reachability === 'checking' && <ButtonIcon icon={Loader} />}
+            {reachability === 'checking' && (
+              <ButtonIcon
+                icon={Loader}
+                color={provider ? palette.fg : undefined}
+              />
+            )}
           </Button>
           {onRemove ? (
             <Button

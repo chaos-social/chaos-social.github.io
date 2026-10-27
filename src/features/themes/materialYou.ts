@@ -5,6 +5,7 @@ import {
   type GenerationStyle,
 } from '#/alf/util/material3'
 import {getMaterial3Colors} from '#/alf/util/material3Theme'
+import {getMaterialYouColor} from '#/alf/util/materialYou'
 import {
   isMaterialYouTheme,
   MATERIAL_YOU_SPECIAL,
@@ -33,17 +34,22 @@ export function materialYouColorSets(source: MaterialYouPalette): {
   dark: ThemeColorSet
 } {
   const palette = getMaterial3Colors(source).regular
+  /*
+   * Neutral endpoints are pure white and black. Use interior surface tones to
+   * retain the wallpaper tint, and pair primary tones 40/100 and 80/20 for
+   * readable filled controls in light and dark mode respectively.
+   */
   return {
     light: {
       name: 'Material You',
       colors: {
-        canvas: palette.contrast_0,
-        surface: palette.contrast_25,
-        surfaceRaised: palette.contrast_0,
+        canvas: getMaterialYouColor(source, 'system_neutral1', 50),
+        surface: palette.contrast_50,
+        surfaceRaised: getMaterialYouColor(source, 'system_neutral1', 10),
         text: palette.contrast_1000,
         textMuted: palette.contrast_600,
         border: palette.contrast_200,
-        accent: palette.primary_500,
+        accent: palette.primary_600,
         accentSoft: palette.primary_100,
         onAccent: palette.contrast_0,
         positive: palette.positive_500,
@@ -55,15 +61,15 @@ export function materialYouColorSets(source: MaterialYouPalette): {
     dark: {
       name: 'Material You',
       colors: {
-        canvas: palette.contrast_1000,
-        surface: palette.contrast_950,
-        surfaceRaised: palette.contrast_900,
+        canvas: palette.contrast_950,
+        surface: palette.contrast_900,
+        surfaceRaised: palette.contrast_800,
         text: palette.contrast_0,
         textMuted: palette.contrast_300,
         border: palette.contrast_800,
-        accent: palette.primary_400,
-        accentSoft: palette.primary_900,
-        onAccent: palette.contrast_1000,
+        accent: palette.primary_200,
+        accentSoft: palette.primary_700,
+        onAccent: palette.primary_800,
         positive: palette.positive_400,
         warning: palette.yellow,
         critical: palette.negative_400,
