@@ -48,7 +48,7 @@ jest.mock('#/components/Typography', () => {
 jest.mock('expo-image', () => {
   const {View} =
     jest.requireActual<typeof import('react-native')>('react-native')
-  return {Image: View}
+  return {Image: (props: object) => <View {...props} testID="card-image" />}
 })
 jest.mock('#/state/preferences/moderation-opts', () => ({
   useModerationOpts: () => undefined,
@@ -244,3 +244,23 @@ it.each(interactions)(
     expect(screen.queryByTestId('atmospherePhotoHoverOverlay')).toBeNull()
   },
 )
+
+jest.mock('#/state/preferences/image-cdn-host', () => ({
+  ...jest.requireActual('#/state/preferences/image-cdn-host'),
+  useImageCdnHost: () => 'https://images.example',
+}))
+
+it('routes Atmosphere images through the configured blob proxy', () => {
+  render(
+    <PhotoCard
+      photo={{
+        ...photo,
+        image:
+          'https://cdn.bsky.app/img/feed_thumbnail/plain/did:plc:author/cid@jpeg',
+      }}
+    />,
+  )
+  expect(screen.getByTestId('card-image').props.source).toBe(
+    'https://images.example/img/feed_thumbnail/plain/did:plc:author/cid@jpeg',
+  )
+})

@@ -5,6 +5,10 @@ import {useLingui} from '@lingui/react/macro'
 
 import {getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
+import {
+  maybeModifyImageCdnHost,
+  useImageCdnHost,
+} from '#/state/preferences/image-cdn-host'
 import {type AtmosphereAnnouncementBannerData} from '#/screens/Atmosphere/data/exploreData'
 import {atoms as a, useTheme, utils} from '#/alf'
 import {Link} from '#/components/Link'
@@ -19,6 +23,7 @@ export function AnnouncementBanner({
   const {t: l} = useLingui()
   const t = useTheme()
   const shape = useEnableSquareButtons()
+  const imageCdnHost = useImageCdnHost()
 
   return (
     <View style={a.pb_md}>
@@ -33,7 +38,7 @@ export function AnnouncementBanner({
         ]}>
         {banner.image ? (
           <Image
-            source={banner.image}
+            source={maybeModifyImageCdnHost(banner.image, imageCdnHost)}
             contentFit="cover"
             style={[a.absolute, a.inset_0]}
             accessible={false}

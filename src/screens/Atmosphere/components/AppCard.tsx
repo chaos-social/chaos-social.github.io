@@ -6,6 +6,10 @@ import {useLingui} from '@lingui/react/macro'
 import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
+import {
+  maybeModifyImageCdnHost,
+  useImageCdnHost,
+} from '#/state/preferences/image-cdn-host'
 import {type AtmosphereAppCardData} from '#/screens/Atmosphere/data/exploreData'
 import {atoms as a, useTheme, utils} from '#/alf'
 import {Link} from '#/components/Link'
@@ -16,6 +20,7 @@ export function AppCard({app}: {app: AtmosphereAppCardData}) {
   const {t: l} = useLingui()
   const t = useTheme()
   const shape = useEnableSquareButtons()
+  const imageCdnHost = useImageCdnHost()
   const avatarShape = useEnableSquareAvatars()
 
   return (
@@ -29,7 +34,7 @@ export function AppCard({app}: {app: AtmosphereAppCardData}) {
       ]}>
       {app.backgroundImage ? (
         <Image
-          source={app.backgroundImage}
+          source={maybeModifyImageCdnHost(app.backgroundImage, imageCdnHost)}
           contentFit="cover"
           style={[a.absolute, {top: 0, right: 0, bottom: 0, width: 96}]}
           accessible={false}
@@ -64,7 +69,7 @@ export function AppCard({app}: {app: AtmosphereAppCardData}) {
           ]}>
           {app.logo ? (
             <Image
-              source={app.logo}
+              source={maybeModifyImageCdnHost(app.logo, imageCdnHost)}
               contentFit="cover"
               style={[
                 {

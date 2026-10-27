@@ -7,6 +7,10 @@ import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
+import {
+  maybeModifyImageCdnHost,
+  useImageCdnHost,
+} from '#/state/preferences/image-cdn-host'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {formatCount} from '#/view/com/util/numeric/format'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
@@ -28,6 +32,7 @@ export function PhotoCard({
   const {t: l, i18n} = useLingui()
   const t = useTheme()
   const shape = useEnableSquareButtons()
+  const imageCdnHost = useImageCdnHost()
   const {
     state: interacted,
     onIn: onInteract,
@@ -70,7 +75,7 @@ export function PhotoCard({
           t.atoms.bg_contrast_25,
         ]}>
         <Image
-          source={photo.image}
+          source={maybeModifyImageCdnHost(photo.image, imageCdnHost)}
           contentFit="cover"
           accessibilityLabel={photo.imageAlt}
           accessibilityHint=""

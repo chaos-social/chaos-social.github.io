@@ -8,6 +8,10 @@ import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
 import {sanitizeDisplayName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
+import {
+  maybeModifyImageCdnHost,
+  useImageCdnHost,
+} from '#/state/preferences/image-cdn-host'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {type AtmosphereLivestreamCardData} from '#/screens/Atmosphere/data/exploreData'
@@ -31,6 +35,7 @@ export function LivestreamCard({
   const {t: l} = useLingui()
   const t = useTheme()
   const shape = useEnableSquareButtons()
+  const imageCdnHost = useImageCdnHost()
   const moderationOpts = useModerationOpts()
   const authorProfile = livestream.authorProfile
   const moderation =
@@ -90,7 +95,7 @@ export function LivestreamCard({
             ]}>
             {livestream.image ? (
               <Image
-                source={livestream.image}
+                source={maybeModifyImageCdnHost(livestream.image, imageCdnHost)}
                 contentFit="cover"
                 style={[a.absolute, a.inset_0, a.w_full, a.h_full]}
                 accessible={false}

@@ -5,6 +5,10 @@ import {useLingui} from '@lingui/react/macro'
 import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
+import {
+  maybeModifyImageCdnHost,
+  useImageCdnHost,
+} from '#/state/preferences/image-cdn-host'
 import {type AtmosphereArticleCardData} from '#/screens/Atmosphere/data/exploreData'
 import {atoms as a, useTheme, web} from '#/alf'
 import {useInteractionState} from '#/components/hooks/useInteractionState'
@@ -25,6 +29,7 @@ export function ArticleCard({
   const {t: l} = useLingui()
   const t = useTheme()
   const shape = useEnableSquareButtons()
+  const imageCdnHost = useImageCdnHost()
   const avatarShape = useEnableSquareAvatars()
   const {
     state: interacted,
@@ -70,7 +75,7 @@ export function ArticleCard({
             style={[a.w_full, t.atoms.bg_contrast_25, {aspectRatio: 16 / 9}]}>
             {article.image ? (
               <Image
-                source={article.image}
+                source={maybeModifyImageCdnHost(article.image, imageCdnHost)}
                 contentFit="cover"
                 style={[a.absolute, a.inset_0, a.w_full, a.h_full]}
                 accessible={false}
@@ -89,7 +94,10 @@ export function ArticleCard({
                 ]}>
                 {article.publisherAvatar ? (
                   <Image
-                    source={article.publisherAvatar}
+                    source={maybeModifyImageCdnHost(
+                      article.publisherAvatar,
+                      imageCdnHost,
+                    )}
                     contentFit="cover"
                     style={[
                       {

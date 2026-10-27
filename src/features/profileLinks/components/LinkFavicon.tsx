@@ -5,6 +5,10 @@ import {getBlobCidString} from '@atproto/lex'
 
 import {getShapeRadius} from '#/lib/shapes'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
+import {
+  maybeModifyImageCdnHost,
+  useImageCdnHost,
+} from '#/state/preferences/image-cdn-host'
 import {atoms as a} from '#/alf'
 import {ButtonIcon} from '#/components/Button'
 import {Globe_Stroke2_Corner0_Rounded as GlobeIcon} from '#/components/icons/Globe'
@@ -40,12 +44,14 @@ export function LinkFavicon({
   style?: StyleProp<ViewStyle>
 }) {
   const avatarShape = useEnableSquareAvatars()
-  const [failed, setFailed] = useState(false)
-  if (failed) return fallback
+  const imageCdnHost = useImageCdnHost()
+  const sourceUri = maybeModifyImageCdnHost(uri, imageCdnHost)
+  const [failedUri, setFailedUri] = useState<string>()
+  if (failedUri === sourceUri) return fallback
   return (
     <View style={[a.align_center, a.justify_center, style]}>
       <Image
-        source={{uri}}
+        source={{uri: sourceUri}}
         contentFit="contain"
         style={{
           width: size,
@@ -53,7 +59,7 @@ export function LinkFavicon({
           borderRadius: getShapeRadius(avatarShape, size / 6, size / 6),
         }}
         accessibilityIgnoresInvertColors
-        onError={() => setFailed(true)}
+        onError={() => setFailedUri(sourceUri)}
       />
     </View>
   )

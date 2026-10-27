@@ -1,13 +1,17 @@
 jest.unmock('multiformats/cid')
 
+import {createElement} from 'react'
+import {Image} from 'expo-image'
 import {parseCid} from '@atproto/lex'
 import {type DidString} from '@atproto/syntax'
-import {renderHook} from '@testing-library/react-native'
+import {fireEvent, render, renderHook} from '@testing-library/react-native'
 
 import {uploadBlob} from '#/lib/api'
 import {compressImage, createComposerImage} from '#/state/gallery'
+import {useImageCdnHost} from '#/state/preferences/image-cdn-host'
 import {usePdsClient} from '#/state/session'
 import {type app} from '#/lexicons'
+import {LinkFavicon} from './components/LinkFavicon'
 import {linksFromRecords} from './record'
 import {useUploadCustomLinkIcon, useWriteProfileLinks} from './state'
 import {type ProfileLink} from './types'
@@ -20,6 +24,15 @@ jest.mock('#/state/gallery', () => ({
 jest.mock('#/state/session', () => ({usePdsClient: jest.fn()}))
 jest.mock('#/state/preferences/moderation-opts', () => ({}))
 jest.mock('#/ageAssurance', () => ({}))
+jest.mock('#/state/preferences/image-cdn-host', () => ({
+  ...jest.requireActual('#/state/preferences/image-cdn-host'),
+  useImageCdnHost: jest.fn(),
+}))
+jest.mock('#/components/Button', () => ({ButtonIcon: () => null}))
+jest.mock('expo-image', () => ({
+  Image:
+    jest.requireActual<typeof import('react-native')>('react-native').Image,
+}))
 
 const did = 'did:plc:test' as DidString
 const uri = `at://${did}/app.bsky.actor.link/test`
@@ -129,4 +142,37 @@ it('propagates upload failures so the editor can keep the previous icon', async 
   mockPdsClient()
   const {result} = renderHook(() => useUploadCustomLinkIcon())
   await expect(result.current(image)).rejects.toThrow('upload failed')
+})
+
+const cdnIconUrl = `https://cdn.bsky.app/img/avatar_thumbnail/plain/${did}/${icon.ref.toString()}@png`
+
+it('keeps local profile link previews off the blob proxy', () => {
+  const uri = 'file:///selected.png'
+  jest.mocked(useImageCdnHost).mockReturnValue('https://images.example')
+  const {UNSAFE_getByType} = render(
+    createElement(LinkFavicon, {
+      uri,
+      size: 16,
+      fallback: null,
+    }),
+  )
+  expect(UNSAFE_getByType(Image).props.source).toEqual({uri})
+})
+
+it('retries a failed link icon when the configured blob proxy changes', () => {
+  jest.mocked(useImageCdnHost).mockReturnValue('https://old.example')
+  const element = () =>
+    createElement(LinkFavicon, {
+      uri: cdnIconUrl,
+      size: 16,
+      fallback: null,
+    })
+  const {UNSAFE_getByType, UNSAFE_queryByType, rerender} = render(element())
+  fireEvent(UNSAFE_getByType(Image), 'error')
+  expect(UNSAFE_queryByType(Image)).toBeNull()
+  jest.mocked(useImageCdnHost).mockReturnValue('https://new.example')
+  rerender(element())
+  expect(UNSAFE_getByType(Image).props.source).toEqual({
+    uri: cdnIconUrl.replace('https://cdn.bsky.app', 'https://new.example'),
+  })
 })

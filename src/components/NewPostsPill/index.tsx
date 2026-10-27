@@ -16,6 +16,10 @@ import {PressableScale} from '#/lib/custom-animations/PressableScale'
 import {getShapeRadius, getShapeStyle} from '#/lib/shapes'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
+import {
+  maybeModifyImageCdnHost,
+  useImageCdnHost,
+} from '#/state/preferences/image-cdn-host'
 import {atoms as a, useTheme} from '#/alf'
 import {GlassView, IS_GLASS_AVAILABLE} from '#/components/GlassView'
 import {useInteractionState} from '#/components/hooks/useInteractionState'
@@ -285,6 +289,7 @@ function PillLabelText({children}: {children: React.ReactNode}) {
 /** SVG masks leave actual transparent gaps between the faces over glass. */
 function Facepile({authors}: {authors: NewPostsPillAuthor[]}) {
   const t = useTheme()
+  const imageCdnHost = useImageCdnHost()
   const avatarShape = useEnableSquareAvatars()
   const instance = useId().replace(/[^a-zA-Z0-9]/g, '')
   const radius = getShapeRadius(avatarShape, 3, AVATAR_SIZE / 2)
@@ -335,7 +340,11 @@ function Facepile({authors}: {authors: NewPostsPillAuthor[]}) {
             fill={t.atoms.bg_contrast_25.backgroundColor}
           />
           <Image
-            href={author.avatar}
+            href={
+              author.avatar
+                ? maybeModifyImageCdnHost(author.avatar, imageCdnHost)
+                : undefined
+            }
             x={index * step}
             y={0}
             width={AVATAR_SIZE}
