@@ -29,10 +29,19 @@ import {useInitialNumToRender} from '#/lib/hooks/useInitialNumToRender'
 import {useNonReactiveCallback} from '#/lib/hooks/useNonReactiveCallback'
 import {ScrollProvider} from '#/lib/ScrollContext'
 import {cleanError, isNetworkError} from '#/lib/strings/errors'
+import {userStyle} from '#/lib/userstyles'
 import {logger} from '#/logger'
 import {usePostAuthorShadowFilter} from '#/state/cache/profile-shadow'
 import {listenPostCreated} from '#/state/events'
 import {useFeedFeedbackContext} from '#/state/feed-feedback'
+import {
+  createPdsViewabilityStore,
+  PdsViewabilityProvider,
+} from '#/state/pds-viewability'
+import {useDisableComposerPrompt} from '#/state/preferences/disable-composer-prompt'
+import {useHideQuotesOfBlockedAccounts} from '#/state/preferences/hide-quotes-of-blocked-accounts'
+import {useHideUnreplyablePosts} from '#/state/preferences/hide-unreplyable-posts'
+import {useRepostCarouselEnabled} from '#/state/preferences/repost-carousel-enabled'
 import {useTrendingSettings} from '#/state/preferences/trending'
 import {STALE} from '#/state/queries'
 import {truncateAndInvalidate} from '#/state/queries/util'
@@ -50,19 +59,27 @@ import {ErrorMessage} from '#/view/com/util/error/ErrorMessage'
 import {List, type ListRef} from '#/view/com/util/List'
 import {LoadMoreRetryBtn} from '#/view/com/util/LoadMoreRetryBtn'
 import {type VideoFeedSourceContext} from '#/screens/VideoFeed/types'
-import {atoms as a, useBreakpoints, useLayoutBreakpoints, useTheme} from '#/alf'
+import {atoms as a, useLayoutBreakpoints, useTheme} from '#/alf'
 import {
   AgeAssuranceDismissibleFeedBanner,
   useInternalState as useAgeAssuranceBannerState,
 } from '#/components/ageAssurance/AgeAssuranceDismissibleFeedBanner'
 import {ProgressGuide, SuggestedFollows} from '#/components/FeedInterstitials'
 import {
+  collectPdsProfileDidsForFeedRow,
+  type FeedPostSliceOrGroup,
+  filterFeedSlices,
+  groupReposts,
+} from '#/components/feeds/postFeedUtils'
+import {
   PostFeedVideoGridRow,
   PostFeedVideoGridRowPlaceholder,
+  useVideoGridColumns,
 } from '#/components/feeds/PostFeedVideoGridRow'
 import {FeedTrendingTopicsInterstitial} from '#/components/interstitials/FeedTrendingTopics'
 import {TrendingVideos as TrendingVideosInterstitial} from '#/components/interstitials/TrendingVideos'
 import {isStandardSiteEmbed} from '#/components/Post/Embed/StandardSiteEmbed/utils'
+import {PostFeedItemCarousel} from '#/components/PostFeedItemCarousel'
 import {PostFeedSkeleton} from '#/components/PostFeedSkeleton'
 import {RichText} from '#/components/RichText'
 import {useAnalytics} from '#/analytics'
@@ -91,6 +108,7 @@ import {
   RQKEY,
   usePostFeedFetcher,
   usePostFeedGapFill,
+  usePostFeedParams,
   usePostFeedPrepend,
   usePostFeedQuery,
   usePostFeedRefresh,
@@ -104,6 +122,7 @@ import {useSettleAtTop} from './useSettleAtTop'
 import {useSettleScrollHandlers} from './useSettleScrollHandlers'
 
 type FeedRow =
+  | {type: 'reposts'; key: string; items: FeedPostSlice[]}
   | {
       type: 'loading'
       key: string
@@ -214,6 +233,14 @@ export function getItemsForFeedback(feedRow: FeedRow): {
       feedContext: feedRow.slice.feedContext,
       reqId: feedRow.slice.reqId,
     }))
+  } else if (feedRow.type === 'reposts') {
+    return feedRow.items.flatMap(slice =>
+      slice.items.map(item => ({
+        item,
+        feedContext: slice.feedContext,
+        reqId: slice.reqId,
+      })),
+    )
   } else if (feedRow.type === 'videoGridRow') {
     return feedRow.items.map((item, i) => ({
       item,
@@ -240,6 +267,7 @@ const CHECK_LATEST_AFTER = STALE.SECONDS.THIRTY
  */
 const POST_ROW_TYPES: ReadonlySet<FeedRow['type']> = new Set([
   'sliceItem',
+  'reposts',
   'sliceViewFullThread',
   'showLessFollowup',
   'videoGridRow',
@@ -250,7 +278,7 @@ const POST_ROW_TYPES: ReadonlySet<FeedRow['type']> = new Set([
 let PostFeed = ({
   feed,
   description,
-  feedParams,
+  feedParams: providedFeedParams,
   ignoreFilterFor,
   style,
   enabled,
@@ -304,6 +332,7 @@ let PostFeed = ({
   lastFetchDate?: () => number
   ref?: React.Ref<PostFeedRef>
 }): React.ReactNode => {
+  const feedParams = usePostFeedParams(feed, providedFeedParams)
   const ax = useAnalytics()
   const t = useTheme()
   const {t: l} = useLingui()
@@ -315,7 +344,12 @@ let PostFeed = ({
   // eslint-disable-next-line react-hooks/purity
   const lastFetchRef = useRef<number>(Date.now())
   const [feedType, feedUriOrActorDid, feedTab] = feed.split('|')
-  const {gtMobile} = useBreakpoints()
+  const videoGridColumns = useVideoGridColumns()
+  const disableComposerPrompt = useDisableComposerPrompt()
+  const hideUnreplyablePosts = useHideUnreplyablePosts()
+  const hideQuotesOfBlockedAccounts = useHideQuotesOfBlockedAccounts()
+  const repostCarouselEnabled = useRepostCarouselEnabled()
+  const pdsViewabilityStore = useMemo(() => createPdsViewabilityStore(), [feed])
   const {rightNavVisible} = useLayoutBreakpoints()
   const areVideoFeedsEnabled = IS_NATIVE
 
@@ -357,7 +391,7 @@ let PostFeed = ({
     isFetchingNextPage,
     fetchNextPage,
   } = usePostFeedQuery(feed, feedParams, opts)
-  const {createFeedApi} = usePostFeedFetcher(feed)
+  const {createFeedApi} = usePostFeedFetcher(feed, feedParams)
   const {
     refresh,
     error: refreshError,
@@ -619,6 +653,14 @@ let PostFeed = ({
   const isRetryingError = isRefreshing && isError && isEmpty
 
   const feedItems: FeedRow[] = useMemo(() => {
+    const isFeed =
+      feedType === 'following' || feedType === 'feedgen' || feedType === 'list'
+    const visibleSlices = (slices: FeedPostSlice[]) =>
+      filterFeedSlices(slices, {
+        hideUnreplyablePosts: isFeed && !!hideUnreplyablePosts,
+        hideQuotesOfBlockedAccounts: isFeed && !!hideQuotesOfBlockedAccounts,
+        blockedOrMutedAuthors,
+      })
     // wraps a slice item, and replaces it with a showLessFollowup item
     // if the user has pressed show less on it
     const sliceItem = (row: Extract<FeedRow, {type: 'sliceItem'}>) => {
@@ -678,7 +720,7 @@ let PostFeed = ({
             reqId: string | undefined
           }[] = []
           for (const page of data.pages) {
-            for (const slice of page.slices) {
+            for (const slice of visibleSlices(page.slices)) {
               const item = slice.items.find(
                 item => item.uri === slice.feedPostUri,
               )
@@ -704,13 +746,12 @@ let PostFeed = ({
           for (let i = 0; i < videos.length; i++) {
             const video = videos[i]
             const item = video.item
-            const cols = gtMobile ? 3 : 2
             const rowItem = {
               item,
               feedContext: video.feedContext,
               reqId: video.reqId,
             }
-            if (i % cols === 0) {
+            if (i % videoGridColumns === 0) {
               rows.push([rowItem])
             } else {
               rows[rows.length - 1].push(rowItem)
@@ -732,7 +773,11 @@ let PostFeed = ({
           // Only anchored Following runs the restore prepend that leaves gaps.
           const gaps = isAnchored ? findGaps(data.pages) : undefined
           for (const [pageIndex, page] of data.pages.entries()) {
-            for (const slice of page.slices) {
+            const slices: FeedPostSliceOrGroup[] =
+              feedType === 'following' && repostCarouselEnabled
+                ? groupReposts(visibleSlices(page.slices))
+                : visibleSlices(page.slices)
+            for (const slice of slices) {
               sliceIndex++
 
               if (hasSession) {
@@ -766,6 +811,7 @@ let PostFeed = ({
                     // Show composer prompt for Discover and Following feeds
                     if (
                       hasSession &&
+                      !disableComposerPrompt &&
                       (feedUriOrActorDid === DISCOVER_FEED_URI ||
                         feed === 'following')
                     ) {
@@ -796,7 +842,7 @@ let PostFeed = ({
                 } else if (feedKind === 'following') {
                   if (sliceIndex === 0) {
                     // Show composer prompt for Following feed, unless anchored
-                    if (hasSession && !isAnchored) {
+                    if (hasSession && !disableComposerPrompt && !isAnchored) {
                       arr.push({
                         type: 'composerPrompt',
                         key: 'composerPrompt-' + sliceIndex,
@@ -824,7 +870,13 @@ let PostFeed = ({
                 }
               }
 
-              if (slice.isFallbackMarker) {
+              if (slice.isRepostSlice) {
+                arr.push({
+                  type: 'reposts',
+                  key: slice.slices[0]._reactKey,
+                  items: slice.slices,
+                })
+              } else if (slice.isFallbackMarker) {
                 arr.push({
                   type: 'fallbackMarker',
                   key:
@@ -958,7 +1010,11 @@ let PostFeed = ({
     hasSession,
     showProgressInterstitial,
     trendingVideoDisabled,
-    gtMobile,
+    videoGridColumns,
+    disableComposerPrompt,
+    hideUnreplyablePosts,
+    hideQuotesOfBlockedAccounts,
+    repostCarouselEnabled,
     isVideoFeed,
     areVideoFeedsEnabled,
     hasPressedShowLessUris,
@@ -991,6 +1047,8 @@ let PostFeed = ({
       prepend.staged &&
       top &&
       ((row.type === 'sliceItem' && top.slices.includes(row.slice)) ||
+        (row.type === 'reposts' &&
+          row.items.some(slice => top.slices.includes(slice))) ||
         (row.type === 'gap' && row.cursor === top.cursor))
     ) {
       prepend.onPageSeen(top.fetchedAt)
@@ -1203,6 +1261,8 @@ let PostFeed = ({
         )
       } else if (row.type === 'showLessFollowup') {
         return <ShowLessFollowup />
+      } else if (row.type === 'reposts') {
+        return <PostFeedItemCarousel items={row.items} />
       } else if (row.type === 'gap') {
         return (
           <GapRow
@@ -1260,7 +1320,7 @@ let PostFeed = ({
 
     return isFetchingNextPage ? (
       <View style={[styles.feedFooter]}>
-        <ActivityIndicator />
+        <ActivityIndicator color={t.palette.primary_500} />
         <View style={{height: offset}} />
       </View>
     ) : shouldRenderEndOfFeed ? (
@@ -1274,6 +1334,7 @@ let PostFeed = ({
     renderEndOfFeed,
     headerOffset,
     bottomBarOffset,
+    t.palette.primary_500,
   ])
 
   const liveNowConfig = useLiveNowConfig()
@@ -1311,8 +1372,13 @@ let PostFeed = ({
     },
   )
 
+  const markPdsProfilesNearViewport = (item: FeedRow) => {
+    pdsViewabilityStore.markNearViewport(collectPdsProfileDidsForFeedRow(item))
+  }
+
   const onItemSeen = useCallback(
     (item: FeedRow) => {
+      pdsViewabilityStore.markVisible(collectPdsProfileDidsForFeedRow(item))
       feedFeedback.onItemSeen(item)
       onTopRowSeen(item)
 
@@ -1435,55 +1501,68 @@ let PostFeed = ({
         }
       }
     },
-    [feedFeedback, onTopRowSeen, feed, liveNowConfig, getPostPosition, ax],
+    [
+      feedFeedback,
+      onTopRowSeen,
+      feed,
+      liveNowConfig,
+      getPostPosition,
+      ax,
+      pdsViewabilityStore,
+    ],
   )
 
   return (
-    <View testID={testID} style={style}>
-      <ScrollProvider {...scrollHandlers}>
-        <List
-          testID={testID ? `${testID}-flatlist` : undefined}
-          ref={scrollElRef}
-          data={feedItems}
-          keyExtractor={(item: FeedRow) => item.key}
-          renderItem={renderItem}
-          ListFooterComponent={FeedFooter}
-          ListHeaderComponent={ListHeaderComponent}
-          refreshing={isPTRing}
-          onRefresh={() => void onRefresh()}
-          headerOffset={headerOffset}
-          progressViewOffset={progressViewOffset}
-          contentContainerStyle={{
-            minHeight: Dimensions.get('window').height * 1.5,
-          }}
-          onScrolledDownChange={handleScrolledDownChange}
-          onEndReached={() => void onEndReached()}
-          onEndReachedThreshold={2} // number of posts left to trigger load more
-          removeClippedSubviews={true}
-          extraData={extraData}
-          desktopFixedHeight={
-            desktopFixedHeightOffset ? desktopFixedHeightOffset : true
-          }
-          initialNumToRender={initialNumToRenderOverride ?? initialNumToRender}
-          windowSize={9}
-          maxToRenderPerBatch={IS_IOS ? 5 : 1}
-          updateCellsBatchingPeriod={40}
-          onItemSeen={onItemSeen}
-          maintainVisibleContentPosition={
-            isAnchored ? {minIndexForVisible: leadingRowCount} : undefined
-          }
-          onLayout={isAnchored ? listRest.onLayout : undefined}
-        />
-      </ScrollProvider>
-      {isAnchored && (
-        <PrependPill
-          visible={pill.visible}
-          count={pill.count}
-          authors={pill.authors}
-          onPress={pill.onPress}
-        />
-      )}
-    </View>
+    <PdsViewabilityProvider store={pdsViewabilityStore}>
+      <View testID={testID} style={[style, userStyle('wsky-feed')]}>
+        <ScrollProvider {...scrollHandlers}>
+          <List
+            testID={testID ? `${testID}-flatlist` : undefined}
+            ref={scrollElRef}
+            data={feedItems}
+            keyExtractor={(item: FeedRow) => item.key}
+            renderItem={renderItem}
+            ListFooterComponent={FeedFooter}
+            ListHeaderComponent={ListHeaderComponent}
+            refreshing={isPTRing}
+            onRefresh={() => void onRefresh()}
+            headerOffset={headerOffset}
+            progressViewOffset={progressViewOffset}
+            contentContainerStyle={{
+              minHeight: Dimensions.get('window').height * 1.5,
+            }}
+            onScrolledDownChange={handleScrolledDownChange}
+            onEndReached={() => void onEndReached()}
+            onEndReachedThreshold={2} // number of posts left to trigger load more
+            removeClippedSubviews={true}
+            extraData={extraData}
+            desktopFixedHeight={
+              desktopFixedHeightOffset ? desktopFixedHeightOffset : true
+            }
+            initialNumToRender={
+              initialNumToRenderOverride ?? initialNumToRender
+            }
+            windowSize={9}
+            maxToRenderPerBatch={IS_IOS ? 5 : 1}
+            updateCellsBatchingPeriod={40}
+            onItemNearViewport={markPdsProfilesNearViewport}
+            onItemSeen={onItemSeen}
+            maintainVisibleContentPosition={
+              isAnchored ? {minIndexForVisible: leadingRowCount} : undefined
+            }
+            onLayout={isAnchored ? listRest.onLayout : undefined}
+          />
+        </ScrollProvider>
+        {isAnchored && (
+          <PrependPill
+            visible={pill.visible}
+            count={pill.count}
+            authors={pill.authors}
+            onPress={pill.onPress}
+          />
+        )}
+      </View>
+    </PdsViewabilityProvider>
   )
 }
 PostFeed = memo(PostFeed)

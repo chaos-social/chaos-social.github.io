@@ -1,7 +1,11 @@
 import {useState} from 'react'
 
 import {type NewPostsPillAuthor} from '#/components/NewPostsPill'
-import {type FeedPostSlice, type StagedPage} from './queries/postFeed'
+import {
+  type FeedPostSlice,
+  type FeedPostSliceItem,
+  type StagedPage,
+} from './queries/postFeed'
 import {SETTLE_AT_TOP_LIMIT} from './useSettleAtTop'
 
 /** How many faces the pill shows. */
@@ -12,6 +16,14 @@ type Row = {
   type: string
   key: string
   slice?: FeedPostSlice
+  items?: FeedPostSlice[] | FeedPostSliceItem[]
+}
+
+/** Post slices represented by a regular row or a repost carousel. */
+function postSlices(row: Row): FeedPostSlice[] {
+  if (row.type === 'sliceItem' && row.slice) return [row.slice]
+  if (row.type === 'reposts') return (row.items ?? []) as FeedPostSlice[]
+  return []
 }
 
 /** The parts of a rendered feed page that the pill reads. */
@@ -75,13 +87,13 @@ export function getPrependOffer(
   const keys: string[] = []
   const authors: NewPostsPillAuthor[] = []
   for (const row of rows) {
-    if (row.type !== 'sliceItem' || !row.slice || !slices.has(row.slice)) {
-      continue
-    }
+    const rowSlices = postSlices(row).filter(slice => slices.has(slice))
+    if (!rowSlices.length) continue
     keys.push(row.key)
-    if (!counted.has(row.slice)) {
-      counted.add(row.slice)
-      const face = faceOf(row.slice)
+    for (const slice of rowSlices) {
+      if (counted.has(slice)) continue
+      counted.add(slice)
+      const face = faceOf(slice)
       if (
         face &&
         authors.length < FACE_LIMIT &&
@@ -111,13 +123,13 @@ export function livePrependOffer(
   const faces = new Set<string>()
   let topKey: string | undefined
   for (const row of rows) {
-    if (row.type !== 'sliceItem' || !row.slice || !keys.has(row.key)) {
-      continue
-    }
+    if (!keys.has(row.key)) continue
+    const slices = postSlices(row)
+    if (!slices.length) continue
     topKey ??= row.key
-    const face = faceOf(row.slice)
-    if (face) {
-      faces.add(face.did)
+    for (const slice of slices) {
+      const face = faceOf(slice)
+      if (face) faces.add(face.did)
     }
   }
   return {

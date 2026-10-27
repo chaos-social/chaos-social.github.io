@@ -1,6 +1,7 @@
 import {jsonToLex} from '@atproto/lex'
 import {createAsyncStoragePersister} from '@tanstack/query-async-storage-persister'
 import {
+  dehydrate,
   type DehydrateOptions,
   hashKey,
   QueryClient,
@@ -683,4 +684,36 @@ describe('through the persister', () => {
       })
     },
   )
+})
+
+it('persists separate positions for both Discover fallback preferences', () => {
+  const client = new QueryClient()
+  const keys = [
+    FOLLOWING_SNAPSHOT_QUERY_KEY,
+    ['post-feed', 'v2|following', {noDiscoverFallback: true}],
+  ]
+  keys.forEach((key, i) => client.setQueryData(key, following(i + 1)))
+  const persisted: PersistedClient = {
+    timestamp: NOW,
+    buster: 'test',
+    clientState: dehydrate(client),
+  }
+  const saved = saveFollowingSnapshot(persisted)
+  expect(saved.clientState.queries).toHaveLength(2)
+  saved.clientState.queries.forEach(query => {
+    expect(isFollowingSnapshotQuery(query)).toBe(true)
+    expect(query.state.data).toHaveProperty(
+      'version',
+      FOLLOWING_SNAPSHOT_VERSION,
+    )
+  })
+  const loaded = loadFollowingSnapshot(JSON.parse(JSON.stringify(saved)))
+  keys.forEach((key, i) => {
+    const query = loaded.clientState.queries.find(
+      query => query.queryHash === hashKey(key),
+    )!
+    expect(query.state.data).not.toHaveProperty('version')
+    expect((query.state.data as PostFeedData).pages).toHaveLength(i + 1)
+  })
+  client.clear()
 })

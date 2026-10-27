@@ -7,9 +7,10 @@ import {useLingui} from '@lingui/react/macro'
 import {dateDiff, formatDateDiff} from '#/lib/hooks/useTimeAgo'
 import {makeProfileLink} from '#/lib/routes/links'
 import {forceLTR} from '#/lib/strings/bidi'
-import {sanitizeDisplayName} from '#/lib/strings/display-names'
+import {getAuthorPrimaryName} from '#/lib/strings/display-names'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {niceDate} from '#/lib/strings/time'
+import {useHideDisplayNames} from '#/state/preferences/hide-display-names'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {TimeElapsed} from '#/view/com/util/TimeElapsed'
 import {atoms as a, useTheme, web} from '#/alf'
@@ -85,15 +86,16 @@ export function Strong({
  * handle if the name is empty or hidden.
  */
 export function useDisplayName(profile: bsky.profile.AnyProfileView) {
+  const hideDisplayNames = useHideDisplayNames()
   const moderationOpts = useModerationOpts()
   const moderation = moderationOpts
     ? moderateProfile(profile, moderationOpts)
     : undefined
   return (
-    sanitizeDisplayName(
-      profile.displayName || '',
-      moderation?.ui('displayName'),
-    ) || sanitizeHandle(profile.handle)
+    getAuthorPrimaryName(profile, {
+      hideDisplayNames,
+      moderation: moderation?.ui('displayName'),
+    }) || sanitizeHandle(profile.handle)
   )
 }
 

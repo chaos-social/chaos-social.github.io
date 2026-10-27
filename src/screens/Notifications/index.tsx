@@ -20,7 +20,9 @@ import {
   type NativeStackScreenProps,
   type NotificationsTabNavigatorParams,
 } from '#/lib/routes/types'
+import {userStyle} from '#/lib/userstyles'
 import {emitSoftReset} from '#/state/events'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {
   getGroupedNotificationsTop,
   type GroupedNotificationsFeed,
@@ -82,7 +84,10 @@ export function NotificationsScreen(props: Props) {
 
 export function NewNotificationsScreen({}: Props) {
   return (
-    <Layout.Screen testID="newNotificationsScreen" noInsetTop={IS_LIQUID_GLASS}>
+    <Layout.Screen
+      testID="newNotificationsScreen"
+      noInsetTop={IS_LIQUID_GLASS}
+      style={userStyle('wsky-screen--notifications')}>
       <HomeHeaderModeProvider>
         <NewNotificationsScreenInner />
       </HomeHeaderModeProvider>
@@ -500,6 +505,7 @@ function NotificationsHeader({
    */
   loadingLatestPages: ReadonlySet<number>
 }) {
+  const enableSquareButtons = useEnableSquareButtons()
   const t = useTheme()
   const {t: l} = useLingui()
   const headerMode = useHomeHeaderMode()
@@ -629,7 +635,7 @@ function NotificationsHeader({
               size="small"
               variant="ghost"
               color="secondary"
-              shape="round"
+              shape={enableSquareButtons ? 'square' : 'round'}
               // Ghost buttons fill with the screen colour, which shows on the see-through header
               style={[a.justify_center, a.bg_transparent]}>
               <ButtonIcon

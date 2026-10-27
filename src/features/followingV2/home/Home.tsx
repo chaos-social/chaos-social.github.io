@@ -21,6 +21,7 @@ import {
   type NativeStackScreenProps,
 } from '#/lib/routes/types'
 import {getLocalizedFeedName} from '#/lib/strings/feed-names'
+import {userStyle} from '#/lib/userstyles'
 import {emitSoftReset} from '#/state/events'
 import {
   type SavedFeedSourceInfo,
@@ -45,6 +46,7 @@ import {
   useHomeHeaderMode,
 } from '#/view/com/util/MainScrollProvider'
 import {NoFeedsPinned} from '#/screens/Home/NoFeedsPinned'
+import {useTheme} from '#/alf'
 import * as Layout from '#/components/Layout'
 import {useAnalytics} from '#/analytics'
 import {IS_LIQUID_GLASS, IS_WEB} from '#/env'
@@ -57,6 +59,7 @@ export function HomeScreen(props: Props) {
   const {setShowLoggedOut} = useLoggedOutViewControls()
   const {data: preferences} = usePreferencesQuery()
   const {currentAccount} = useSession()
+  const t = useTheme()
   const {data: pinnedFeedInfos, isLoading: isPinnedFeedsLoading} =
     usePinnedFeedsInfos()
 
@@ -92,7 +95,10 @@ export function HomeScreen(props: Props) {
 
   if (preferences && pinnedFeedInfos && !isPinnedFeedsLoading) {
     return (
-      <Layout.Screen testID="HomeScreen" noInsetTop={IS_LIQUID_GLASS}>
+      <Layout.Screen
+        testID="HomeScreen"
+        noInsetTop={IS_LIQUID_GLASS}
+        style={userStyle('wsky-screen--home')}>
         <HomeHeaderModeProvider>
           <HomeScreenReady
             {...props}
@@ -104,9 +110,9 @@ export function HomeScreen(props: Props) {
     )
   } else {
     return (
-      <Layout.Screen>
+      <Layout.Screen style={userStyle('wsky-screen--home')}>
         <Layout.Center style={styles.loading}>
-          <ActivityIndicator size="large" />
+          <ActivityIndicator size="large" color={t.palette.primary_500} />
         </Layout.Center>
       </Layout.Screen>
     )

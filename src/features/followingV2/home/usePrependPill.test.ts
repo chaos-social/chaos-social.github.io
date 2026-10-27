@@ -435,3 +435,25 @@ describe('usePrependPill', () => {
     })
   })
 })
+
+describe('repost carousels in an anchored feed', () => {
+  it('counts grouped posts once and keeps the carousel as an offered row', () => {
+    const fresh = [slice('a'), slice('b')]
+    const sample = slice('sample')
+    const rows = [{type: 'reposts', key: 'carousel', items: [...fresh, sample]}]
+    const offer = getPrependOffer(rows, page(PREPENDED_AT, fresh))!
+    expect(offer.count).toBe(2)
+    expect(offer.keys).toEqual(['carousel'])
+    expect(offer.authors.map(author => author.did)).toEqual([
+      'did:plc:a',
+      'did:plc:b',
+    ])
+    expect(livePrependOffer(offer, rows).topKey).toBe('carousel')
+    expect(
+      livePrependOffer(offer, [{...rows[0], items: [fresh[1]]}]).authors.map(
+        author => author.did,
+      ),
+    ).toEqual(['did:plc:b'])
+    expect(livePrependOffer(offer, []).topKey).toBeUndefined()
+  })
+})

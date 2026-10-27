@@ -3,6 +3,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context'
 import {plural} from '@lingui/core/macro'
 
 import {HITSLOP_20} from '#/lib/constants'
+import {useDisableTopOfFeedButton} from '#/state/preferences/disable-top-of-feed-button'
 import {useShellLayout} from '#/state/shell/shell-layout'
 import {useHomeHeaderMode} from '#/view/com/util/MainScrollProvider'
 import {atoms as a} from '#/alf'
@@ -52,6 +53,7 @@ export function PrependPill({
   authors: NewPostsPillAuthor[]
   onPress: () => void
 }) {
+  const disableTopOfFeedButton = useDisableTopOfFeedButton()
   const mode = useHomeHeaderMode()
   const {headerHeight} = useShellLayout()
   const {top: topInset} = useSafeAreaInsets()
@@ -64,6 +66,8 @@ export function PrependPill({
       transform: [{translateY: height + mode.get() * (pinnedHeight - height)}],
     }
   })
+
+  if (disableTopOfFeedButton) return null
 
   return (
     <Animated.View pointerEvents="box-none" style={[strip, follow]}>

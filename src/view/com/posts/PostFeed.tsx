@@ -18,7 +18,7 @@ import {
   View,
   type ViewStyle,
 } from 'react-native'
-import {AppBskyEmbedImages, AppBskyFeedDefs} from '@atproto/api'
+import {AppBskyEmbedImages} from '@atproto/api'
 import {type RichText as RichTextType} from '@bsky/sdk/richtext'
 import {useLingui} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
@@ -55,11 +55,7 @@ import {
   RQKEY,
   usePostFeedQuery,
 } from '#/state/queries/post-feed'
-import {
-  embedViewRecordToPostView,
-  getEmbeddedPost,
-  truncateAndInvalidate,
-} from '#/state/queries/util'
+import {truncateAndInvalidate} from '#/state/queries/util'
 import {useSession} from '#/state/session'
 import {useProgressGuide} from '#/state/shell/progress-guide'
 import {useSelectedFeed} from '#/state/shell/selected-feed'
@@ -73,6 +69,12 @@ import {
 } from '#/components/ageAssurance/AgeAssuranceDismissibleFeedBanner'
 import {Button, ButtonText} from '#/components/Button'
 import {ProgressGuide, SuggestedFollows} from '#/components/FeedInterstitials'
+import {
+  collectPdsProfileDidsForFeedRow,
+  type FeedPostSliceOrGroup,
+  filterFeedSlices,
+  groupReposts,
+} from '#/components/feeds/postFeedUtils'
 import {
   PostFeedVideoGridRow,
   PostFeedVideoGridRowPlaceholder,
@@ -196,56 +198,6 @@ type FeedRow =
       key: string
     }
 
-function collectPdsProfileDids(
-  post: AppBskyFeedDefs.PostView,
-  dids = new Set<string>(),
-  depth = 0,
-) {
-  dids.add(post.author.did)
-
-  // Quote embeds can themselves contain another quote. Bound recursion to
-  // malformed or unexpectedly deep data while covering real nested quotes.
-  if (depth < 4) {
-    const embeddedPost = getEmbeddedPost(post.embed)
-    if (embeddedPost) {
-      collectPdsProfileDids(
-        embedViewRecordToPostView(embeddedPost),
-        dids,
-        depth + 1,
-      )
-    }
-  }
-
-  return dids
-}
-
-function collectPdsProfileDidsForFeedRow(item: FeedRow) {
-  const dids = new Set<string>()
-  if (item.type === 'sliceItem') {
-    collectPdsProfileDids(item.slice.items[item.indexInSlice].post, dids)
-  } else if (item.type === 'reposts') {
-    for (const slice of item.items) {
-      for (const sliceItem of slice.items) {
-        collectPdsProfileDids(sliceItem.post, dids)
-      }
-    }
-  } else if (item.type === 'videoGridRow') {
-    for (const sliceItem of item.items) {
-      collectPdsProfileDids(sliceItem.post, dids)
-    }
-  }
-  return dids
-}
-
-type FeedPostSliceOrGroup =
-  | (FeedPostSlice & {
-      isRepostSlice?: false
-    })
-  | {
-      isRepostSlice: true
-      slices: FeedPostSlice[]
-    }
-
 export function getItemsForFeedback(feedRow: FeedRow): {
   item: FeedPostSliceItem
   feedContext: string | undefined
@@ -272,52 +224,6 @@ export function getItemsForFeedback(feedRow: FeedRow): {
   } else {
     return []
   }
-}
-
-// logic from https://github.com/cheeaun/phanpy/blob/d608ee0a7594e3c83cdb087e81002f176d0d7008/src/utils/timeline-utils.js#L9
-function groupReposts(values: FeedPostSlice[]) {
-  let newValues: FeedPostSliceOrGroup[] = []
-  const reposts: FeedPostSlice[] = []
-
-  // serial reposts lain
-  let serialReposts = 0
-
-  for (const row of values) {
-    if (AppBskyFeedDefs.isReasonRepost(row.reason)) {
-      reposts.push(row)
-      serialReposts++
-      continue
-    }
-
-    newValues.push(row)
-    if (serialReposts < 3) {
-      serialReposts = 0
-    }
-  }
-
-  // TODO: handle counts for multi-item slices
-  if (
-    values.length > 10 &&
-    (reposts.length > values.length / 4 || serialReposts >= 3)
-  ) {
-    // if boostStash is more than 3 quarter of values
-    if (reposts.length > (values.length * 3) / 4) {
-      // insert boost array at the end of specialHome list
-      newValues = [...newValues, {isRepostSlice: true, slices: reposts}]
-    } else {
-      // insert boosts array in the middle of specialHome list
-      const half = Math.floor(newValues.length / 2)
-      newValues = [
-        ...newValues.slice(0, half),
-        {isRepostSlice: true, slices: reposts},
-        ...newValues.slice(half),
-      ]
-    }
-
-    return newValues
-  }
-
-  return values as FeedPostSliceOrGroup[]
 }
 
 // DISABLED need to check if this is causing random feed refreshes -prf
@@ -699,19 +605,11 @@ let PostFeed = ({
           }
         } else {
           for (const page of data?.pages) {
-            const visibleSlices =
-              filterUnreplyablePosts || filterQuotesOfBlockedAccounts
-                ? page.slices.filter(
-                    slice =>
-                      !slice.items.some(
-                        item =>
-                          (filterUnreplyablePosts &&
-                            item.post.viewer?.replyDisabled === true) ||
-                          (filterQuotesOfBlockedAccounts &&
-                            quotesBlockedAccount(item.post.embed)),
-                      ),
-                  )
-                : page.slices
+            const visibleSlices = filterFeedSlices(page.slices, {
+              hideUnreplyablePosts: !!filterUnreplyablePosts,
+              hideQuotesOfBlockedAccounts: !!filterQuotesOfBlockedAccounts,
+              blockedOrMutedAuthors,
+            })
             const slices = useRepostCarousel
               ? groupReposts(visibleSlices)
               : (visibleSlices as FeedPostSliceOrGroup[])

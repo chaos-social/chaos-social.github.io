@@ -32,6 +32,7 @@ import {isNetworkError} from '#/lib/strings/errors'
 import {logger} from '#/logger'
 import {useFeedTuners} from '#/state/preferences/feed-tuners'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
+import {useNoDiscoverFallback} from '#/state/preferences/no-discover-fallback'
 import {STALE} from '#/state/queries'
 import {RQKEY_ROOT} from '#/state/queries/post-feed'
 import {usePreferencesQuery} from '#/state/queries/preferences'
@@ -73,6 +74,18 @@ export type FeedDescriptor =
   | 'demo'
 export interface FeedParams {
   feedCacheKey?: 'discover' | 'explore' | undefined
+  noDiscoverFallback?: boolean
+}
+
+/** Keep fallback settings in every v2 read and write's cache identity. */
+export function usePostFeedParams(
+  feed: FeedDescriptor,
+  params?: FeedParams,
+): FeedParams | undefined {
+  const noDiscoverFallback = useNoDiscoverFallback()
+  return feed === 'following' && noDiscoverFallback
+    ? {...params, noDiscoverFallback: true}
+    : params
 }
 
 /** Everything needed to fetch the page after the one it follows. */
@@ -161,9 +174,10 @@ const MIN_POSTS = 30
 
 export function usePostFeedQuery(
   feedDesc: FeedDescriptor,
-  params?: FeedParams,
+  providedParams?: FeedParams,
   opts?: {enabled?: boolean; ignoreFilterFor?: string},
 ) {
+  const params = usePostFeedParams(feedDesc, providedParams)
   const feedTuners = useFeedTuners(feedDesc)
   const moderationOpts = useModerationOpts()
   const {data: preferences} = usePreferencesQuery()
@@ -175,7 +189,7 @@ export function usePostFeedQuery(
    */
   const enabled =
     opts?.enabled !== false && Boolean(moderationOpts) && Boolean(preferences)
-  const {fetchPage} = usePostFeedFetcher(feedDesc)
+  const {fetchPage} = usePostFeedFetcher(feedDesc, params)
   const lastRun = useRef<{
     args: typeof selectArgs
     /** The pages it tuned, in the order it tuned them. */
@@ -398,14 +412,19 @@ export function toFeedPostSlice(
  * outside of it. Each fetch gets a fresh feed API, as they hold no state
  * between pages.
  */
-export function usePostFeedFetcher(feedDesc: FeedDescriptor) {
+export function usePostFeedFetcher(
+  feedDesc: FeedDescriptor,
+  providedParams?: FeedParams,
+) {
+  const params = usePostFeedParams(feedDesc, providedParams)
   const {data: preferences} = usePreferencesQuery()
   const userInterests = aggregateUserInterests(preferences)
   const followingPinnedIndex =
     preferences?.savedFeeds?.findIndex(
       f => f.pinned && f.value === 'following',
     ) ?? -1
-  const enableFollowingToDiscoverFallback = followingPinnedIndex === 0
+  const enableFollowingToDiscoverFallback =
+    followingPinnedIndex === 0 && !params?.noDiscoverFallback
   const {hasSession} = useSession()
   const client = useAppviewClient()
 
@@ -480,10 +499,11 @@ export type PostFeedData = InfiniteData<FeedPageUnselected, RQPageParam>
  */
 export function usePostFeedRefresh(
   feedDesc: FeedDescriptor,
-  params?: FeedParams,
+  providedParams?: FeedParams,
 ) {
+  const params = usePostFeedParams(feedDesc, providedParams)
   const queryClient = useQueryClient()
-  const {fetchPage} = usePostFeedFetcher(feedDesc)
+  const {fetchPage} = usePostFeedFetcher(feedDesc, params)
   const queryKey = RQKEY(feedDesc, params)
   const [error, setError] = useState<Error | undefined>(undefined)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -670,7 +690,7 @@ function isSameFeedItem(
  */
 export function usePostFeedPrepend(
   feedDesc: FeedDescriptor,
-  params: FeedParams | undefined,
+  providedParams: FeedParams | undefined,
   {
     enabled,
     topFetchedAt,
@@ -689,8 +709,9 @@ export function usePostFeedPrepend(
     isRefreshing: () => boolean
   },
 ) {
+  const params = usePostFeedParams(feedDesc, providedParams)
   const queryClient = useQueryClient()
-  const {createFeedApi, fetchPage} = usePostFeedFetcher(feedDesc)
+  const {createFeedApi, fetchPage} = usePostFeedFetcher(feedDesc, params)
   const queryKey = RQKEY(feedDesc, params)
   /** The prepend in progress, fetching or holding what it found. */
   const pending = useRef<Promise<FeedPageUnselected | undefined>>(undefined)
@@ -1001,10 +1022,11 @@ export type GapFillOutcome = 'filled' | 'failed' | 'superseded'
  */
 export function usePostFeedGapFill(
   feedDesc: FeedDescriptor,
-  params?: FeedParams,
+  providedParams?: FeedParams,
 ) {
+  const params = usePostFeedParams(feedDesc, providedParams)
   const queryClient = useQueryClient()
-  const {fetchPage} = usePostFeedFetcher(feedDesc)
+  const {fetchPage} = usePostFeedFetcher(feedDesc, params)
   const queryKey = RQKEY(feedDesc, params)
 
   return async (cursor: string): Promise<GapFillOutcome> => {
@@ -1053,8 +1075,9 @@ export function usePostFeedGapFill(
  */
 export function usePostFeedSettle(
   feedDesc: FeedDescriptor,
-  params?: FeedParams,
+  providedParams?: FeedParams,
 ) {
+  const params = usePostFeedParams(feedDesc, providedParams)
   const queryClient = useQueryClient()
   const queryKey = RQKEY(feedDesc, params)
 

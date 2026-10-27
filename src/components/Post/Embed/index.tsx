@@ -261,6 +261,7 @@ function ExternalCardEmbed({
       <Card
         view={external}
         authorDid={getEmbedCreator(rest.post?.record, external.uri)}
+        viewContext={rest.viewContext}
         onEmbedInteractionCallback={rest.onOpen}
         style={[a.mt_sm, rest.style]}
       />

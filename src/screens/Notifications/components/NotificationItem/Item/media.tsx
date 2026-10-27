@@ -6,7 +6,12 @@ import {Trans} from '@lingui/react/macro'
 import {getShapeStyle, type ShapePreference} from '#/lib/shapes'
 import {sanitizeHandle} from '#/lib/strings/handles'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
+import {
+  applyImageTransforms,
+  useImageCdnHost,
+} from '#/state/preferences/image-cdn-host'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
+import {useThumbnailFormat} from '#/state/preferences/thumbnail-format'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, tokens, useTheme} from '#/alf'
 import {Text} from '#/components/Typography'
@@ -91,6 +96,8 @@ export function InlineImages({
 }) {
   const t = useTheme()
   const shape = useEnableSquareButtons()
+  const imageCdnHost = useImageCdnHost()
+  const thumbnailFormat = useThumbnailFormat()
   const thumbnails = getPostThumbnails(embed).slice(0, 4)
 
   if (thumbnails.length === 0) return null
@@ -141,7 +148,12 @@ export function InlineImages({
                   },
                 ]}>
                 <Image
-                  source={{uri: thumbnail.uri}}
+                  source={{
+                    uri: applyImageTransforms(thumbnail.uri, {
+                      imageCdnHost,
+                      format: thumbnailFormat,
+                    }),
+                  }}
                   accessibilityIgnoresInvertColors
                   // Alt text could describe what the blur is hiding
                   accessibilityLabel={blurred ? undefined : thumbnail.alt}

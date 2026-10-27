@@ -6,6 +6,7 @@ import {
   type FeedParams,
   type PostFeedData,
   RQKEY,
+  usePostFeedParams,
   usePostFeedSettle,
 } from './queries/postFeed'
 
@@ -53,7 +54,7 @@ export type SettleAtTopHandlers = {
  */
 export function useSettleAtTop(
   feedDesc: FeedDescriptor,
-  params: FeedParams | undefined,
+  providedParams: FeedParams | undefined,
   {
     enabled,
     onRestAtTop,
@@ -63,6 +64,7 @@ export function useSettleAtTop(
     onRestAtTop?: () => void
   },
 ): SettleAtTopHandlers {
+  const params = usePostFeedParams(feedDesc, providedParams)
   const queryClient = useQueryClient()
   const settle = usePostFeedSettle(feedDesc, params)
   const queryKey = RQKEY(feedDesc, params)

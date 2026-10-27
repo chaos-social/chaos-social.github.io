@@ -14,6 +14,7 @@ import {
 import {userStyle} from '#/lib/userstyles'
 import {type Shadow} from '#/state/cache/types'
 import {useFeedFeedbackContext} from '#/state/feed-feedback'
+import {useAutoLikeOnRepost} from '#/state/preferences/auto-like-on-repost'
 import {
   useLikesMetricsDisplay,
   useQuotesMetricsDisplay,
@@ -21,7 +22,6 @@ import {
   useRepostsMetricsDisplay,
 } from '#/state/preferences/metrics-display-preference'
 import {
-  useGetPost,
   usePostLikeMutationQueue,
   usePostRepostMutationQueue,
 } from '#/state/queries/post'
@@ -34,7 +34,6 @@ import {
   ProgressGuideAction,
   useProgressGuideControls,
 } from '#/state/shell/progress-guide'
-import * as userActionHistory from '#/state/userActionHistory'
 import {atoms as a, useBreakpoints, useTheme} from '#/alf'
 import {EphemeralAccountSwitcherFromScope} from '#/components/EphemeralAccountSwitcher'
 import {useEphemeralAccountError} from '#/components/hooks/useEphemeralAccountError'
@@ -43,7 +42,6 @@ import * as Skele from '#/components/Skeleton'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
 import {type app} from '#/lexicons'
-import {useAutoLikeOnRepost} from '../../state/preferences/auto-like-on-repost.tsx'
 import {useRunWithEphemeralAgent} from '../hooks/useRunWithEphemeralAgent'
 import {BookmarkButton} from './BookmarkButton'
 import {MetricCountLabel} from './MetricCountLabel'
@@ -56,6 +54,7 @@ import {PostMenuButton} from './PostMenu'
 import {useReplyIcon} from './ReplyIcon'
 import {RepostButton} from './RepostButton'
 import {ShareMenuButton} from './ShareMenu'
+import {useAutoLikeAfterRepost} from './useAutoLikeAfterRepost'
 
 function PostControlsInner({
   big,
@@ -96,7 +95,6 @@ function PostControlsInner({
   const {openComposer} = useOpenComposer()
   const {feedDescriptor} = useFeedFeedbackContext()
   const {accounts, currentAccount} = useSession()
-  const getPost = useGetPost()
   const runWithEphemeralAgent = useRunWithEphemeralAgent()
   const showEphemeralError = useEphemeralAccountError()
   const [queueLike, queueUnlike] = usePostLikeMutationQueue(
@@ -137,23 +135,13 @@ function PostControlsInner({
   const [hasLikeIconBeenToggled, setHasLikeIconBeenToggled] = useState(false)
 
   const autoLikeOnRepost = useAutoLikeOnRepost()
-
-  const shouldAutoLikeOnRepost = async () => {
-    if (post.author.did === currentAccount?.did) return false
-    if (post.viewer?.like) return false
-
-    if (userActionHistory.getActionHistory().likes.includes(post.uri)) {
-      return false
-    }
-
-    let latestPost
-    try {
-      latestPost = await getPost({uri: post.uri})
-    } catch {
-      return false
-    }
-    return !latestPost.viewer?.like
-  }
+  const autoLikeAfterRepost = useAutoLikeAfterRepost({
+    post,
+    queueLike,
+    feedContext,
+    reqId,
+    onLike: () => setHasLikeIconBeenToggled(true),
+  })
 
   const onPressToggleLike = async () => {
     if (isBlocked) {
@@ -212,19 +200,7 @@ function PostControlsInner({
           reqId,
         })
         await queueRepost()
-        if (autoLikeOnRepost) {
-          if (await shouldAutoLikeOnRepost()) {
-            setHasLikeIconBeenToggled(true)
-            sendInteraction({
-              item: post.uri,
-              event: 'app.bsky.feed.defs#interactionLike',
-              feedContext,
-              reqId,
-            })
-            captureAction(ProgressGuideAction.Like)
-            await queueLike()
-          }
-        }
+        await autoLikeAfterRepost()
       } else {
         await queueUnrepost()
       }

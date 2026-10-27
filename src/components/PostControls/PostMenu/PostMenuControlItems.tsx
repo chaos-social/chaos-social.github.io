@@ -1,3 +1,4 @@
+import {useRef} from 'react'
 import {AtUri} from '@atproto/syntax'
 import {useLingui} from '@lingui/react/macro'
 
@@ -8,7 +9,10 @@ import {shareUrl} from '#/lib/sharing'
 import {toShareUrl} from '#/lib/strings/url-helpers'
 import {type Shadow} from '#/state/cache/post-shadow'
 import {useFeedFeedbackContext} from '#/state/feed-feedback'
-import {usePostRepostMutationQueue} from '#/state/queries/post'
+import {
+  usePostLikeMutationQueue,
+  usePostRepostMutationQueue,
+} from '#/state/queries/post'
 import {useRequireAuth} from '#/state/session'
 import {ArrowShareRight_Stroke2_Corner2_Rounded as ShareIcon} from '#/components/icons/ArrowShareRight'
 import {
@@ -24,6 +28,7 @@ import {useAnalytics} from '#/analytics'
 import {IS_WEB} from '#/env'
 import {type app} from '#/lexicons'
 import {usePostBookmark} from '../BookmarkButton'
+import {useAutoLikeAfterRepost} from '../useAutoLikeAfterRepost'
 
 /**
  * Repost, quote, share and save as a group of menu items, for surfaces that
@@ -53,6 +58,19 @@ export function PostMenuControlItems({
     feedDescriptor,
     logContext,
   )
+  const [queueLike] = usePostLikeMutationQueue(
+    post,
+    undefined,
+    feedDescriptor,
+    logContext,
+  )
+  const autoLikeAfterRepost = useAutoLikeAfterRepost({
+    post,
+    queueLike,
+    feedContext: postFeedContext,
+    reqId: postReqId,
+  })
+  const repostInFlight = useRef(false)
   const {isBookmarked, toggleBookmark} = usePostBookmark({post, logContext})
 
   const isReposted = Boolean(post.viewer?.repost)
@@ -68,6 +86,7 @@ export function PostMenuControlItems({
   }
 
   const onRepost = async () => {
+    if (repostInFlight.current) return
     if (isBlocked) {
       showBlockedToast()
       return
@@ -76,6 +95,7 @@ export function PostMenuControlItems({
      * Unlike the repost button, the menu has closed by the time this lands,
      * so a toast confirms it.
      */
+    repostInFlight.current = true
     try {
       if (isReposted) {
         await queueUnrepost()
@@ -94,6 +114,7 @@ export function PostMenuControlItems({
           reqId: postReqId,
         })
         await queueRepost()
+        await autoLikeAfterRepost()
         Toast.show(l({message: 'Reposted', context: 'Toast after reposting'}), {
           type: 'success',
         })
@@ -103,6 +124,8 @@ export function PostMenuControlItems({
       if (e?.name !== 'AbortError') {
         throw e
       }
+    } finally {
+      repostInFlight.current = false
     }
   }
 

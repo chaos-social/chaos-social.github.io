@@ -76,6 +76,9 @@ jest.mock('#/state/preferences/languages', () => ({
   getAppLanguageAsContentLanguage: () => '',
   getContentLanguages: () => [],
 }))
+jest.mock('#/state/preferences/no-discover-fallback', () => ({
+  useNoDiscoverFallback: () => mockNoDiscoverFallback,
+}))
 jest.mock('#/state/preferences/feed-tuners', () => ({
   useFeedTuners: () => mockFeedTuners,
 }))
@@ -136,6 +139,7 @@ const MODERATION_OPTS = {
   prefs: DEFAULT_LOGGED_OUT_PREFERENCES.moderationPrefs,
   labelDefs: {},
 }
+let mockNoDiscoverFallback = false
 let mockModerationOpts: typeof MODERATION_OPTS | undefined
 let mockPreferences:
   | {
@@ -285,6 +289,7 @@ const appState = AppState.currentState
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockNoDiscoverFallback = false
   mockModerationOpts = MODERATION_OPTS
   mockPreferences = {savedFeeds: [], interests: {tags: []}}
   pageCounts = {timeline: 3, discover: 3, custom: 3}
@@ -3060,5 +3065,37 @@ describe('RQKEY', () => {
     await queryClient.invalidateQueries({queryKey: RQKEY(custom)})
 
     expect(isInvalidated(queryClient)).toBe(false)
+  })
+})
+
+describe('Witchsky fallback preferences in Following v2', () => {
+  it('separates fallback caches and stops at Following when fallback is disabled', async () => {
+    pinFollowingFirst()
+    setDev(false)
+    pageCounts.timeline = 1
+    const {hook, queryClient} = await renderFeed('following')
+    expect(hook.result.current.query.data?.pages[0].source).toBe('discover')
+
+    mockNoDiscoverFallback = true
+    mockClient.call.mockClear()
+    hook.rerender({})
+    await waitFor(() =>
+      expect(hook.result.current.query.data?.pages[0].source).toBeUndefined(),
+    )
+    expect(hook.result.current.query.hasNextPage).toBe(false)
+    expect(
+      mockClient.call.mock.calls.every(
+        ([method]) => method === app.bsky.feed.getTimeline,
+      ),
+    ).toBe(true)
+    expect(
+      queryClient.getQueryData(RQKEY('following', {noDiscoverFallback: true})),
+    ).toBeDefined()
+
+    mockNoDiscoverFallback = false
+    hook.rerender({})
+    await waitFor(() =>
+      expect(hook.result.current.query.data?.pages[0].source).toBe('discover'),
+    )
   })
 })

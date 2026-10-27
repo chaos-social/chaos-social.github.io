@@ -34,7 +34,10 @@ export const FOLLOWING_SNAPSHOT_MAX_BYTES = 1024 * 1024
  * persister doesn't load the feed query module; a test checks they agree.
  */
 export const FOLLOWING_SNAPSHOT_QUERY_KEY = ['post-feed', 'v2|following', {}]
-const FOLLOWING_SNAPSHOT_QUERY_HASH = hashKey(FOLLOWING_SNAPSHOT_QUERY_KEY)
+const FOLLOWING_SNAPSHOT_QUERY_HASHES = new Set([
+  hashKey(FOLLOWING_SNAPSHOT_QUERY_KEY),
+  hashKey(['post-feed', 'v2|following', {noDiscoverFallback: true}]),
+])
 
 /** A page as it's written to disk. */
 type SnapshotPage = Omit<FeedPageUnselected, 'feed'> & {feed: JsonValue[]}
@@ -52,7 +55,7 @@ export type FollowingSnapshot = {
  * Following v2 persists. Following v2 is native-only, so never on web.
  */
 export function isFollowingSnapshotQuery(query: {queryHash: string}) {
-  return IS_NATIVE && query.queryHash === FOLLOWING_SNAPSHOT_QUERY_HASH
+  return IS_NATIVE && FOLLOWING_SNAPSHOT_QUERY_HASHES.has(query.queryHash)
 }
 
 /**
@@ -295,33 +298,37 @@ function replaceFollowingData(
   ) => unknown,
 ): PersistedClient {
   const queries: unknown = client?.clientState?.queries
-  if (!Array.isArray(queries)) {
+  if (
+    !Array.isArray(queries) ||
+    !queries.some(
+      query =>
+        isRecord(query) &&
+        typeof query.queryHash === 'string' &&
+        FOLLOWING_SNAPSHOT_QUERY_HASHES.has(query.queryHash),
+    )
+  ) {
     return client
-  }
-  const index = queries.findIndex(
-    query =>
-      isRecord(query) && query.queryHash === FOLLOWING_SNAPSHOT_QUERY_HASH,
-  )
-  if (index === -1) {
-    return client
-  }
-  const query = client.clientState.queries[index]
-  let data: unknown
-  try {
-    data = replace(query.state)
-  } catch {
-    data = undefined
   }
   return {
     ...client,
     clientState: {
       ...client.clientState,
-      queries:
-        data === undefined
-          ? client.clientState.queries.filter((_, i) => i !== index)
-          : client.clientState.queries.map((q, i) =>
-              i === index ? {...query, state: {...query.state, data}} : q,
-            ),
+      queries: client.clientState.queries.flatMap(query => {
+        if (
+          !isRecord(query) ||
+          !FOLLOWING_SNAPSHOT_QUERY_HASHES.has(query.queryHash)
+        )
+          return [query]
+        let data: unknown
+        try {
+          data = replace(query.state)
+        } catch {
+          data = undefined
+        }
+        return data === undefined
+          ? []
+          : [{...query, state: {...query.state, data}}]
+      }),
     },
   }
 }

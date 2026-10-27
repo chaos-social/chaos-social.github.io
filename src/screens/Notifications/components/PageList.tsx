@@ -9,6 +9,7 @@ import {useBottomBarOffset} from '#/lib/hooks/useBottomBarOffset'
 import {useInitialNumToRender} from '#/lib/hooks/useInitialNumToRender'
 import {usePostViewTracking} from '#/lib/hooks/usePostViewTracking'
 import {cleanError} from '#/lib/strings/errors'
+import {userStyle} from '#/lib/userstyles'
 import {logger} from '#/logger'
 import {listenSoftReset} from '#/state/events'
 import {
@@ -267,7 +268,7 @@ export function PageList({
         <List
           ref={listRef}
           testID={`notificationsList-${feed}`}
-          style={[a.flex_1]}
+          style={[a.flex_1, userStyle('wsky-notifications')]}
           onLayout={
             IS_NATIVE
               ? event =>
@@ -369,7 +370,7 @@ export function PageList({
                     getBorderColor(t, isUnreadRow(rows.at(-1))),
                   ],
                 ]}>
-                <ActivityIndicator />
+                <ActivityIndicator color={t.palette.primary_500} />
               </View>
             ) : undefined
           }
