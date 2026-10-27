@@ -111,7 +111,7 @@ export async function shareImageModal({uri}: {uri: string}) {
   }
 }
 
-const ALBUM_NAME = 'Bluesky'
+const ALBUM_NAME = 'Witchsky'
 
 /**
  * Saves original bytes from the image owner's PDS, or the CDN's `download`
@@ -151,53 +151,17 @@ export async function saveImageToMediaLibrary({
   // save
   try {
     if (IS_ANDROID) {
-      // android triggers an annoying permission prompt if you try and move an image
-      // between albums. therefore, we need to either create the album with the image
-      // as the starting image, or put it directly into the album
-      const album = await MediaLibrary.getAlbumAsync(ALBUM_NAME)
-      if (album) {
-        // try and migrate if needed
-        try {
-          if (await MediaLibrary.albumNeedsMigrationAsync(album)) {
-            await MediaLibrary.migrateAlbumIfNeededAsync(album)
-          }
-        } catch (err) {
-          logger.info('Attempted and failed to migrate album', {
-            safeMessage: err,
-          })
-        }
-
-        try {
-          // if album exists, put the image straight in there
-          await MediaLibrary.createAssetAsync(imagePath, album)
-        } catch (err) {
-          logger.info('Failed to create asset', {safeMessage: err})
-          // however, it's possible that we don't have write permission to the album
-          // try making a new one!
-          try {
-            await MediaLibrary.createAlbumAsync(
-              ALBUM_NAME,
-              undefined,
-              undefined,
-              imagePath,
-            )
-          } catch (err2) {
-            logger.info('Failed to create asset in a fresh album', {
-              safeMessage: err2,
-            })
-            // ... and if all else fails, just put it in DCIM
-            await MediaLibrary.createAssetAsync(imagePath)
-          }
-        }
-      } else {
-        // otherwise, create album with asset (albums must always have at least one asset)
-        await MediaLibrary.createAlbumAsync(
-          ALBUM_NAME,
-          undefined,
-          undefined,
-          imagePath,
-        )
-      }
+      /*
+       * Create from the local file each time so the MIME type determines the
+       * parent directory, even when Pictures and Movies have identically named
+       * albums. Looking up an album by name could select the wrong parent.
+       */
+      await MediaLibrary.createAlbumAsync(
+        ALBUM_NAME,
+        undefined,
+        undefined,
+        imagePath,
+      )
     } else {
       await MediaLibrary.saveToLibraryAsync(imagePath)
     }
@@ -478,7 +442,11 @@ async function downloadImage(uri: string, destName: string, timeout: number) {
     }
 
     downloadedPath = dlRes.uri
-    const ext = extFromMime(dlRes.mimeType)
+    // Android exposes the MIME type in headers rather than mimeType.
+    const contentType = Object.entries(dlRes.headers ?? {}).find(
+      ([name]) => name.toLowerCase() === 'content-type',
+    )?.[1]
+    const ext = imageMimeToExtension(contentType) ?? extFromMime(dlRes.mimeType)
     finalPath = `${cacheDirectory ?? ''}/${destName}.${ext}`
     await moveAsync({from: downloadedPath, to: finalPath})
 

@@ -11,3 +11,17 @@ index 2d224bb7c33dc6da117e0c94670ca2eec396030f..51d4ff47b20bce8d255190f4f25f44d4
        return@Coroutine createAssetWithAlbumId(context, localUri, true, albumId)
      }
  
+diff --git a/android/src/main/java/expo/modules/medialibrary/MediaLibraryUtils.kt b/android/src/main/java/expo/modules/medialibrary/MediaLibraryUtils.kt
+index d337b212162a73fd32011fa3fa64d1a7892b621a..080f1686b68728ac39c5bc72a71f2dfe812ce379 100644
+--- a/android/src/main/java/expo/modules/medialibrary/MediaLibraryUtils.kt
++++ b/android/src/main/java/expo/modules/medialibrary/MediaLibraryUtils.kt
+@@ -229,6 +229,9 @@ object MediaLibraryUtils {
+   }
+ 
+   fun getRelativePathForAssetType(mimeType: String?, useCameraDir: Boolean): String {
++    if (!useCameraDir && mimeType?.startsWith("video/") == true) {
++      return Environment.DIRECTORY_MOVIES
++    }
+     if (mimeType?.contains("image") == true || mimeType?.contains("video") == true) {
+       return if (useCameraDir) {
+         Environment.DIRECTORY_DCIM

@@ -15,3 +15,15 @@ the caller already catches.
 
 Unchanged upstream in 58.0.10. Android-only, and expo-media-library ships a prebuilt Android AAR, so it must stay
 in `expo.autolinking.android.buildFromSource` for this patch to take effect.
+
+## Android: video albums belong under Movies
+
+Routes video albums to `Environment.DIRECTORY_MOVIES` when `useCameraDir` is false.
+Upstream puts both image and video albums under Pictures. Image albums continue
+using Pictures, and camera saves continue using DCIM.
+
+Witchsky creates download albums from each local file instead of looking up an
+album by name. This lets the file's MIME type select `Pictures/Witchsky` or
+`Movies/Witchsky` without confusing two albums that share the name Witchsky.
+The album creation path reuses an existing directory and inserts a new asset
+without moving previously saved media. Existing downloads are not migrated.
