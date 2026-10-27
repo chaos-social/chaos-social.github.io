@@ -171,6 +171,10 @@ export function Controls({
   const [isFullscreen, toggleFullscreen] = useFullscreen(fullscreenRef)
   const {state: hasFocus, onIn: onFocus, onOut: onBlur} = useInteractionState()
   const [interactingViaKeypress, setInteractingViaKeypress] = useState(false)
+  const [keyboardControlsVisible, setKeyboardControlsVisible] = useState(false)
+  const [controlsFocused, setControlsFocused] = useState(false)
+  const keyboardControlsTimeoutRef =
+    useRef<ReturnType<typeof setTimeout>>(undefined)
   const showSpinner = hlsLoading || buffering
   const {
     state: volumeHovered,
@@ -178,18 +182,24 @@ export function Controls({
     onOut: onVolumeEndHover,
   } = useInteractionState()
 
-  const onKeyDown = useCallback(() => {
+  const revealKeyboardControls = useCallback(() => {
     setInteractingViaKeypress(true)
+    setKeyboardControlsVisible(true)
+    clearTimeout(keyboardControlsTimeoutRef.current)
+    keyboardControlsTimeoutRef.current = setTimeout(() => {
+      setKeyboardControlsVisible(false)
+    }, 2000)
+  }, [])
+
+  useEffect(() => {
+    return () => clearTimeout(keyboardControlsTimeoutRef.current)
   }, [])
 
   useEffect(() => {
     if (interactingViaKeypress) {
-      document.addEventListener('click', () => setInteractingViaKeypress(false))
-      return () => {
-        document.removeEventListener('click', () =>
-          setInteractingViaKeypress(false),
-        )
-      }
+      const onClick = () => setInteractingViaKeypress(false)
+      document.addEventListener('click', onClick)
+      return () => document.removeEventListener('click', onClick)
     }
   }, [interactingViaKeypress])
 
@@ -509,6 +519,9 @@ export function Controls({
       if (isSeek && (!video || !Number.isFinite(video.duration))) return
       event.preventDefault()
       event.stopPropagation()
+      setInteractingViaKeypress(true)
+      setKeyboardControlsVisible(false)
+      clearTimeout(keyboardControlsTimeoutRef.current)
       if (key === 'f') {
         onPressFullscreen()
       } else if (key === 'c') {
@@ -690,6 +703,7 @@ export function Controls({
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const onHoverWithTimeout = useCallback(() => {
+    setInteractingViaKeypress(false)
     onHover()
     clearTimeout(timeoutRef.current)
   }, [onHover])
@@ -711,7 +725,9 @@ export function Controls({
     !speedHeld &&
     (settingsOpen ||
       ((focused || autoplayDisabled) && !playing) ||
-      (interactingViaKeypress ? hasFocus : hovered))
+      (interactingViaKeypress
+        ? hasFocus && (keyboardControlsVisible || controlsFocused)
+        : hovered))
 
   // adjust subtitle cue positioning to avoid occlusion by controls
   // uses percentage-based positioning (snapToLines=false) so wrapped
@@ -756,13 +772,25 @@ export function Controls({
       onDoubleClick={onDoubleClickEmptySpace}
       onFocus={event => {
         onFocus()
-        if (event.target === event.currentTarget) {
-          drawFocus()
-          setInteractingViaKeypress(true)
+        const focusIsOnControls =
+          event.target !== event.currentTarget &&
+          !emptySpaceRef.current?.contains(event.target)
+        setControlsFocused(focusIsOnControls)
+        if (event.target === event.currentTarget) drawFocus()
+        if (
+          event.target === event.currentTarget ||
+          (focusIsOnControls && event.target.matches(':focus-visible'))
+        ) {
+          revealKeyboardControls()
         }
       }}
-      onBlur={onBlur}
-      onKeyDown={onKeyDown}>
+      onBlur={() => {
+        onBlur()
+        setControlsFocused(false)
+      }}
+      onKeyDown={event => {
+        if (event.key === 'Tab') revealKeyboardControls()
+      }}>
       <div
         ref={emptySpaceRef}
         style={{display: 'flex', flex: 1, minHeight: 0}}

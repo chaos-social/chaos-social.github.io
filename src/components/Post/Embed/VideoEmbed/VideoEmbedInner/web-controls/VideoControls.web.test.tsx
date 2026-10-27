@@ -118,8 +118,37 @@ it('shows keyboard actions, refreshes the timeout, and ignores editable targets'
         </I18nProvider>,
       ),
     )
+    const focusTarget = rootContainer.querySelector<HTMLElement>(
+      '[data-testid="postVideoFocusTarget"]',
+    )!
+    const controls = rootContainer.querySelector<HTMLElement>(
+      '[data-testid="videoPlaybackControls"]',
+    )!
+    act(() => {
+      focusTarget.focus()
+      void video.play()
+    })
+    expect(controls.style.opacity).toBe('1')
+    act(() => jest.advanceTimersByTime(2000))
+    expect(controls.style.opacity).toBe('0')
+    const button = document.createElement('button')
+    controls.append(button)
+    act(() => button.focus())
+    act(() => jest.advanceTimersByTime(2500))
+    expect(controls.style.opacity).toBe('1')
+    act(() => focusTarget.focus())
+    button.remove()
+    act(() => jest.advanceTimersByTime(2000))
+    expect(controls.style.opacity).toBe('0')
+    press('k')
+    expect(video.paused).toBe(true)
+    expect(controls.style.opacity).toBe('1')
+    press('k')
+    expect(video.paused).toBe(false)
+    expect(controls.style.opacity).toBe('0')
     press('ArrowRight')
     expect(video.currentTime).toBe(5)
+    expect(controls.style.opacity).toBe('0')
     expect(container.textContent).toContain('+5')
     const badge = () =>
       rootContainer.querySelector<HTMLElement>(
@@ -156,6 +185,7 @@ it('shows keyboard actions, refreshes the timeout, and ignores editable targets'
     press('m')
     expect(video.muted).toBe(true)
     expect(container.textContent).toContain('0%')
+    expect(controls.style.opacity).toBe('0')
     press('m')
     expect(video.muted).toBe(false)
     expect(container.textContent).toContain('100%')
@@ -167,6 +197,7 @@ it('shows keyboard actions, refreshes the timeout, and ignores editable targets'
     press('>')
     expect(video.playbackRate).toBe(1.25)
     expect(container.textContent).toContain('1.25×')
+    expect(controls.style.opacity).toBe('0')
     act(() => jest.advanceTimersByTime(800))
     press('.')
     expect(pause).toHaveBeenCalled()
@@ -206,6 +237,13 @@ it('shows keyboard actions, refreshes the timeout, and ignores editable targets'
     expect(video.playbackRate).toBe(1.25)
     expect(holdBadge()).toBeNull()
     releaseSpace()
+    expect(video.paused).toBe(true)
+    expect(controls.style.opacity).toBe('1')
+    press(' ')
+    releaseSpace()
+    expect(video.paused).toBe(false)
+    expect(controls.style.opacity).toBe('0')
+    press('k')
     expect(video.paused).toBe(true)
 
     press(' ')
