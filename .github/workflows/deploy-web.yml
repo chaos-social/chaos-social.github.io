@@ -1,0 +1,63 @@
+name: Deploy web
+
+on:
+  push:
+    branches: [main, main-3]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      # EXPO_PUBLIC_* values are inlined into the bundle at build time, so they
+      # have to be set here. A value set in the Pages dashboard is too late.
+      EXPO_PUBLIC_ENV: production
+      EXPO_PUBLIC_OAUTH_BASE_URL: ${{ vars.OAUTH_BASE_URL || 'https://witchsky.app' }}
+      EXPO_PUBLIC_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+      EXPO_PUBLIC_BUNDLE_IDENTIFIER: ${{ github.sha }}
+      EXPO_PUBLIC_BUNDLE_DATE: ${{ github.run_id }}
+      NODE_OPTIONS: --max-old-space-size=8192
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # package.json requires node >=24.22.1 and devEngines pins pnpm 11.28.5.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.28.5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # messages.ts catalogs are gitignored and generated, and i18n.web.ts
+      # imports them dynamically, so the export fails if this is skipped.
+      - name: Compile translations
+        run: pnpm intl:compile
+
+      - name: Build web
+        run: pnpm build-web
+
+      - name: Check browser support
+        run: pnpm check-web-browser-support
+
+      - name: Deploy to Cloudflare Pages
+        run: >
+          pnpm exec wrangler pages deploy dist
+          --project-name="${{ vars.CF_PAGES_PROJECT || 'witchsky' }}"
+          --branch="${{ github.ref_name }}"
+          --commit-hash="${{ github.sha }}"
+          --commit-message="${{ github.event.head_commit.message || github.sha }}"

@@ -7,7 +7,14 @@ import {getSentryExpoConfig} from '@sentry/react-native/metro.js'
 let config = getSentryExpoConfig(import.meta.dirname, {
   // TODO: confirm this doesn't break anything when we switch to metro web
   includeWebReplay: false,
-  includeWebFeedback: false,
+  /*
+   * Must stay true on Windows: @sentry/react-native decides whether to stub
+   * the feedbackSync/Async wrappers with `originModulePath.includes(
+   * '@sentry/browser')`, which never matches a backslash path. The wrappers
+   * then call `buildFeedbackIntegration()` at module evaluation time on an
+   * empty module and the web bundle throws. Keep feedback bundled instead.
+   */
+  includeWebFeedback: true,
   annotateReactComponents: {
     textComponentNames: ['Text', 'ButtonText'],
   },

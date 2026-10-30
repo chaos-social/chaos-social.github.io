@@ -1,0 +1,1276 @@
+From 6754a5b8cfcf188c5b8a67d049e27e4033358817 Mon Sep 17 00:00:00 2001
+From: uwx <maxine@cybergal.com>
+Date: Fri, 30 Oct 2026 03:38:36 +0100
+Subject: [PATCH] feat: see through blocks
+
+---
+ .../Post/Embed/externalCard.test.tsx          |   6 +
+ src/components/Post/Embed/index.tsx           |  41 +++
+ .../home/queries/postFeed.test.tsx            |   7 +
+ src/lib/api/feed/author.ts                    |  40 ++-
+ .../PostThread/components/ThreadItemPost.tsx  |  11 +
+ .../Settings/RunesSettings/ExtraSettings.tsx  |  20 ++
+ src/state/persisted/schema.ts                 |   2 +
+ src/state/preferences/index.tsx               |   7 +
+ src/state/preferences/see-through-blocks.tsx  |  54 ++++
+ .../__tests__/see-through-blocks-test.ts      |  91 ++++++
+ src/state/queries/post-feed.ts                |  44 ++-
+ src/state/queries/see-through-blocks.ts       | 282 ++++++++++++++++++
+ src/state/queries/usePostThread/index.ts      |  38 ++-
+ .../usePostThread/swapInAnonThread.test.ts    |  47 +++
+ .../queries/usePostThread/swapInAnonThread.ts |  38 +++
+ src/state/queries/usePostThread/types.ts      |   5 +
+ src/view/com/posts/PostFeedItem.tsx           |  64 +++-
+ src/view/screens/Profile.tsx                  |  20 +-
+ 18 files changed, 799 insertions(+), 18 deletions(-)
+ create mode 100644 src/state/preferences/see-through-blocks.tsx
+ create mode 100644 src/state/queries/__tests__/see-through-blocks-test.ts
+ create mode 100644 src/state/queries/see-through-blocks.ts
+ create mode 100644 src/state/queries/usePostThread/swapInAnonThread.test.ts
+ create mode 100644 src/state/queries/usePostThread/swapInAnonThread.ts
+
+diff --git a/src/components/Post/Embed/externalCard.test.tsx b/src/components/Post/Embed/externalCard.test.tsx
+index 18ecf07a5..7ae1ee9e8 100644
+--- a/src/components/Post/Embed/externalCard.test.tsx
++++ b/src/components/Post/Embed/externalCard.test.tsx
+@@ -5,6 +5,12 @@ import {Embed, PostEmbedViewContext} from './index'
+ jest.mock('#/state/session', () => ({}))
+ jest.mock('#/state/queries/profile', () => ({}))
+ jest.mock('#/state/queries/direct-fetch-record', () => ({}))
++jest.mock('#/state/preferences/see-through-blocks', () => ({
++  useSeeThroughBlocks: () => false,
++}))
++jest.mock('#/state/queries/see-through-blocks', () => ({
++  useUnblockedPostQuery: () => ({}),
++}))
+ jest.mock('#/alf', () => ({atoms: {mt_sm: {}}, useTheme: () => ({})}))
+ jest.mock('#/state/preferences/moderation-opts', () => ({
+   useModerationOpts: () => undefined,
+diff --git a/src/components/Post/Embed/index.tsx b/src/components/Post/Embed/index.tsx
+index 3fa58f6eb..5c3636cca 100644
+--- a/src/components/Post/Embed/index.tsx
++++ b/src/components/Post/Embed/index.tsx
+@@ -20,8 +20,10 @@ import {getChatInviteCodeFromUrl} from '#/lib/strings/url-helpers'
+ import {useDirectFetchRecords} from '#/state/preferences/direct-fetch-records'
+ import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
+ import {useModerationOpts} from '#/state/preferences/moderation-opts'
++import {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
+ import {useDirectFetchEmbedRecord} from '#/state/queries/direct-fetch-record'
+ import {unstableCacheProfileView} from '#/state/queries/profile'
++import {useUnblockedPostQuery} from '#/state/queries/see-through-blocks'
+ import {useSession} from '#/state/session'
+ import {Link} from '#/view/com/util/Link'
+ import {PostMeta} from '#/view/com/util/PostMeta'
+@@ -293,6 +295,35 @@ function RecordEmbed({
+     enabled: shouldDirectFetch,
+   })
+ 
++  /*
++   * A blocked quote is readable anonymously, which also brings the full view
++   * (embeds, author) rather than a synthesized one. Takes precedence over the
++   * PDS direct fetch above when both runes are on.
++   */
++  const seeThroughBlocks = useSeeThroughBlocks()
++  const anonPost = useUnblockedPostQuery({
++    uri: embed.type === 'post_blocked' ? embed.view.uri : undefined,
++    enabled: embed.type === 'post_blocked' && seeThroughBlocks,
++  })
++  /*
++   * The PostView is a full appview view, which `QuoteEmbed` accepts through
++   * `embedViewRecordToPostView`; it only needs the record shape here.
++   */
++  const anonEmbed = anonPost.data
++    ? ({
++        type: 'post',
++        view: {
++          $type: 'app.bsky.embed.record#viewRecord',
++          uri: anonPost.data.uri,
++          cid: anonPost.data.cid,
++          author: anonPost.data.author,
++          value: anonPost.data.record,
++          indexedAt: anonPost.data.indexedAt,
++          embeds: anonPost.data.embed ? [anonPost.data.embed] : undefined,
++        },
++      } as EmbedType<'post'>)
++    : undefined
++
+   if (
+     (embed.type === 'post' ||
+       embed.type === 'post_blocked' ||
+@@ -372,6 +403,16 @@ function RecordEmbed({
+       )
+     }
+     case 'post_blocked': {
++      if (anonEmbed) {
++        return (
++          <DirectFetchEmbed
++            {...rest}
++            embed={anonEmbed}
++            visibilityLabel={_(msg`Blocked - shown anonymously`)}
++          />
++        )
++      }
++
+       const directFetchResult = directRecord.data
+       const record = directFetchResult?.record
+       if (record !== undefined) {
+diff --git a/src/features/followingV2/home/queries/postFeed.test.tsx b/src/features/followingV2/home/queries/postFeed.test.tsx
+index 55bb308b5..ee7bc599e 100644
+--- a/src/features/followingV2/home/queries/postFeed.test.tsx
++++ b/src/features/followingV2/home/queries/postFeed.test.tsx
+@@ -85,6 +85,13 @@ jest.mock('#/state/preferences/feed-tuners', () => ({
+ jest.mock('#/state/preferences/moderation-opts', () => ({
+   useModerationOpts: () => mockModerationOpts,
+ }))
++jest.mock('#/state/preferences/see-through-blocks', () => ({
++  useSeeThroughBlocks: () => false,
++}))
++jest.mock('#/state/queries/see-through-blocks', () => ({
++  useUnblockedPostQuery: () => ({}),
++  isBlocked: () => false,
++}))
+ jest.mock('#/state/queries/preferences', () => ({
+   usePreferencesQuery: () => ({data: mockPreferences}),
+ }))
+diff --git a/src/lib/api/feed/author.ts b/src/lib/api/feed/author.ts
+index 76e6433f6..19509bd4d 100644
+--- a/src/lib/api/feed/author.ts
++++ b/src/lib/api/feed/author.ts
+@@ -1,5 +1,7 @@
+ import {type Client, type XrpcRequestParams} from '@atproto/lex'
+ 
++import {getErrorName} from '#/lib/xrpc-error'
++import {getPublicAppviewClient} from '#/state/session/clients'
+ import {app} from '#/lexicons'
+ import * as bsky from '#/types/bsky'
+ import {type FeedAPI, type FeedAPIResponse} from './types'
+@@ -11,16 +13,24 @@ type GetAuthorFeedParams = XrpcRequestParams<
+ export class AuthorFeedAPI implements FeedAPI {
+   client: Client
+   _params: GetAuthorFeedParams
++  /**
++   * Read lazily so a rune change takes effect without rebuilding the API,
++   * which would otherwise discard the paginated cache.
++   */
++  seeThroughBlocks?: () => boolean
+ 
+   constructor({
+     client,
+     feedParams,
++    seeThroughBlocks,
+   }: {
+     client: Client
+     feedParams: GetAuthorFeedParams
++    seeThroughBlocks?: () => boolean
+   }) {
+     this.client = client
+     this._params = feedParams
++    this.seeThroughBlocks = seeThroughBlocks
+   }
+ 
+   get params() {
+@@ -50,11 +60,31 @@ export class AuthorFeedAPI implements FeedAPI {
+      * The agent behaved the same way - its `success` flag was only ever true -
+      * so the empty-page branch this replaces was unreachable.
+      */
+-    const data = await this.client.call(app.bsky.feed.getAuthorFeed, {
+-      ...this.params,
+-      cursor,
+-      limit,
+-    })
++    let data: app.bsky.feed.getAuthorFeed.$OutputBody
++    try {
++      data = await this.client.call(app.bsky.feed.getAuthorFeed, {
++        ...this.params,
++        cursor,
++        limit,
++      })
++    } catch (e) {
++      /*
++       * The AppView refuses an author feed on a block. The same request made
++       * anonymously is answered in full, so retry once through the public
++       * client when the rune is on.
++       */
++      const name = getErrorName(e)
++      if (
++        !this.seeThroughBlocks?.() ||
++        (name !== 'BlockedActor' && name !== 'BlockedByActor')
++      ) {
++        throw e
++      }
++      data = await getPublicAppviewClient().call(
++        app.bsky.feed.getAuthorFeed,
++        {...this.params, cursor, limit},
++      )
++    }
+     return {
+       cursor: data.cursor,
+       feed: this._filter(data.feed),
+diff --git a/src/screens/PostThread/components/ThreadItemPost.tsx b/src/screens/PostThread/components/ThreadItemPost.tsx
+index c8bd5af68..735c3f7e1 100644
+--- a/src/screens/PostThread/components/ThreadItemPost.tsx
++++ b/src/screens/PostThread/components/ThreadItemPost.tsx
+@@ -368,6 +368,17 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
+             </View>
+ 
+             <View style={[a.flex_1, userStyle('wsky-post__content')]}>
++              {item.seeThrough && (
++                <Text
++                  style={[
++                    a.text_xs,
++                    a.font_semi_bold,
++                    a.pb_2xs,
++                    t.atoms.text_contrast_medium,
++                  ]}>
++                  <Trans>Blocked - shown anonymously</Trans>
++                </Text>
++              )}
+               <PostMeta
+                 author={post.author}
+                 moderation={moderation}
+diff --git a/src/screens/Settings/RunesSettings/ExtraSettings.tsx b/src/screens/Settings/RunesSettings/ExtraSettings.tsx
+index bd37de03f..8048498f2 100644
+--- a/src/screens/Settings/RunesSettings/ExtraSettings.tsx
++++ b/src/screens/Settings/RunesSettings/ExtraSettings.tsx
+@@ -23,6 +23,10 @@ import {
+   useOmitViaField,
+   useSetOmitViaField,
+ } from '#/state/preferences/omit-via-field'
++import {
++  useSeeThroughBlocks,
++  useSetSeeThroughBlocks,
++} from '#/state/preferences/see-through-blocks'
+ import {useSetTidSuffix,useTidSuffix} from '#/state/preferences/tid-suffix'
+ import * as SettingsList from '#/screens/Settings/components/SettingsList'
+ import {atoms as a} from '#/alf'
+@@ -59,6 +63,9 @@ export function RunesExtraSettingsScreen() {
+ 
+   const omitViaField = useOmitViaField()
+   const setOmitViaField = useSetOmitViaField()
++
++  const seeThroughBlocks = useSeeThroughBlocks()
++  const setSeeThroughBlocks = useSetSeeThroughBlocks()
+   const tidSuffix = useTidSuffix()
+   const setTidSuffixControl = Dialog.useDialogControl()
+   const [devMode, setDevMode] = useDevMode()
+@@ -78,6 +85,19 @@ export function RunesExtraSettingsScreen() {
+           <Toggle.Platform />
+         </SettingsList.Item>
+       </Toggle.Item>
++      <Toggle.Item
++        name="see_through_blocks"
++        label={l`See through blocks`}
++        value={seeThroughBlocks}
++        onChange={value => setSeeThroughBlocks(value)}>
++        <SettingsList.Item>
++          <SettingsList.ItemIcon icon={VisibilityIcon} />
++          <SettingsList.ItemText>
++            <Trans>See through blocks</Trans>
++          </SettingsList.ItemText>
++          <Toggle.Platform />
++        </SettingsList.Item>
++      </Toggle.Item>
+       <Toggle.Item
+         name="auto_like_on_repost"
+         label={l`Auto-like what you repost`}
+diff --git a/src/state/persisted/schema.ts b/src/state/persisted/schema.ts
+index 754eedc9e..6f1943e86 100644
+--- a/src/state/persisted/schema.ts
++++ b/src/state/persisted/schema.ts
+@@ -252,6 +252,7 @@ const schema = z.object({
+   pasteToLinkEnabled: z.boolean().optional(),
+   constellationEnabled: z.boolean().optional(),
+   directFetchRecords: z.boolean().optional(),
++  seeThroughBlocks: z.boolean().optional(),
+   ignoredAppLabelers: z.array(z.string()).optional(),
+   noDiscoverFallback: z.boolean().optional(),
+   repostCarouselEnabled: z.boolean().optional(),
+@@ -478,6 +479,7 @@ export const defaults: Schema = {
+   pasteToLinkEnabled: false,
+   constellationEnabled: true,
+   directFetchRecords: false,
++  seeThroughBlocks: false,
+   ignoredAppLabelers: [],
+   noDiscoverFallback: false,
+   repostCarouselEnabled: false,
+diff --git a/src/state/preferences/index.tsx b/src/state/preferences/index.tsx
+index 66dbed507..23cd7a891 100644
+--- a/src/state/preferences/index.tsx
++++ b/src/state/preferences/index.tsx
+@@ -53,6 +53,7 @@ import {Provider as PlcDirectoryProvider} from './plc-directory'
+ import {Provider as PostNameReplacementProvider} from './post-name-replacement.tsx'
+ import {Provider as ReplyIconIndicatorsProvider} from './reply-icon-indicators'
+ import {Provider as RepostCarouselProvider} from './repost-carousel-enabled'
++import {Provider as SeeThroughBlocksProvider} from './see-through-blocks'
+ import {Provider as SettingsSyncProvider} from './settings-sync'
+ import {Provider as ShowAvatarFollowButtonProvider} from './show-avatar-follow-button'
+ import {Provider as ShowFollowedByOnOwnProfileProvider} from './show-followed-by-on-own-profile'
+@@ -143,6 +144,10 @@ export {
+   useReplyIconIndicators,
+   useSetReplyIconIndicators,
+ } from './reply-icon-indicators'
++export {
++  useSeeThroughBlocks,
++  useSetSeeThroughBlocks,
++} from './see-through-blocks'
+ export {
+   useSetSettingsSyncEnabled,
+   useSettingsSyncEnabled,
+@@ -177,6 +182,7 @@ export function Provider({children}: PropsWithChildren<{}>) {
+               <GoLinksProvider>
+                 <IgnoredAppLabelersProvider>
+                   <DirectFetchRecordsProvider>
++                    <SeeThroughBlocksProvider>
+                     <ConstellationProvider>
+                       <ConstellationInstanceProvider>
+                         <DeerVerificationProvider>
+@@ -308,6 +314,7 @@ export function Provider({children}: PropsWithChildren<{}>) {
+                         </DeerVerificationProvider>
+                       </ConstellationInstanceProvider>
+                     </ConstellationProvider>
++                    </SeeThroughBlocksProvider>
+                   </DirectFetchRecordsProvider>
+                 </IgnoredAppLabelersProvider>
+               </GoLinksProvider>
+diff --git a/src/state/preferences/see-through-blocks.tsx b/src/state/preferences/see-through-blocks.tsx
+new file mode 100644
+index 000000000..e640a877d
+--- /dev/null
++++ b/src/state/preferences/see-through-blocks.tsx
+@@ -0,0 +1,54 @@
++import {
++  createContext,
++  type PropsWithChildren,
++  useCallback,
++  useContext,
++  useEffect,
++  useState,
++} from 'react'
++
++import * as persisted from '#/state/persisted'
++
++type StateContext = persisted.Schema['seeThroughBlocks']
++type SetContext = (v: persisted.Schema['seeThroughBlocks']) => void
++
++const stateContext = createContext<StateContext>(
++  persisted.defaults.seeThroughBlocks,
++)
++const setContext = createContext<SetContext>(
++  (_: persisted.Schema['seeThroughBlocks']) => {},
++)
++
++export function Provider({children}: PropsWithChildren<{}>) {
++  const [state, setState] = useState(persisted.get('seeThroughBlocks'))
++
++  const setStateWrapped = useCallback(
++    (seeThroughBlocks: persisted.Schema['seeThroughBlocks']) => {
++      setState(seeThroughBlocks)
++      void persisted.write('seeThroughBlocks', seeThroughBlocks)
++    },
++    [setState],
++  )
++
++  useEffect(() => {
++    return persisted.onUpdate('seeThroughBlocks', nextSeeThroughBlocks => {
++      setState(nextSeeThroughBlocks)
++    })
++  }, [setStateWrapped])
++
++  return (
++    <stateContext.Provider value={state}>
++      <setContext.Provider value={setStateWrapped}>
++        {children}
++      </setContext.Provider>
++    </stateContext.Provider>
++  )
++}
++
++export function useSeeThroughBlocks() {
++  return useContext(stateContext)
++}
++
++export function useSetSeeThroughBlocks() {
++  return useContext(setContext)
++}
+diff --git a/src/state/queries/__tests__/see-through-blocks-test.ts b/src/state/queries/__tests__/see-through-blocks-test.ts
+new file mode 100644
+index 000000000..7648392de
+--- /dev/null
++++ b/src/state/queries/__tests__/see-through-blocks-test.ts
+@@ -0,0 +1,91 @@
++import {type Client} from '@atproto/lex'
++
++import {fetchPostAnon} from '../see-through-blocks'
++
++jest.mock('#/state/queries/resolve-identity', () => ({
++  resolvePdsServiceUrl: () => Promise.resolve('https://pds.example'),
++}))
++
++const SLINGSHOT = 'https://slingshot.example/'
++const URI = 'at://did:plc:alice/app.bsky.feed.post/3k'
++
++const record = {
++  $type: 'app.bsky.feed.post',
++  text: 'blocked but readable',
++  createdAt: '2024-01-01T00:00:00.000Z',
++}
++
++function makeClient(posts: unknown[] | Error) {
++  const call = () =>
++    posts instanceof Error
++      ? Promise.reject(posts)
++      : Promise.resolve({posts})
++  return {call} as unknown as Client
++}
++
++function jsonResponse(body: unknown) {
++  return {ok: true, json: () => Promise.resolve(body)} as Response
++}
++
++function errorResponse() {
++  return {ok: false, status: 500} as Response
++}
++
++const fetchMock = jest.fn()
++
++beforeEach(() => {
++  fetchMock.mockReset()
++  global.fetch = fetchMock
++})
++
++/** The URL each fallback requested, in order. */
++function requestedHosts() {
++  return fetchMock.mock.calls.map(([url]) => (url as URL).hostname)
++}
++
++describe('fetchPostAnon', () => {
++  it('uses the anonymous appview when it answers', async () => {
++    const view = {uri: URI, cid: 'bafy', author: {did: 'did:plc:alice'}}
++    const result = await fetchPostAnon(makeClient([view]), SLINGSHOT, URI)
++    expect(result).toBe(view)
++    expect(fetchMock).not.toHaveBeenCalled()
++  })
++
++  it('falls back to slingshot when the appview returns nothing', async () => {
++    fetchMock.mockResolvedValueOnce(jsonResponse({value: record}))
++    const result = await fetchPostAnon(makeClient([]), SLINGSHOT, URI)
++    expect(result?.uri).toBe(URI)
++    expect(requestedHosts()).toEqual(['slingshot.example'])
++  })
++
++  it('falls back to the author pds when slingshot fails', async () => {
++    fetchMock
++      .mockResolvedValueOnce(errorResponse())
++      .mockResolvedValueOnce(jsonResponse({value: record}))
++    const result = await fetchPostAnon(
++      makeClient(new Error('boom')),
++      SLINGSHOT,
++      URI,
++    )
++    expect(result?.uri).toBe(URI)
++    expect(requestedHosts()).toEqual(['slingshot.example', 'pds.example'])
++  })
++
++  it('returns undefined when every source fails', async () => {
++    fetchMock.mockResolvedValue(errorResponse())
++    const result = await fetchPostAnon(
++      makeClient(new Error('boom')),
++      SLINGSHOT,
++      URI,
++    )
++    expect(result).toBeUndefined()
++  })
++
++  it('ignores a record that is not a post', async () => {
++    fetchMock.mockResolvedValue(
++      jsonResponse({value: {$type: 'app.bsky.graph.follow'}}),
++    )
++    const result = await fetchPostAnon(makeClient([]), SLINGSHOT, URI)
++    expect(result).toBeUndefined()
++  })
++})
+diff --git a/src/state/queries/post-feed.ts b/src/state/queries/post-feed.ts
+index c6314caa0..d67592601 100644
+--- a/src/state/queries/post-feed.ts
++++ b/src/state/queries/post-feed.ts
+@@ -1,4 +1,4 @@
+-import {useCallback, useMemo, useRef} from 'react'
++import {useCallback, useEffect, useMemo, useRef} from 'react'
+ import {AppState} from 'react-native'
+ import {type Client} from '@atproto/lex'
+ import {type AtIdentifierString, AtUri, type AtUriString} from '@atproto/syntax'
+@@ -36,8 +36,10 @@ import {
+ import {DISCOVER_FEED_URI} from '#/lib/constants'
+ import {logger} from '#/logger'
+ import {useNoDiscoverFallback} from '#/state/preferences/no-discover-fallback'
++import {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
+ import {STALE} from '#/state/queries'
+ import {DEFAULT_LOGGED_OUT_PREFERENCES} from '#/state/queries/preferences/const'
++import {isBlocked} from '#/state/queries/see-through-blocks'
+ import {useAppviewClient, useSession} from '#/state/session'
+ import * as userActionHistory from '#/state/userActionHistory'
+ import {KnownError} from '#/view/com/posts/PostFeedErrorMessage'
+@@ -149,6 +151,16 @@ export function usePostFeedQuery(
+   const feedTuners = useFeedTuners(feedDesc)
+   const moderationOpts = useModerationOpts()
+   const noDiscoverFallback = useNoDiscoverFallback()
++  const seeThroughBlocks = useSeeThroughBlocks()
++  /*
++   * The feed API outlives a rune change (rebuilding it would drop the
++   * paginated cache), so it reads the rune through this ref instead of
++   * capturing it.
++   */
++  const seeThroughBlocksRef = useRef<boolean>(Boolean(seeThroughBlocks))
++  useEffect(() => {
++    seeThroughBlocksRef.current = Boolean(seeThroughBlocks)
++  }, [seeThroughBlocks])
+   const {data: preferences} = usePreferencesQuery()
+   /**
+    * Load bearing: we need to await AA state or risk FOUC. This marginally
+@@ -188,8 +200,15 @@ export function usePostFeedQuery(
+       moderationOpts,
+       ignoreFilterFor: opts?.ignoreFilterFor,
+       isDiscover,
++      seeThroughBlocks,
+     }),
+-    [feedTuners, moderationOpts, opts?.ignoreFilterFor, isDiscover],
++    [
++      feedTuners,
++      moderationOpts,
++      opts?.ignoreFilterFor,
++      isDiscover,
++      seeThroughBlocks,
++    ],
+   )
+ 
+   const query = useInfiniteQuery<
+@@ -223,6 +242,7 @@ export function usePostFeedQuery(
+           client,
+           userInterests,
+           enableFollowingToDiscoverFallback,
++          seeThroughBlocksRef,
+         })
+       const api =
+         pageParam?.api ??
+@@ -267,8 +287,13 @@ export function usePostFeedQuery(
+       (data: InfiniteData<FeedPageUnselected, RQPageParam>) => {
+         // If the selection depends on some data, that data should
+         // be included in the selectArgs object and read here.
+-        const {feedTuners, moderationOpts, ignoreFilterFor, isDiscover} =
+-          selectArgs
++        const {
++          feedTuners,
++          moderationOpts,
++          ignoreFilterFor,
++          isDiscover,
++          seeThroughBlocks,
++        } = selectArgs
+ 
+         const tuner = new FeedTuner(feedTuners)
+ 
+@@ -336,6 +361,14 @@ export function usePostFeedQuery(
+                       !ignoreFilter &&
+                       moderations[i]?.ui('contentList').filter
+                     ) {
++                      /*
++                       * With the see-through rune on, a post dropped purely
++                       * because of a block is kept. The card replaces it with
++                       * an anonymous read of the same post; see PostFeedItem.
++                       */
++                      if (seeThroughBlocks && isBlocked(moderations[i])) {
++                        continue
++                      }
+                       return undefined
+                     }
+                   }
+@@ -438,6 +471,7 @@ function createApi({
+   userInterests,
+   client,
+   enableFollowingToDiscoverFallback,
++  seeThroughBlocksRef,
+ }: {
+   feedDesc: FeedDescriptor
+   feedParams: FeedParams
+@@ -445,6 +479,7 @@ function createApi({
+   userInterests?: string
+   client: Client
+   enableFollowingToDiscoverFallback: boolean
++  seeThroughBlocksRef: {current: boolean}
+ }) {
+   if (feedDesc === 'following') {
+     if (feedParams.mergeFeedEnabled) {
+@@ -470,6 +505,7 @@ function createApi({
+     return new AuthorFeedAPI({
+       client,
+       feedParams: {actor: actor as AtIdentifierString, filter},
++      seeThroughBlocks: () => seeThroughBlocksRef.current,
+     })
+   } else if (feedDesc.startsWith('likes')) {
+     const [__, actor] = feedDesc.split('|')
+diff --git a/src/state/queries/see-through-blocks.ts b/src/state/queries/see-through-blocks.ts
+new file mode 100644
+index 000000000..4674d04b4
+--- /dev/null
++++ b/src/state/queries/see-through-blocks.ts
+@@ -0,0 +1,282 @@
++import {type Did} from '@atproto/api'
++import {type Client} from '@atproto/lex'
++import {AtUri, type AtUriString} from '@atproto/syntax'
++import {type ModerationDecision} from '@bsky/sdk/moderation'
++import {useQuery} from '@tanstack/react-query'
++
++import {useDeferredEnable} from '#/lib/hooks/useDeferredEnable'
++import {useSlingshotInstance} from '#/state/preferences/slingshot-instance'
++import {STALE} from '#/state/queries'
++import {resolvePdsServiceUrl} from '#/state/queries/resolve-identity'
++import {createQueryKey} from '#/state/queries/util'
++import {getPublicAppviewClient} from '#/state/session/clients'
++import {app} from '#/lexicons'
++import * as bsky from '#/types/bsky'
++
++export {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
++
++/**
++ * Anonymous record reads.
++ *
++ * Every block cause in `@bsky/sdk/moderation` is derived from an item's
++ * `viewer` fields, so an unauthenticated read of the same content produces no
++ * block at all. That is the whole mechanism behind seeing through a block: ask
++ * the same question without credentials.
++ *
++ * The AppView answers nearly every post anonymously, so that is the first and
++ * usually only path. Slingshot and the author's PDS are fallbacks for accounts
++ * whose AppView reads are refused; those return a bare record, so the view is
++ * synthesized the same way `directFetchRecordAndProfile` does it.
++ */
++
++const RQKEY_ROOT = 'see-through-blocks'
++export const RQKEY = (uri: string) => createQueryKey(RQKEY_ROOT, {uri})
++
++/**
++ * Whether the decision is about a block, as opposed to a mute, a label, or
++ * hidden-post preference. Only blocks are see-through; everything else keeps
++ * its normal behaviour.
++ */
++export function isBlocked(decision: ModerationDecision | undefined) {
++  return Boolean(decision?.blockCause)
++}
++
++function getErrorMessage(e: unknown) {
++  return e instanceof Error ? e.message : String(e)
++}
++
++/** Per-request timeout for the fallback reads. */
++const FETCH_TIMEOUT = 8000
++
++/**
++ * Hermes does not reliably provide `AbortSignal.timeout`, so time out with a
++ * controller the same way `pds-detection.ts` does.
++ */
++async function fetchJson(url: URL, timeout: number): Promise<unknown> {
++  const controller = new AbortController()
++  const timer = setTimeout(() => controller.abort(), timeout)
++  try {
++    const response = await fetch(url, {
++      headers: {accept: 'application/json'},
++      signal: controller.signal,
++    })
++    if (!response.ok) {
++      throw new Error(`getRecord failed: ${response.status}`)
++    }
++    return await response.json()
++  } finally {
++    clearTimeout(timer)
++  }
++}
++
++/**
++ * Slingshot's `com.atproto.repo.getRecord`. Takes repo/collection/rkey rather
++ * than an at-uri, and is unauthenticated.
++ */
++async function fetchRecordViaSlingshot(
++  slingshot: string,
++  uri: string,
++): Promise<unknown> {
++  const urip = new AtUri(uri)
++  const url = new URL('/xrpc/com.atproto.repo.getRecord', slingshot)
++  url.searchParams.set('repo', urip.host)
++  url.searchParams.set('collection', urip.collection)
++  url.searchParams.set('rkey', urip.rkey)
++  return ((await fetchJson(url, FETCH_TIMEOUT)) as {value: unknown}).value
++}
++
++/**
++ * The author PDS directly. Last resort: needs a DID, and only works for
++ * accounts that still expose public repo reads.
++ */
++async function fetchRecordViaPds(uri: string): Promise<unknown> {
++  const urip = new AtUri(uri)
++  if (!urip.host.startsWith('did:')) return
++  const pds = await resolvePdsServiceUrl(urip.host as Did)
++  if (!pds) return
++  const url = new URL('/xrpc/com.atproto.repo.getRecord', pds)
++  if (url.protocol !== 'https:') return
++  url.searchParams.set('repo', urip.host)
++  url.searchParams.set('collection', urip.collection)
++  url.searchParams.set('rkey', urip.rkey)
++  return ((await fetchJson(url, FETCH_TIMEOUT)) as {value: unknown}).value
++}
++
++/** Author stub for a synthesized view; viewer-less by construction. */
++function authorFromUri(uri: string): app.bsky.actor.defs.ProfileViewBasic {
++  return {
++    $type: 'app.bsky.actor.defs#profileViewBasic',
++    did: new AtUri(uri).host as Did,
++    handle: 'handle.invalid',
++  }
++}
++
++/**
++ * Build a PostView out of a bare record. Counts and embeds-as-views are not
++ * available from a repo read, so this is the "minimal view" case: text, tags,
++ * and any embed record the post itself carries as a raw value.
++ */
++function viewFromRecord(
++  uri: string,
++  record: unknown,
++): app.bsky.feed.defs.PostView | undefined {
++  if (!bsky.isType(app.bsky.feed.post.main, record)) return
++  return {
++    $type: 'app.bsky.feed.defs#postView',
++    uri: uri as AtUriString,
++    cid: 'see-through',
++    author: authorFromUri(uri),
++    record,
++    indexedAt: record.createdAt,
++  } satisfies app.bsky.feed.defs.PostView
++}
++
++/**
++ * Swap in the real author profile for a synthesized view.
++ *
++ * The anonymous AppView will happily describe the author even when it refuses
++ * the post, so this is usually one cheap read; on failure the `handle.invalid`
++ * stub is kept rather than dropping the post.
++ */
++async function withRealAuthor(
++  view: app.bsky.feed.defs.PostView,
++): Promise<app.bsky.feed.defs.PostView> {
++  if (view.author.handle !== 'handle.invalid') return view
++  try {
++    const profile = await getPublicAppviewClient().call(
++      app.bsky.actor.getProfile,
++      {actor: view.author.did},
++    )
++    return {
++      ...view,
++      author: {
++        $type: 'app.bsky.actor.defs#profileViewBasic',
++        did: profile.did,
++        handle: profile.handle,
++        displayName: profile.displayName,
++        avatar: profile.avatar,
++        associated: profile.associated,
++        labels: profile.labels,
++        createdAt: profile.createdAt,
++      },
++    }
++  } catch {
++    return view
++  }
++}
++
++/**
++ * A single post, read without credentials. AppView, then Slingshot, then the
++ * author's PDS. Returns `undefined` when all three come up empty so callers can
++ * fall back to the existing blocked placeholder.
++ */
++export async function fetchPostAnon(
++  client: Client,
++  slingshot: string,
++  uri: string,
++): Promise<app.bsky.feed.defs.PostView | undefined> {
++  try {
++    const {posts} = await client.call(app.bsky.feed.getPosts, {
++      uris: [uri as AtUriString],
++    })
++    if (posts[0]) return await withRealAuthor(posts[0])
++  } catch (e) {
++    console.debug('see-through-blocks: appview getPosts failed', getErrorMessage(e))
++  }
++
++  for (const getRecord of [
++    () => fetchRecordViaSlingshot(slingshot, uri),
++    () => fetchRecordViaPds(uri),
++  ]) {
++    try {
++      const record = await getRecord()
++      const view = viewFromRecord(uri, record)
++      if (view) return await withRealAuthor(view)
++    } catch (e) {
++      console.debug(
++        'see-through-blocks: record fallback failed',
++        getErrorMessage(e),
++      )
++    }
++  }
++}
++
++export function useUnblockedPostQuery({
++  uri,
++  enabled,
++}: {
++  uri: string | undefined
++  enabled?: boolean
++}) {
++  const slingshot = useSlingshotInstance()
++  const deferredEnabled = useDeferredEnable(Boolean(enabled) && !!uri)
++  return useQuery({
++    queryKey: RQKEY(uri ?? ''),
++    staleTime: STALE.HOURS.ONE,
++    queryFn: () => fetchPostAnon(getPublicAppviewClient(), slingshot, uri!),
++    enabled: deferredEnabled,
++  })
++}
++
++/**
++ * The whole thread, read without credentials. Threads are self-contained, so a
++ * blocked reply or parent resolves from this one call.
++ */
++export async function fetchThreadAnon(
++  client: Client,
++  anchor: string,
++  params: UnblockedThreadParams,
++) {
++  return await client.call(app.bsky.unspecced.getPostThreadV2, {
++    ...params,
++    anchor: anchor as AtUriString,
++  })
++}
++
++export type UnblockedThreadParams = {
++  branchingFactor?: number
++  below?: number
++  sort?: app.bsky.unspecced.getPostThreadV2.$Params['sort']
++}
++
++export function useUnblockedThreadQuery({
++  anchor,
++  params,
++  enabled,
++}: {
++  anchor: string | undefined
++  params: UnblockedThreadParams
++  enabled?: boolean
++}) {
++  const deferredEnabled = useDeferredEnable(Boolean(enabled) && !!anchor)
++  return useQuery({
++    queryKey: createQueryKey('see-through-blocks-thread', {anchor, params}),
++    staleTime: STALE.MINUTES.FIVE,
++    queryFn: () =>
++      fetchThreadAnon(getPublicAppviewClient(), anchor!, params),
++    enabled: deferredEnabled,
++  })
++}
++
++/**
++ * A profile, read without credentials. The returned view has no `viewer`, so
++ * `moderateProfile` finds nothing to hide.
++ */
++export function useUnblockedProfileQuery({
++  did,
++  enabled,
++}: {
++  did: string | undefined
++  enabled?: boolean
++}) {
++  const deferredEnabled = useDeferredEnable(Boolean(enabled) && !!did)
++  return useQuery({
++    queryKey: createQueryKey('see-through-blocks-profile', {did}),
++    staleTime: STALE.MINUTES.FIVE,
++    queryFn: () =>
++      getPublicAppviewClient().call(app.bsky.actor.getProfile, {
++        actor: did as Did,
++      }),
++    enabled: deferredEnabled,
++  })
++}
+diff --git a/src/state/queries/usePostThread/index.ts b/src/state/queries/usePostThread/index.ts
+index 266dbb910..f3ff199fd 100644
+--- a/src/state/queries/usePostThread/index.ts
++++ b/src/state/queries/usePostThread/index.ts
+@@ -3,10 +3,12 @@ import {type AtUriString} from '@atproto/syntax'
+ import {useQuery, useQueryClient} from '@tanstack/react-query'
+ 
+ import {useModerationOpts} from '#/state/preferences/moderation-opts'
++import {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
+ import {
+   type ThreadView,
+   useThreadPreferences,
+ } from '#/state/queries/preferences/useThreadPreferences'
++import {useUnblockedThreadQuery} from '#/state/queries/see-through-blocks'
+ import {
+   LINEAR_VIEW_BELOW,
+   LINEAR_VIEW_BF,
+@@ -21,6 +23,7 @@ import {
+   getThreadPlaceholder,
+ } from '#/state/queries/usePostThread/queryCache'
+ import {extendSelfThreadChain} from '#/state/queries/usePostThread/selfThreadChain'
++import {swapInAnonThread} from '#/state/queries/usePostThread/swapInAnonThread'
+ import {
+   buildThread,
+   sortAndAnnotateThreadItems,
+@@ -197,6 +200,27 @@ export function usePostThread({
+   })
+ 
+   const thread = useMemo(() => query.data?.thread || [], [query.data?.thread])
++
++  /*
++   * A blocked reply or parent comes back as a tombstone. The anonymous thread
++   * carries the same item with no viewer, so its posts simply get swapped in
++   * before traversal turns them into `threadPostBlocked`.
++   */
++  const seeThroughBlocks = useSeeThroughBlocks()
++  const hasBlockedItems = thread.some(
++    item =>
++      item.value.$type === 'app.bsky.unspecced.defs#threadItemBlocked',
++  )
++  const anonThreadQuery = useUnblockedThreadQuery({
++    anchor,
++    params: {
++      branchingFactor: apiView === 'linear' ? LINEAR_VIEW_BF : TREE_VIEW_BF,
++      below,
++      sort,
++    },
++    enabled: seeThroughBlocks && hasBlockedItems,
++  })
++  const anonThread = anonThreadQuery.data?.thread
+   const threadgate = useMemo(
+     () => query.data?.threadgate,
+     [query.data?.threadgate],
+@@ -304,13 +328,25 @@ export function usePostThread({
+    * moderation, and annotated with all UI state needed for rendering.
+    */
+   const {threadItems, otherThreadItems} = useMemo(() => {
+-    return sortAndAnnotateThreadItems(thread, {
++    const swapped = swapInAnonThread(thread, anonThread)
++    const result = sortAndAnnotateThreadItems(swapped.thread, {
+       view: apiView,
+       threadgateHiddenReplies: mergeThreadgateHiddenReplies(threadgate?.record),
+       moderationOpts: moderationOpts!,
+     })
++    /*
++     * Set explicitly either way: the items are cache objects, so a stale
++     * `true` would otherwise survive turning the rune back off.
++     */
++    for (const item of result.threadItems) {
++      if (item.type === 'threadPost') {
++        item.seeThrough = swapped.swapped.has(item.uri)
++      }
++    }
++    return result
+   }, [
+     thread,
++    anonThread,
+     threadgate?.record,
+     mergeThreadgateHiddenReplies,
+     moderationOpts,
+diff --git a/src/state/queries/usePostThread/swapInAnonThread.test.ts b/src/state/queries/usePostThread/swapInAnonThread.test.ts
+new file mode 100644
+index 000000000..96fb2b4c6
+--- /dev/null
++++ b/src/state/queries/usePostThread/swapInAnonThread.test.ts
+@@ -0,0 +1,47 @@
++import {swapInAnonThread} from './swapInAnonThread'
++
++const BLOCKED = 'app.bsky.unspecced.defs#threadItemBlocked'
++const POST = 'app.bsky.unspecced.defs#threadItemPost'
++
++function blocked(uri: string, depth: number) {
++  return {
++    uri,
++    depth,
++    value: {$type: BLOCKED, author: {did: 'did:plc:alice'}},
++  } as never
++}
++
++function post(uri: string, depth: number) {
++  return {uri, depth, value: {$type: POST, post: {uri}}} as never
++}
++
++describe('swapInAnonThread', () => {
++  it('is a no-op without an anonymous thread', () => {
++    const thread = [blocked('a', 0), post('b', 0)]
++    const result = swapInAnonThread(thread, undefined)
++    expect(result.thread).toBe(thread)
++    expect(result.swapped.size).toBe(0)
++  })
++
++  it('replaces a blocked item and keeps its signed-in depth', () => {
++    const result = swapInAnonThread(
++      [blocked('a', -2), post('b', 0)],
++      [post('a', 0)],
++    )
++    expect(result.thread[0].value.$type).toBe(POST)
++    expect(result.thread[0].depth).toBe(-2)
++    expect(result.swapped).toEqual(new Set(['a']))
++  })
++
++  it('leaves a blocked item alone when the anonymous read lacks it', () => {
++    const result = swapInAnonThread([blocked('a', 0)], [post('b', 0)])
++    expect(result.thread[0].value.$type).toBe(BLOCKED)
++    expect(result.swapped.size).toBe(0)
++  })
++
++  it('does not replace a normal post', () => {
++    const result = swapInAnonThread([post('a', 0)], [post('a', 0)])
++    expect(result.thread[0].value.$type).toBe(POST)
++    expect(result.swapped.size).toBe(0)
++  })
++})
+diff --git a/src/state/queries/usePostThread/swapInAnonThread.ts b/src/state/queries/usePostThread/swapInAnonThread.ts
+new file mode 100644
+index 000000000..9ae77d14e
+--- /dev/null
++++ b/src/state/queries/usePostThread/swapInAnonThread.ts
+@@ -0,0 +1,38 @@
++import {type app} from '#/lexicons'
++
++type ThreadItems = app.bsky.unspecced.getPostThreadV2.ThreadItem[]
++
++/**
++ * Replace blocked items with the same item from an anonymous thread response.
++ *
++ * Blocks are computed from `viewer`, so the anonymous response carries a real
++ * `threadItemPost` where the signed-in one carries `threadItemBlocked`. Only
++ * matches by uri; anything without an anonymous counterpart is left alone so
++ * the normal tombstone still renders.
++ *
++ * Also returns the uris that were swapped, so the renderer can label them.
++ */
++export function swapInAnonThread(
++  thread: ThreadItems,
++  anonThread: ThreadItems | undefined,
++): {thread: ThreadItems; swapped: Set<string>} {
++  const swapped = new Set<string>()
++  if (!anonThread?.length) return {thread, swapped}
++
++  const anonByUri = new Map(anonThread.map(item => [item.uri, item]))
++  const next = thread.map(item => {
++    if (item.value.$type !== 'app.bsky.unspecced.defs#threadItemBlocked') {
++      return item
++    }
++    const replacement = anonByUri.get(item.uri)
++    if (
++      !replacement ||
++      replacement.value.$type !== 'app.bsky.unspecced.defs#threadItemPost'
++    ) {
++      return item
++    }
++    swapped.add(item.uri)
++    return {...replacement, depth: item.depth}
++  })
++  return {thread: next, swapped}
++}
+diff --git a/src/state/queries/usePostThread/types.ts b/src/state/queries/usePostThread/types.ts
+index 0b68c995d..9a8fc3dd2 100644
+--- a/src/state/queries/usePostThread/types.ts
++++ b/src/state/queries/usePostThread/types.ts
+@@ -45,6 +45,11 @@ export type ThreadItem =
+         }
+       }
+       isBlurred: boolean
++      /**
++       * This item was a blocked tombstone, replaced by an anonymous read of
++       * the same post.
++       */
++      seeThrough?: boolean
+       moderation: ModerationDecision
+       ui: {
+         isAnchor: boolean
+diff --git a/src/view/com/posts/PostFeedItem.tsx b/src/view/com/posts/PostFeedItem.tsx
+index 6e0200c90..77d4492f8 100644
+--- a/src/view/com/posts/PostFeedItem.tsx
++++ b/src/view/com/posts/PostFeedItem.tsx
+@@ -1,8 +1,9 @@
+ import {memo, useCallback, useMemo, useState} from 'react'
+ import {StyleSheet, View} from 'react-native'
+ import {AtUri} from '@atproto/syntax'
+-import {type ModerationDecision} from '@bsky/sdk/moderation'
++import {moderatePost, type ModerationDecision} from '@bsky/sdk/moderation'
+ import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
++import {Trans} from '@lingui/react/macro'
+ import {useQueryClient} from '@tanstack/react-query'
+ 
+ import {type ReasonFeedSource} from '#/lib/api/feed/types'
+@@ -20,7 +21,13 @@ import {
+ } from '#/state/cache/post-shadow'
+ import {useFeedFeedbackContext} from '#/state/feed-feedback'
+ import {useCompactPosts} from '#/state/preferences/compact-posts'
++import {useModerationOpts} from '#/state/preferences/moderation-opts'
++import {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
+ import {unstableCacheProfileView} from '#/state/queries/profile'
++import {
++  isBlocked,
++  useUnblockedPostQuery,
++} from '#/state/queries/see-through-blocks'
+ import {useSession} from '#/state/session'
+ import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
+ import {
+@@ -56,6 +63,7 @@ import {DiscoverDebug} from '#/components/PostControls/DiscoverDebug'
+ import {PostTags} from '#/components/PostTags'
+ import {RichText} from '#/components/RichText'
+ import {SubtleHover} from '#/components/SubtleHover'
++import {Text} from '#/components/Typography'
+ import {Features, useAnalytics} from '#/analytics'
+ import {IS_NATIVE, IS_WEB} from '#/env'
+ import {useActorStatus} from '#/features/liveNow'
+@@ -111,24 +119,52 @@ export function PostFeedItem({
+   rootPost: app.bsky.feed.defs.PostView
+   onShowLess?: (interaction: app.bsky.feed.defs.Interaction) => void
+ }): React.ReactNode {
+-  const postShadowed = usePostShadow(post)
++  const seeThroughBlocks = useSeeThroughBlocks()
++  const moderationOpts = useModerationOpts()
++  const blocked = seeThroughBlocks && isBlocked(moderation)
++  const unblocked = useUnblockedPostQuery({
++    uri: post.uri,
++    enabled: blocked,
++  })
++  /*
++   * The anonymous read has no `viewer`, so the card that renders it cannot
++   * find the block again. Falls back to the original view until it arrives.
++   */
++  const displayPost = (blocked && unblocked.data) || post
++  const displayRecord = bsky.isType(
++    app.bsky.feed.post.main,
++    displayPost.record,
++  )
++    ? displayPost.record
++    : record
++  const postShadowed = usePostShadow(displayPost)
+   const richText = useMemo(
+     () =>
+       new RichTextAPI({
+-        text: record.text,
+-        facets: record.facets,
++        text: displayRecord.text,
++        facets: displayRecord.facets,
+       }),
+-    [record],
++    [displayRecord],
+   )
+   if (postShadowed === POST_TOMBSTONE) {
+     return null
+   }
++  /*
++   * The block lived on the original view, so it has to be recomputed against
++   * the anonymous one. Without this the card would still blur itself after the
++   * content arrives.
++   */
++  const displayModeration =
++    blocked && unblocked.data && moderationOpts
++      ? moderatePost(displayPost, moderationOpts)
++      : moderation
+   if (richText && moderation) {
+     return (
+       <ReportDialogMetadataContext.Provider key={postShadowed.uri}>
+         <FeedItemInner
+           post={postShadowed}
+-          record={record}
++          record={displayRecord}
++          seeThrough={Boolean(blocked && unblocked.data)}
+           postNumbering={postNumbering}
+           reason={reason}
+           feedContext={feedContext}
+@@ -136,7 +172,7 @@ export function PostFeedItem({
+           richText={richText}
+           parentAuthor={parentAuthor}
+           showReplyTo={showReplyTo}
+-          moderation={moderation}
++          moderation={displayModeration}
+           isThreadChild={isThreadChild}
+           isThreadLastChild={isThreadLastChild}
+           isThreadParent={isThreadParent}
+@@ -173,11 +209,14 @@ let FeedItemInner = ({
+   isCarouselItem,
+   rootPost,
+   onShowLess,
++  seeThrough,
+ }: FeedItemProps & {
+   richText: RichTextAPI
+   post: Shadow<app.bsky.feed.defs.PostView>
+   rootPost: app.bsky.feed.defs.PostView
+   onShowLess?: (interaction: app.bsky.feed.defs.Interaction) => void
++  /** This is an anonymous read of a post you're blocked from. */
++  seeThrough?: boolean
+ }): React.ReactNode => {
+   const ax = useAnalytics()
+   const queryClient = useQueryClient()
+@@ -476,6 +515,17 @@ let FeedItemInner = ({
+               />
+             )}
+           <LabelsOnMyPost post={post} />
++          {seeThrough && (
++            <Text
++              style={[
++                a.text_xs,
++                a.font_semi_bold,
++                a.pb_2xs,
++                t.atoms.text_contrast_medium,
++              ]}>
++              <Trans>Blocked - shown anonymously</Trans>
++            </Text>
++          )}
+           <PostContent
+             compactPosts={!!compactPosts}
+             isCarouselItem={isCarouselItem}
+diff --git a/src/view/screens/Profile.tsx b/src/view/screens/Profile.tsx
+index 110eefc53..cc84d2cd3 100644
+--- a/src/view/screens/Profile.tsx
++++ b/src/view/screens/Profile.tsx
+@@ -27,11 +27,13 @@ import {useProfileShadow} from '#/state/cache/profile-shadow'
+ import {listenSoftReset} from '#/state/events'
+ import {useHideDisplayNames} from '#/state/preferences/hide-display-names'
+ import {useModerationOpts} from '#/state/preferences/moderation-opts'
++import {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
+ import {useShowStandardLabelerProfile} from '#/state/preferences/show-standard-labeler-profile'
+ import {useLabelerInfoQuery} from '#/state/queries/labeler'
+ import {resetProfilePostsQueries} from '#/state/queries/post-feed'
+ import {useProfileQuery} from '#/state/queries/profile'
+ import {useResolveDidQuery} from '#/state/queries/resolve-uri'
++import {useUnblockedProfileQuery} from '#/state/queries/see-through-blocks'
+ import {useSession} from '#/state/session'
+ import {ProfileFeedgens} from '#/view/com/feeds/ProfileFeedgens'
+ import {ProfileLists} from '#/view/com/lists/ProfileLists'
+@@ -199,10 +201,26 @@ function ProfileScreenLoaded({
+   hideBackButton: boolean
+   isPlaceholderProfile: boolean
+ }) {
++  /*
++   * A block lives on `viewer`, so a viewer-less profile is a plain profile.
++   * This only kicks in for a block, never for mutes or labels.
++   */
++  const seeThroughBlocks = useSeeThroughBlocks()
++  const isBlockedProfile = Boolean(
++    profileUnshadowed.viewer?.blocking ||
++      profileUnshadowed.viewer?.blockedBy ||
++      profileUnshadowed.viewer?.blockingByList,
++  )
++  const anonProfile = useUnblockedProfileQuery({
++    did: profileUnshadowed.did,
++    enabled: seeThroughBlocks && isBlockedProfile,
++  })
++  const profileSource = anonProfile.data ?? profileUnshadowed
++
+   const t = useTheme()
+   const {gtMobile} = useBreakpoints()
+   const {height: windowHeight} = useWindowDimensions()
+-  const profile = useProfileShadow(profileUnshadowed)
++  const profile = useProfileShadow(profileSource)
+   const {hasSession, currentAccount} = useSession()
+   const {openComposer} = useOpenComposer()
+   const navigation = useNavigation<NavigationProp>()
+-- 
+2.51.2.windows.1
+
