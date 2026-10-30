@@ -1,4 +1,4 @@
-import {useCallback, useMemo, useRef} from 'react'
+import {useCallback, useEffect, useMemo, useRef} from 'react'
 import {AppState} from 'react-native'
 import {type Client} from '@atproto/lex'
 import {type AtIdentifierString, AtUri, type AtUriString} from '@atproto/syntax'
@@ -36,8 +36,10 @@ import {
 import {DISCOVER_FEED_URI} from '#/lib/constants'
 import {logger} from '#/logger'
 import {useNoDiscoverFallback} from '#/state/preferences/no-discover-fallback'
+import {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
 import {STALE} from '#/state/queries'
 import {DEFAULT_LOGGED_OUT_PREFERENCES} from '#/state/queries/preferences/const'
+import {isBlocked} from '#/state/queries/see-through-blocks'
 import {useAppviewClient, useSession} from '#/state/session'
 import * as userActionHistory from '#/state/userActionHistory'
 import {KnownError} from '#/view/com/posts/PostFeedErrorMessage'
@@ -149,6 +151,16 @@ export function usePostFeedQuery(
   const feedTuners = useFeedTuners(feedDesc)
   const moderationOpts = useModerationOpts()
   const noDiscoverFallback = useNoDiscoverFallback()
+  const seeThroughBlocks = useSeeThroughBlocks()
+  /*
+   * The feed API outlives a rune change (rebuilding it would drop the
+   * paginated cache), so it reads the rune through this ref instead of
+   * capturing it.
+   */
+  const seeThroughBlocksRef = useRef<boolean>(Boolean(seeThroughBlocks))
+  useEffect(() => {
+    seeThroughBlocksRef.current = Boolean(seeThroughBlocks)
+  }, [seeThroughBlocks])
   const {data: preferences} = usePreferencesQuery()
   /**
    * Load bearing: we need to await AA state or risk FOUC. This marginally
@@ -188,8 +200,15 @@ export function usePostFeedQuery(
       moderationOpts,
       ignoreFilterFor: opts?.ignoreFilterFor,
       isDiscover,
+      seeThroughBlocks,
     }),
-    [feedTuners, moderationOpts, opts?.ignoreFilterFor, isDiscover],
+    [
+      feedTuners,
+      moderationOpts,
+      opts?.ignoreFilterFor,
+      isDiscover,
+      seeThroughBlocks,
+    ],
   )
 
   const query = useInfiniteQuery<
@@ -223,6 +242,7 @@ export function usePostFeedQuery(
           client,
           userInterests,
           enableFollowingToDiscoverFallback,
+          seeThroughBlocksRef,
         })
       const api =
         pageParam?.api ??
@@ -267,8 +287,13 @@ export function usePostFeedQuery(
       (data: InfiniteData<FeedPageUnselected, RQPageParam>) => {
         // If the selection depends on some data, that data should
         // be included in the selectArgs object and read here.
-        const {feedTuners, moderationOpts, ignoreFilterFor, isDiscover} =
-          selectArgs
+        const {
+          feedTuners,
+          moderationOpts,
+          ignoreFilterFor,
+          isDiscover,
+          seeThroughBlocks,
+        } = selectArgs
 
         const tuner = new FeedTuner(feedTuners)
 
@@ -336,6 +361,14 @@ export function usePostFeedQuery(
                       !ignoreFilter &&
                       moderations[i]?.ui('contentList').filter
                     ) {
+                      /*
+                       * With the see-through rune on, a post dropped purely
+                       * because of a block is kept. The card replaces it with
+                       * an anonymous read of the same post; see PostFeedItem.
+                       */
+                      if (seeThroughBlocks && isBlocked(moderations[i])) {
+                        continue
+                      }
                       return undefined
                     }
                   }
@@ -438,6 +471,7 @@ function createApi({
   userInterests,
   client,
   enableFollowingToDiscoverFallback,
+  seeThroughBlocksRef,
 }: {
   feedDesc: FeedDescriptor
   feedParams: FeedParams
@@ -445,6 +479,7 @@ function createApi({
   userInterests?: string
   client: Client
   enableFollowingToDiscoverFallback: boolean
+  seeThroughBlocksRef: {current: boolean}
 }) {
   if (feedDesc === 'following') {
     if (feedParams.mergeFeedEnabled) {
@@ -470,6 +505,7 @@ function createApi({
     return new AuthorFeedAPI({
       client,
       feedParams: {actor: actor as AtIdentifierString, filter},
+      seeThroughBlocks: () => seeThroughBlocksRef.current,
     })
   } else if (feedDesc.startsWith('likes')) {
     const [__, actor] = feedDesc.split('|')

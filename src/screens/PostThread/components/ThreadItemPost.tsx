@@ -368,6 +368,17 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
             </View>
 
             <View style={[a.flex_1, userStyle('wsky-post__content')]}>
+              {item.seeThrough && (
+                <Text
+                  style={[
+                    a.text_xs,
+                    a.font_semi_bold,
+                    a.pb_2xs,
+                    t.atoms.text_contrast_medium,
+                  ]}>
+                  <Trans>Blocked - shown anonymously</Trans>
+                </Text>
+              )}
               <PostMeta
                 author={post.author}
                 moderation={moderation}

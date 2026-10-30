@@ -3,10 +3,12 @@ import {type AtUriString} from '@atproto/syntax'
 import {useQuery, useQueryClient} from '@tanstack/react-query'
 
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
+import {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
 import {
   type ThreadView,
   useThreadPreferences,
 } from '#/state/queries/preferences/useThreadPreferences'
+import {useUnblockedThreadQuery} from '#/state/queries/see-through-blocks'
 import {
   LINEAR_VIEW_BELOW,
   LINEAR_VIEW_BF,
@@ -21,6 +23,7 @@ import {
   getThreadPlaceholder,
 } from '#/state/queries/usePostThread/queryCache'
 import {extendSelfThreadChain} from '#/state/queries/usePostThread/selfThreadChain'
+import {swapInAnonThread} from '#/state/queries/usePostThread/swapInAnonThread'
 import {
   buildThread,
   sortAndAnnotateThreadItems,
@@ -197,6 +200,27 @@ export function usePostThread({
   })
 
   const thread = useMemo(() => query.data?.thread || [], [query.data?.thread])
+
+  /*
+   * A blocked reply or parent comes back as a tombstone. The anonymous thread
+   * carries the same item with no viewer, so its posts simply get swapped in
+   * before traversal turns them into `threadPostBlocked`.
+   */
+  const seeThroughBlocks = useSeeThroughBlocks()
+  const hasBlockedItems = thread.some(
+    item =>
+      item.value.$type === 'app.bsky.unspecced.defs#threadItemBlocked',
+  )
+  const anonThreadQuery = useUnblockedThreadQuery({
+    anchor,
+    params: {
+      branchingFactor: apiView === 'linear' ? LINEAR_VIEW_BF : TREE_VIEW_BF,
+      below,
+      sort,
+    },
+    enabled: seeThroughBlocks && hasBlockedItems,
+  })
+  const anonThread = anonThreadQuery.data?.thread
   const threadgate = useMemo(
     () => query.data?.threadgate,
     [query.data?.threadgate],
@@ -304,13 +328,25 @@ export function usePostThread({
    * moderation, and annotated with all UI state needed for rendering.
    */
   const {threadItems, otherThreadItems} = useMemo(() => {
-    return sortAndAnnotateThreadItems(thread, {
+    const swapped = swapInAnonThread(thread, anonThread)
+    const result = sortAndAnnotateThreadItems(swapped.thread, {
       view: apiView,
       threadgateHiddenReplies: mergeThreadgateHiddenReplies(threadgate?.record),
       moderationOpts: moderationOpts!,
     })
+    /*
+     * Set explicitly either way: the items are cache objects, so a stale
+     * `true` would otherwise survive turning the rune back off.
+     */
+    for (const item of result.threadItems) {
+      if (item.type === 'threadPost') {
+        item.seeThrough = swapped.swapped.has(item.uri)
+      }
+    }
+    return result
   }, [
     thread,
+    anonThread,
     threadgate?.record,
     mergeThreadgateHiddenReplies,
     moderationOpts,

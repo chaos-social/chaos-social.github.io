@@ -45,6 +45,11 @@ export type ThreadItem =
         }
       }
       isBlurred: boolean
+      /**
+       * This item was a blocked tombstone, replaced by an anonymous read of
+       * the same post.
+       */
+      seeThrough?: boolean
       moderation: ModerationDecision
       ui: {
         isAnchor: boolean

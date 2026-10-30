@@ -27,11 +27,13 @@ import {useProfileShadow} from '#/state/cache/profile-shadow'
 import {listenSoftReset} from '#/state/events'
 import {useHideDisplayNames} from '#/state/preferences/hide-display-names'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
+import {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
 import {useShowStandardLabelerProfile} from '#/state/preferences/show-standard-labeler-profile'
 import {useLabelerInfoQuery} from '#/state/queries/labeler'
 import {resetProfilePostsQueries} from '#/state/queries/post-feed'
 import {useProfileQuery} from '#/state/queries/profile'
 import {useResolveDidQuery} from '#/state/queries/resolve-uri'
+import {useUnblockedProfileQuery} from '#/state/queries/see-through-blocks'
 import {useSession} from '#/state/session'
 import {ProfileFeedgens} from '#/view/com/feeds/ProfileFeedgens'
 import {ProfileLists} from '#/view/com/lists/ProfileLists'
@@ -199,10 +201,26 @@ function ProfileScreenLoaded({
   hideBackButton: boolean
   isPlaceholderProfile: boolean
 }) {
+  /*
+   * A block lives on `viewer`, so a viewer-less profile is a plain profile.
+   * This only kicks in for a block, never for mutes or labels.
+   */
+  const seeThroughBlocks = useSeeThroughBlocks()
+  const isBlockedProfile = Boolean(
+    profileUnshadowed.viewer?.blocking ||
+      profileUnshadowed.viewer?.blockedBy ||
+      profileUnshadowed.viewer?.blockingByList,
+  )
+  const anonProfile = useUnblockedProfileQuery({
+    did: profileUnshadowed.did,
+    enabled: seeThroughBlocks && isBlockedProfile,
+  })
+  const profileSource = anonProfile.data ?? profileUnshadowed
+
   const t = useTheme()
   const {gtMobile} = useBreakpoints()
   const {height: windowHeight} = useWindowDimensions()
-  const profile = useProfileShadow(profileUnshadowed)
+  const profile = useProfileShadow(profileSource)
   const {hasSession, currentAccount} = useSession()
   const {openComposer} = useOpenComposer()
   const navigation = useNavigation<NavigationProp>()

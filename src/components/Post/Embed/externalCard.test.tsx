@@ -5,6 +5,12 @@ import {Embed, PostEmbedViewContext} from './index'
 jest.mock('#/state/session', () => ({}))
 jest.mock('#/state/queries/profile', () => ({}))
 jest.mock('#/state/queries/direct-fetch-record', () => ({}))
+jest.mock('#/state/preferences/see-through-blocks', () => ({
+  useSeeThroughBlocks: () => false,
+}))
+jest.mock('#/state/queries/see-through-blocks', () => ({
+  useUnblockedPostQuery: () => ({}),
+}))
 jest.mock('#/alf', () => ({atoms: {mt_sm: {}}, useTheme: () => ({})}))
 jest.mock('#/state/preferences/moderation-opts', () => ({
   useModerationOpts: () => undefined,

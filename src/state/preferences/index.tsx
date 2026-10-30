@@ -53,6 +53,7 @@ import {Provider as PlcDirectoryProvider} from './plc-directory'
 import {Provider as PostNameReplacementProvider} from './post-name-replacement.tsx'
 import {Provider as ReplyIconIndicatorsProvider} from './reply-icon-indicators'
 import {Provider as RepostCarouselProvider} from './repost-carousel-enabled'
+import {Provider as SeeThroughBlocksProvider} from './see-through-blocks'
 import {Provider as SettingsSyncProvider} from './settings-sync'
 import {Provider as ShowAvatarFollowButtonProvider} from './show-avatar-follow-button'
 import {Provider as ShowFollowedByOnOwnProfileProvider} from './show-followed-by-on-own-profile'
@@ -144,6 +145,10 @@ export {
   useSetReplyIconIndicators,
 } from './reply-icon-indicators'
 export {
+  useSeeThroughBlocks,
+  useSetSeeThroughBlocks,
+} from './see-through-blocks'
+export {
   useSetSettingsSyncEnabled,
   useSettingsSyncEnabled,
 } from './settings-sync'
@@ -177,6 +182,7 @@ export function Provider({children}: PropsWithChildren<{}>) {
               <GoLinksProvider>
                 <IgnoredAppLabelersProvider>
                   <DirectFetchRecordsProvider>
+                    <SeeThroughBlocksProvider>
                     <ConstellationProvider>
                       <ConstellationInstanceProvider>
                         <DeerVerificationProvider>
@@ -308,6 +314,7 @@ export function Provider({children}: PropsWithChildren<{}>) {
                         </DeerVerificationProvider>
                       </ConstellationInstanceProvider>
                     </ConstellationProvider>
+                    </SeeThroughBlocksProvider>
                   </DirectFetchRecordsProvider>
                 </IgnoredAppLabelersProvider>
               </GoLinksProvider>

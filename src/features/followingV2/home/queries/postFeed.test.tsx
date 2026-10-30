@@ -85,6 +85,13 @@ jest.mock('#/state/preferences/feed-tuners', () => ({
 jest.mock('#/state/preferences/moderation-opts', () => ({
   useModerationOpts: () => mockModerationOpts,
 }))
+jest.mock('#/state/preferences/see-through-blocks', () => ({
+  useSeeThroughBlocks: () => false,
+}))
+jest.mock('#/state/queries/see-through-blocks', () => ({
+  useUnblockedPostQuery: () => ({}),
+  isBlocked: () => false,
+}))
 jest.mock('#/state/queries/preferences', () => ({
   usePreferencesQuery: () => ({data: mockPreferences}),
 }))

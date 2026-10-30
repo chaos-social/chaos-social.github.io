@@ -23,6 +23,10 @@ import {
   useOmitViaField,
   useSetOmitViaField,
 } from '#/state/preferences/omit-via-field'
+import {
+  useSeeThroughBlocks,
+  useSetSeeThroughBlocks,
+} from '#/state/preferences/see-through-blocks'
 import {useSetTidSuffix,useTidSuffix} from '#/state/preferences/tid-suffix'
 import * as SettingsList from '#/screens/Settings/components/SettingsList'
 import {atoms as a} from '#/alf'
@@ -59,6 +63,9 @@ export function RunesExtraSettingsScreen() {
 
   const omitViaField = useOmitViaField()
   const setOmitViaField = useSetOmitViaField()
+
+  const seeThroughBlocks = useSeeThroughBlocks()
+  const setSeeThroughBlocks = useSetSeeThroughBlocks()
   const tidSuffix = useTidSuffix()
   const setTidSuffixControl = Dialog.useDialogControl()
   const [devMode, setDevMode] = useDevMode()
@@ -74,6 +81,19 @@ export function RunesExtraSettingsScreen() {
           <SettingsList.ItemIcon icon={VisibilityIcon} />
           <SettingsList.ItemText>
             <Trans>Fetch records directly from PDS to fix broken quotes</Trans>
+          </SettingsList.ItemText>
+          <Toggle.Platform />
+        </SettingsList.Item>
+      </Toggle.Item>
+      <Toggle.Item
+        name="see_through_blocks"
+        label={l`See through blocks`}
+        value={seeThroughBlocks}
+        onChange={value => setSeeThroughBlocks(value)}>
+        <SettingsList.Item>
+          <SettingsList.ItemIcon icon={VisibilityIcon} />
+          <SettingsList.ItemText>
+            <Trans>See through blocks</Trans>
           </SettingsList.ItemText>
           <Toggle.Platform />
         </SettingsList.Item>

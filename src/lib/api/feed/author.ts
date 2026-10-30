@@ -1,5 +1,7 @@
 import {type Client, type XrpcRequestParams} from '@atproto/lex'
 
+import {getErrorName} from '#/lib/xrpc-error'
+import {getPublicAppviewClient} from '#/state/session/clients'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {type FeedAPI, type FeedAPIResponse} from './types'
@@ -11,16 +13,24 @@ type GetAuthorFeedParams = XrpcRequestParams<
 export class AuthorFeedAPI implements FeedAPI {
   client: Client
   _params: GetAuthorFeedParams
+  /**
+   * Read lazily so a rune change takes effect without rebuilding the API,
+   * which would otherwise discard the paginated cache.
+   */
+  seeThroughBlocks?: () => boolean
 
   constructor({
     client,
     feedParams,
+    seeThroughBlocks,
   }: {
     client: Client
     feedParams: GetAuthorFeedParams
+    seeThroughBlocks?: () => boolean
   }) {
     this.client = client
     this._params = feedParams
+    this.seeThroughBlocks = seeThroughBlocks
   }
 
   get params() {
@@ -50,11 +60,31 @@ export class AuthorFeedAPI implements FeedAPI {
      * The agent behaved the same way - its `success` flag was only ever true -
      * so the empty-page branch this replaces was unreachable.
      */
-    const data = await this.client.call(app.bsky.feed.getAuthorFeed, {
-      ...this.params,
-      cursor,
-      limit,
-    })
+    let data: app.bsky.feed.getAuthorFeed.$OutputBody
+    try {
+      data = await this.client.call(app.bsky.feed.getAuthorFeed, {
+        ...this.params,
+        cursor,
+        limit,
+      })
+    } catch (e) {
+      /*
+       * The AppView refuses an author feed on a block. The same request made
+       * anonymously is answered in full, so retry once through the public
+       * client when the rune is on.
+       */
+      const name = getErrorName(e)
+      if (
+        !this.seeThroughBlocks?.() ||
+        (name !== 'BlockedActor' && name !== 'BlockedByActor')
+      ) {
+        throw e
+      }
+      data = await getPublicAppviewClient().call(
+        app.bsky.feed.getAuthorFeed,
+        {...this.params, cursor, limit},
+      )
+    }
     return {
       cursor: data.cursor,
       feed: this._filter(data.feed),

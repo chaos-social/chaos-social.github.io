@@ -20,8 +20,10 @@ import {getChatInviteCodeFromUrl} from '#/lib/strings/url-helpers'
 import {useDirectFetchRecords} from '#/state/preferences/direct-fetch-records'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
+import {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
 import {useDirectFetchEmbedRecord} from '#/state/queries/direct-fetch-record'
 import {unstableCacheProfileView} from '#/state/queries/profile'
+import {useUnblockedPostQuery} from '#/state/queries/see-through-blocks'
 import {useSession} from '#/state/session'
 import {Link} from '#/view/com/util/Link'
 import {PostMeta} from '#/view/com/util/PostMeta'
@@ -293,6 +295,35 @@ function RecordEmbed({
     enabled: shouldDirectFetch,
   })
 
+  /*
+   * A blocked quote is readable anonymously, which also brings the full view
+   * (embeds, author) rather than a synthesized one. Takes precedence over the
+   * PDS direct fetch above when both runes are on.
+   */
+  const seeThroughBlocks = useSeeThroughBlocks()
+  const anonPost = useUnblockedPostQuery({
+    uri: embed.type === 'post_blocked' ? embed.view.uri : undefined,
+    enabled: embed.type === 'post_blocked' && seeThroughBlocks,
+  })
+  /*
+   * The PostView is a full appview view, which `QuoteEmbed` accepts through
+   * `embedViewRecordToPostView`; it only needs the record shape here.
+   */
+  const anonEmbed = anonPost.data
+    ? ({
+        type: 'post',
+        view: {
+          $type: 'app.bsky.embed.record#viewRecord',
+          uri: anonPost.data.uri,
+          cid: anonPost.data.cid,
+          author: anonPost.data.author,
+          value: anonPost.data.record,
+          indexedAt: anonPost.data.indexedAt,
+          embeds: anonPost.data.embed ? [anonPost.data.embed] : undefined,
+        },
+      } as EmbedType<'post'>)
+    : undefined
+
   if (
     (embed.type === 'post' ||
       embed.type === 'post_blocked' ||
@@ -372,6 +403,16 @@ function RecordEmbed({
       )
     }
     case 'post_blocked': {
+      if (anonEmbed) {
+        return (
+          <DirectFetchEmbed
+            {...rest}
+            embed={anonEmbed}
+            visibilityLabel={_(msg`Blocked - shown anonymously`)}
+          />
+        )
+      }
+
       const directFetchResult = directRecord.data
       const record = directFetchResult?.record
       if (record !== undefined) {

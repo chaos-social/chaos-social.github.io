@@ -1,8 +1,9 @@
 import {memo, useCallback, useMemo, useState} from 'react'
 import {StyleSheet, View} from 'react-native'
 import {AtUri} from '@atproto/syntax'
-import {type ModerationDecision} from '@bsky/sdk/moderation'
+import {moderatePost, type ModerationDecision} from '@bsky/sdk/moderation'
 import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
+import {Trans} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
 import {type ReasonFeedSource} from '#/lib/api/feed/types'
@@ -20,7 +21,13 @@ import {
 } from '#/state/cache/post-shadow'
 import {useFeedFeedbackContext} from '#/state/feed-feedback'
 import {useCompactPosts} from '#/state/preferences/compact-posts'
+import {useModerationOpts} from '#/state/preferences/moderation-opts'
+import {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
 import {unstableCacheProfileView} from '#/state/queries/profile'
+import {
+  isBlocked,
+  useUnblockedPostQuery,
+} from '#/state/queries/see-through-blocks'
 import {useSession} from '#/state/session'
 import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
 import {
@@ -56,6 +63,7 @@ import {DiscoverDebug} from '#/components/PostControls/DiscoverDebug'
 import {PostTags} from '#/components/PostTags'
 import {RichText} from '#/components/RichText'
 import {SubtleHover} from '#/components/SubtleHover'
+import {Text} from '#/components/Typography'
 import {Features, useAnalytics} from '#/analytics'
 import {IS_NATIVE, IS_WEB} from '#/env'
 import {useActorStatus} from '#/features/liveNow'
@@ -111,24 +119,52 @@ export function PostFeedItem({
   rootPost: app.bsky.feed.defs.PostView
   onShowLess?: (interaction: app.bsky.feed.defs.Interaction) => void
 }): React.ReactNode {
-  const postShadowed = usePostShadow(post)
+  const seeThroughBlocks = useSeeThroughBlocks()
+  const moderationOpts = useModerationOpts()
+  const blocked = seeThroughBlocks && isBlocked(moderation)
+  const unblocked = useUnblockedPostQuery({
+    uri: post.uri,
+    enabled: blocked,
+  })
+  /*
+   * The anonymous read has no `viewer`, so the card that renders it cannot
+   * find the block again. Falls back to the original view until it arrives.
+   */
+  const displayPost = (blocked && unblocked.data) || post
+  const displayRecord = bsky.isType(
+    app.bsky.feed.post.main,
+    displayPost.record,
+  )
+    ? displayPost.record
+    : record
+  const postShadowed = usePostShadow(displayPost)
   const richText = useMemo(
     () =>
       new RichTextAPI({
-        text: record.text,
-        facets: record.facets,
+        text: displayRecord.text,
+        facets: displayRecord.facets,
       }),
-    [record],
+    [displayRecord],
   )
   if (postShadowed === POST_TOMBSTONE) {
     return null
   }
+  /*
+   * The block lived on the original view, so it has to be recomputed against
+   * the anonymous one. Without this the card would still blur itself after the
+   * content arrives.
+   */
+  const displayModeration =
+    blocked && unblocked.data && moderationOpts
+      ? moderatePost(displayPost, moderationOpts)
+      : moderation
   if (richText && moderation) {
     return (
       <ReportDialogMetadataContext.Provider key={postShadowed.uri}>
         <FeedItemInner
           post={postShadowed}
-          record={record}
+          record={displayRecord}
+          seeThrough={Boolean(blocked && unblocked.data)}
           postNumbering={postNumbering}
           reason={reason}
           feedContext={feedContext}
@@ -136,7 +172,7 @@ export function PostFeedItem({
           richText={richText}
           parentAuthor={parentAuthor}
           showReplyTo={showReplyTo}
-          moderation={moderation}
+          moderation={displayModeration}
           isThreadChild={isThreadChild}
           isThreadLastChild={isThreadLastChild}
           isThreadParent={isThreadParent}
@@ -173,11 +209,14 @@ let FeedItemInner = ({
   isCarouselItem,
   rootPost,
   onShowLess,
+  seeThrough,
 }: FeedItemProps & {
   richText: RichTextAPI
   post: Shadow<app.bsky.feed.defs.PostView>
   rootPost: app.bsky.feed.defs.PostView
   onShowLess?: (interaction: app.bsky.feed.defs.Interaction) => void
+  /** This is an anonymous read of a post you're blocked from. */
+  seeThrough?: boolean
 }): React.ReactNode => {
   const ax = useAnalytics()
   const queryClient = useQueryClient()
@@ -476,6 +515,17 @@ let FeedItemInner = ({
               />
             )}
           <LabelsOnMyPost post={post} />
+          {seeThrough && (
+            <Text
+              style={[
+                a.text_xs,
+                a.font_semi_bold,
+                a.pb_2xs,
+                t.atoms.text_contrast_medium,
+              ]}>
+              <Trans>Blocked - shown anonymously</Trans>
+            </Text>
+          )}
           <PostContent
             compactPosts={!!compactPosts}
             isCarouselItem={isCarouselItem}
