@@ -22,17 +22,35 @@ import {
   type NotificationType,
   type UnreadCheck,
 } from './types'
+import {
+  asyncGenFilter,
+  asyncGenTryMap,
+  constellationLinks,
+  ConstellationLink,
+  asyncGenDedupe,
+  asyncGenCollect,
+} from '../constellation'
+import {useConstellationInstance} from '#/state/preferences/constellation-instance'
+import {resolvePdsServiceUrl} from '../resolve-identity'
 
 const GROUPABLE_REASONS = [
   'like',
+  'post-bite',
   'repost',
   'follow',
+  'user-bite',
   'like-via-repost',
   'repost-via-repost',
+  'bite-via-repost',
   'subscribed-post',
 ]
 const MS_1HR = 1e3 * 60 * 60
 const MS_2DAY = MS_1HR * 48
+
+type LinkedRecord = {
+  link: ConstellationLink
+  record: any
+}
 
 // exported api
 // =
@@ -69,6 +87,71 @@ export async function fetchPage({
   const notifs = data.notifications.filter(
     notif => !shouldFilterNotif(notif, moderationOpts),
   )
+
+  console.log('notifs')
+  console.log(notifs)
+
+  const constellationInstance = 'https://constellation.microcosm.blue/' //useConstellationInstance()
+  const biteLinks = asyncGenDedupe(
+    constellationLinks(constellationInstance, {
+      target: 'at://did:plc:loise3eov323mj7pgmc5dj5z',
+      collection: 'net.wafrn.feed.bite',
+      path: '.subject',
+      from_dids: [],
+    }),
+    link => link.did,
+  )
+
+  const biteRecords = asyncGenFilter(
+    asyncGenTryMap<ConstellationLink, {link: ConstellationLink; record: any}>(
+      biteLinks,
+      async link => {
+        let service = await resolvePdsServiceUrl(link.did)
+
+        const request = `${service}/xrpc/com.atproto.repo.getRecord?repo=${link.did}&collection=net.wafrn.feed.bite&rkey=${link.rkey}`
+        const record = (
+          (await (await fetch(request)).json()) as {
+            value?: unknown
+          }
+        ).value
+        return {link, record}
+      },
+      (_, e) => {
+        console.error(e)
+      },
+    ),
+    // the explicit return type shouldn't be needed...
+    (d: {link: ConstellationLink; record: unknown}): d is LinkedRecord => true,
+    // bsky.validate<AppBskyGraphVerification.Record>(
+    //   d.record,
+    //   AppBskyGraphVerification.validateRecord,
+    // ),
+  )
+
+  for (const {link, record} of await asyncGenCollect(biteRecords)) {
+    let notif: any = {}
+
+    let uri = 'at://' + link.did + '/net.wafrn.feed.bite/' + link.rkey
+
+    const profile = await agent.getProfile({actor: link.did})
+
+    notif = {
+      uri: uri,
+      cid: 'bafyreidjgv4tniv5t5zzmzpy4i65enbgxyk4njnpgbdmcnloytppam7eqm',
+      author: profile.data,
+      reason: 'user-bite',
+      record: {
+        $type: 'net.wafrn.feed.bite',
+        createdAt: record.createdAt,
+        subject: record.subject,
+      },
+      isRead: true,
+      indexedAt: '2026-07-12T20:26:45.729Z',
+      labels: [],
+    }
+
+    notifs.unshift(notif)
+  }
 
   // group notifications which are essentially similar (follows, likes on a post)
   let notifsGrouped = groupNotifications(notifs)
@@ -313,16 +396,19 @@ function toKnownType(notif: Notification): NotificationType {
     return 'post-like'
   }
   if (
+    notif.reason === 'post-bite' ||
     notif.reason === 'repost' ||
     notif.reason === 'mention' ||
     notif.reason === 'reply' ||
     notif.reason === 'quote' ||
     notif.reason === 'follow' ||
+    notif.reason === 'user-bite' ||
     notif.reason === 'starterpack-joined' ||
     notif.reason === 'verified' ||
     notif.reason === 'unverified' ||
     notif.reason === 'like-via-repost' ||
     notif.reason === 'repost-via-repost' ||
+    notif.reason === 'bite-via-repost' ||
     notif.reason === 'subscribed-post' ||
     notif.reason === 'contact-match'
   ) {
@@ -344,9 +430,11 @@ function getSubjectUri(
     return notif.uri
   } else if (
     type === 'post-like' ||
+    type === 'post-bite' ||
     type === 'repost' ||
     type === 'like-via-repost' ||
-    type === 'repost-via-repost'
+    type === 'repost-via-repost' ||
+    type === 'bite-via-repost'
   ) {
     if (
       bsky.isType(app.bsky.feed.repost, notif.record) ||

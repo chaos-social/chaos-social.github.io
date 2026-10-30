@@ -19,6 +19,7 @@ type Collection =
   | 'app.bsky.graph.starterpack'
   | 'app.bsky.graph.verification'
   | 'chat.bsky.actor.declaration'
+  | 'net.wafrn.feed.bite'
 
 const headers = new Headers({
   Accept: 'application/json',

@@ -79,6 +79,7 @@ import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/
 import {Repost_Stroke2_Corner3_Rounded as RepostIcon} from '#/components/icons/Repost'
 import {RepostRepost_Stroke2_Corner2_Rounded as RepostRepostIcon} from '#/components/icons/Repost'
 import {StarterPackMultiPathLarge as StarterPackIcon} from '#/components/icons/StarterPack'
+import {Bite as BiteIcon} from '#/components/icons/Cookie'
 import {VerifiedCheck} from '#/components/icons/VerifiedCheck'
 import {InlineLinkText, Link, useLink} from '#/components/Link'
 import * as MediaPreview from '#/components/MediaPreview'
@@ -125,9 +126,11 @@ let NotificationFeedItem = ({
   const itemHref = useMemo(() => {
     switch (item.type) {
       case 'post-like':
+      case 'post-bite':
       case 'repost':
       case 'like-via-repost':
-      case 'repost-via-repost': {
+      case 'repost-via-repost':
+      case 'bite-via-repost': {
         if (item.subjectUri) {
           const urip = new AtUri(item.subjectUri)
           return `/profile/${urip.host}/post/${urip.rkey}`
@@ -137,7 +140,8 @@ let NotificationFeedItem = ({
       case 'follow':
       case 'contact-match':
       case 'verified':
-      case 'unverified': {
+      case 'unverified':
+      case 'user-bite': {
         return makeProfileLink(item.notification.author)
       }
       case 'reply':
@@ -354,6 +358,31 @@ let NotificationFeedItem = ({
     ) : (
       <Trans>{firstAuthorLink} liked your post</Trans>
     )
+  } else if (item.type === 'post-bite') {
+    a11yLabel = hasMultipleAuthors
+      ? _(
+          msg`${firstAuthorName} and ${plural(additionalAuthorsCount, {
+            one: `${formattedAuthorsCount} other`,
+            other: `${formattedAuthorsCount} others`,
+          })} bit your post`,
+        )
+      : _(msg`${firstAuthorName} bit your post`)
+    notificationContent = hasMultipleAuthors ? (
+      <Trans>
+        {firstAuthorLink} and{' '}
+        <Text style={[a.text_md, a.font_semi_bold, a.leading_snug]}>
+          <Plural
+            value={additionalAuthorsCount}
+            one={`${formattedAuthorsCount} other`}
+            other={`${formattedAuthorsCount} others`}
+          />
+        </Text>{' '}
+        bit your post
+      </Trans>
+    ) : (
+      <Trans>{firstAuthorLink} bit your post</Trans>
+    )
+    icon = <BiteIcon size="xl" style={{color: t.palette.primary_500}} />
   } else if (item.type === 'repost') {
     a11yLabel = hasMultipleAuthors
       ? _(
@@ -428,6 +457,31 @@ let NotificationFeedItem = ({
       )
     }
     icon = <PersonPlusIcon size="xl" style={{color: t.palette.primary_500}} />
+  } else if (item.type === 'user-bite') {
+    a11yLabel = hasMultipleAuthors
+      ? _(
+          msg`${firstAuthorName} and ${plural(additionalAuthorsCount, {
+            one: `${formattedAuthorsCount} other`,
+            other: `${formattedAuthorsCount} others`,
+          })} bit you!`,
+        )
+      : _(msg`${firstAuthorName} bit you!`)
+    notificationContent = hasMultipleAuthors ? (
+      <Trans>
+        {firstAuthorLink} and{' '}
+        <Text style={[a.text_md, a.font_semi_bold, a.leading_snug]}>
+          <Plural
+            value={additionalAuthorsCount}
+            one={`${formattedAuthorsCount} other`}
+            other={`${formattedAuthorsCount} others`}
+          />
+        </Text>{' '}
+        bit you!
+      </Trans>
+    ) : (
+      <Trans>{firstAuthorLink} bit you!</Trans>
+    )
+    icon = <BiteIcon size="xl" style={{color: t.palette.primary_500}} />
   } else if (item.type === 'contact-match') {
     a11yLabel = _(msg`Your contact ${firstAuthorName} is on Bluesky`)
     notificationContent = (
@@ -593,6 +647,31 @@ let NotificationFeedItem = ({
     icon = (
       <RepostRepostIcon size="xl" style={{color: t.palette.positive_500}} />
     )
+  } else if (item.type === 'bite-via-repost') {
+    a11yLabel = hasMultipleAuthors
+      ? _(
+          msg`${firstAuthorName} and ${plural(additionalAuthorsCount, {
+            one: `${formattedAuthorsCount} other`,
+            other: `${formattedAuthorsCount} others`,
+          })} bit your repost`,
+        )
+      : _(msg`${firstAuthorName} bit your repost`)
+    notificationContent = hasMultipleAuthors ? (
+      <Trans>
+        {firstAuthorLink} and{' '}
+        <Text style={[a.text_md, a.font_semi_bold, a.leading_snug]}>
+          <Plural
+            value={additionalAuthorsCount}
+            one={`${formattedAuthorsCount} other`}
+            other={`${formattedAuthorsCount} others`}
+          />
+        </Text>{' '}
+        bit your repost
+      </Trans>
+    ) : (
+      <Trans>{firstAuthorLink} bit your repost</Trans>
+    )
+    icon = <BiteIcon size="xl" style={{color: t.palette.primary_500}} />
   } else if (item.type === 'subscribed-post') {
     const postsCount = 1 + (item.additional?.length || 0)
     a11yLabel = hasMultipleAuthors
@@ -729,9 +808,11 @@ let NotificationFeedItem = ({
                 <FollowBackButton profile={item.notification.author} />
               ) : null}
               {item.type === 'post-like' ||
+              item.type === 'post-bite' ||
               item.type === 'repost' ||
               item.type === 'like-via-repost' ||
               item.type === 'repost-via-repost' ||
+              item.type === 'bite-via-repost' ||
               item.type === 'subscribed-post' ? (
                 <View style={[a.pt_2xs]}>
                   <AdditionalPostText post={item.subject} />
