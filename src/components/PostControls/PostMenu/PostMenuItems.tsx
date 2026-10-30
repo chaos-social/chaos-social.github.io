@@ -1,4 +1,4 @@
-import {memo, useMemo} from 'react'
+import {memo, useMemo, useState} from 'react'
 import {
   Platform,
   type PressableProps,
@@ -22,6 +22,7 @@ import {useNavigation} from '@react-navigation/native'
 import {useQueryClient} from '@tanstack/react-query'
 
 import {DISCOVER_DEBUG_DIDS} from '#/lib/constants'
+import {useHaptics} from '#/lib/haptics'
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {useOpenLink} from '#/lib/hooks/useOpenLink'
 import {getPostMediaDownloadName} from '#/lib/media/downloadFilename'
@@ -47,6 +48,7 @@ import {
   useHiddenPostsApi,
   useLanguagePrefs,
 } from '#/state/preferences'
+import {useShowBiteButton} from '#/state/preferences/show-bite-button'
 import {usePinnedPostMutation} from '#/state/queries/pinned-post'
 import {
   useGetPost,
@@ -81,6 +83,7 @@ import {
 import {Atom_Stroke2_Corner0_Rounded as AtomIcon} from '#/components/icons/Atom'
 import {BubbleQuestion_Stroke2_Corner0_Rounded as Translate} from '#/components/icons/Bubble'
 import {Clipboard_Stroke2_Corner2_Rounded as ClipboardIcon} from '#/components/icons/Clipboard'
+import {Bite as BiteIcon} from '#/components/icons/Cookie'
 import {Download_Stroke2_Corner0_Rounded as Download} from '#/components/icons/Download'
 import {
   EmojiSad_Stroke2_Corner0_Rounded as EmojiSad,
@@ -118,6 +121,7 @@ import {IS_NATIVE} from '#/env'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {PostMenuControlItems} from './PostMenuControlItems'
+import {useBiteMutation} from './useBiteMutation'
 
 let PostMenuItems = ({
   post,
@@ -159,6 +163,12 @@ let PostMenuItems = ({
   const {mutateAsync: pinPostMutate, isPending: isPinPending} =
     usePinnedPostMutation()
   const requireSignIn = useRequireAuth()
+  const haptics = useHaptics()
+  const showBiteButton = useShowBiteButton()
+  const {mutateAsync: bite, isPending: isBitePending} = useBiteMutation(
+    post.uri,
+  )
+  const [hasBitten, setHasBitten] = useState(false)
   const hiddenPosts = useHiddenPosts()
   const {hidePost} = useHiddenPostsApi()
   const feedFeedback = useFeedFeedbackContext()
@@ -806,6 +816,28 @@ let PostMenuItems = ({
     void openLink(url)
   }
 
+  /*
+   * Wafrn consumes these from the firehose; we cannot read back whether a
+   * bite exists, so the item just remembers this session's success.
+   */
+  const onBite = async () => {
+    haptics.confirm()
+    try {
+      await bite()
+      setHasBitten(true)
+      Toast.show(l({message: 'Bitten', comment: 'Wafrn bite action'}), {
+        type: 'success',
+      })
+    } catch (e) {
+      logger.error('Failed to bite post', {safeMessage: e})
+      Toast.show(l`Could not bite this post`, {type: 'error'})
+    }
+  }
+
+  const biteLabel = hasBitten
+    ? l({message: 'Bitten', comment: 'Post already bitten on wafrn'})
+    : l({message: 'Bite', comment: 'Bite a post, like a like, as on wafrn'})
+
   const onSignIn = () => requireSignIn(() => {})
 
   const onPressHideTranslation = () => clearTranslation()
@@ -1106,6 +1138,19 @@ let PostMenuItems = ({
             <Menu.Group>
               {!isAuthor && (
                 <>
+                  {showBiteButton && (
+                    <Menu.Item
+                      testID="postDropdownBiteBtn"
+                      disabled={hasBitten || isBitePending}
+                      label={biteLabel}
+                      onPress={() => requireSignIn(() => void onBite())}>
+                      <Menu.ItemText>{biteLabel}</Menu.ItemText>
+                      <Menu.ItemIcon
+                        icon={isBitePending ? Loader : BiteIcon}
+                        position="right"
+                      />
+                    </Menu.Item>
+                  )}
                   <Menu.Item
                     testID="postDropdownMuteBtn"
                     label={

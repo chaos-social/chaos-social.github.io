@@ -13,7 +13,15 @@ import {isInGroupedFeed} from '#/state/queries/notifications/grouped/membership'
 import {type GroupedNotificationsFeed} from '#/state/queries/notifications/grouped/types'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
+import {
+  asyncGenCollect,
+  asyncGenDedupe,
+  asyncGenTryMap,
+  type ConstellationLink,
+  constellationLinks,
+} from '../constellation'
 import {precacheProfile} from '../profile'
+import {resolvePdsServiceUrl} from '../resolve-identity'
 import {fetchNotificationPosts} from './fetch-posts'
 import {
   type FeedNotification,
@@ -22,16 +30,6 @@ import {
   type NotificationType,
   type UnreadCheck,
 } from './types'
-import {
-  asyncGenFilter,
-  asyncGenTryMap,
-  constellationLinks,
-  ConstellationLink,
-  asyncGenDedupe,
-  asyncGenCollect,
-} from '../constellation'
-import {useConstellationInstance} from '#/state/preferences/constellation-instance'
-import {resolvePdsServiceUrl} from '../resolve-identity'
 
 const GROUPABLE_REASONS = [
   'like',
@@ -47,9 +45,14 @@ const GROUPABLE_REASONS = [
 const MS_1HR = 1e3 * 60 * 60
 const MS_2DAY = MS_1HR * 48
 
+type BiteRecord = {
+  createdAt: string
+  subject: string
+}
+
 type LinkedRecord = {
   link: ConstellationLink
-  record: any
+  record: BiteRecord
 }
 
 // exported api
@@ -102,43 +105,33 @@ export async function fetchPage({
     link => link.did,
   )
 
-  const biteRecords = asyncGenFilter(
-    asyncGenTryMap<ConstellationLink, {link: ConstellationLink; record: any}>(
-      biteLinks,
-      async link => {
-        let service = await resolvePdsServiceUrl(link.did)
+  const biteRecords = asyncGenTryMap<ConstellationLink, LinkedRecord>(
+    biteLinks,
+    async link => {
+      let service = await resolvePdsServiceUrl(link.did)
 
-        const request = `${service}/xrpc/com.atproto.repo.getRecord?repo=${link.did}&collection=net.wafrn.feed.bite&rkey=${link.rkey}`
-        const record = (
-          (await (await fetch(request)).json()) as {
-            value?: unknown
-          }
-        ).value
-        return {link, record}
-      },
-      (_, e) => {
-        console.error(e)
-      },
-    ),
-    // the explicit return type shouldn't be needed...
-    (d: {link: ConstellationLink; record: unknown}): d is LinkedRecord => true,
-    // bsky.validate<AppBskyGraphVerification.Record>(
-    //   d.record,
-    //   AppBskyGraphVerification.validateRecord,
-    // ),
+      const request = `${service}/xrpc/com.atproto.repo.getRecord?repo=${link.did}&collection=net.wafrn.feed.bite&rkey=${link.rkey}`
+      const record = (
+        (await (await fetch(request)).json()) as {
+          value?: unknown
+        }
+      ).value as BiteRecord
+      return {link, record}
+    },
+    (_, e) => {
+      console.error(e)
+    },
   )
 
   for (const {link, record} of await asyncGenCollect(biteRecords)) {
-    let notif: any = {}
+    const author = (await client.call(app.bsky.actor.getProfile, {
+      actor: link.did,
+    })) as app.bsky.actor.defs.ProfileView
 
-    let uri = 'at://' + link.did + '/net.wafrn.feed.bite/' + link.rkey
-
-    const profile = await agent.getProfile({actor: link.did})
-
-    notif = {
-      uri: uri,
+    notifs.unshift({
+      uri: `at://${link.did}/net.wafrn.feed.bite/${link.rkey}`,
       cid: 'bafyreidjgv4tniv5t5zzmzpy4i65enbgxyk4njnpgbdmcnloytppam7eqm',
-      author: profile.data,
+      author,
       reason: 'user-bite',
       record: {
         $type: 'net.wafrn.feed.bite',
@@ -148,9 +141,7 @@ export async function fetchPage({
       isRead: true,
       indexedAt: '2026-07-12T20:26:45.729Z',
       labels: [],
-    }
-
-    notifs.unshift(notif)
+    })
   }
 
   // group notifications which are essentially similar (follows, likes on a post)

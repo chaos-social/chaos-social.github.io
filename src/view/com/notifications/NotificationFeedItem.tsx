@@ -70,6 +70,7 @@ import {
   ChevronTop_Stroke2_Corner0_Rounded as ChevronUpIcon,
 } from '#/components/icons/Chevron'
 import {Contacts_Filled_Corner2_Rounded as ContactsIconFilled} from '#/components/icons/Contacts'
+import {Bite as BiteIcon} from '#/components/icons/Cookie'
 import {
   Heart2_Filled_Stroke2_Corner0_Rounded as HeartIconFilled,
   LikeRepost_Stroke2_Corner2_Rounded as RepostHeartIcon,
@@ -79,7 +80,6 @@ import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/
 import {Repost_Stroke2_Corner3_Rounded as RepostIcon} from '#/components/icons/Repost'
 import {RepostRepost_Stroke2_Corner2_Rounded as RepostRepostIcon} from '#/components/icons/Repost'
 import {StarterPackMultiPathLarge as StarterPackIcon} from '#/components/icons/StarterPack'
-import {Bite as BiteIcon} from '#/components/icons/Cookie'
 import {VerifiedCheck} from '#/components/icons/VerifiedCheck'
 import {InlineLinkText, Link, useLink} from '#/components/Link'
 import * as MediaPreview from '#/components/MediaPreview'

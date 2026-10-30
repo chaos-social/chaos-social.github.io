@@ -27,7 +27,11 @@ import {
   useSeeThroughBlocks,
   useSetSeeThroughBlocks,
 } from '#/state/preferences/see-through-blocks'
-import {useSetTidSuffix,useTidSuffix} from '#/state/preferences/tid-suffix'
+import {
+  useSetShowBiteButton,
+  useShowBiteButton,
+} from '#/state/preferences/show-bite-button'
+import {useSetTidSuffix, useTidSuffix} from '#/state/preferences/tid-suffix'
 import * as SettingsList from '#/screens/Settings/components/SettingsList'
 import {atoms as a} from '#/alf'
 import {Admonition} from '#/components/Admonition'
@@ -36,6 +40,7 @@ import * as Dialog from '#/components/Dialog'
 import * as Toggle from '#/components/forms/Toggle'
 import {BellRinging_Stroke2_Corner0_Rounded as BellRingingIcon} from '#/components/icons/BellRinging'
 import {CodeBrackets_Stroke2_Corner2_Rounded as CodeBracketsIcon} from '#/components/icons/CodeBrackets'
+import {Bite as BiteIcon} from '#/components/icons/Cookie'
 import {Explosion_Stroke2_Corner0_Rounded as ExplosionIcon} from '#/components/icons/Explosion'
 import {Eye_Stroke2_Corner0_Rounded as VisibilityIcon} from '#/components/icons/Eye'
 import {Hashtag_Stroke2_Corner0_Rounded as HashtagIcon} from '#/components/icons/Hashtag'
@@ -66,6 +71,8 @@ export function RunesExtraSettingsScreen() {
 
   const seeThroughBlocks = useSeeThroughBlocks()
   const setSeeThroughBlocks = useSetSeeThroughBlocks()
+  const showBiteButton = useShowBiteButton()
+  const setShowBiteButton = useSetShowBiteButton()
   const tidSuffix = useTidSuffix()
   const setTidSuffixControl = Dialog.useDialogControl()
   const [devMode, setDevMode] = useDevMode()
@@ -81,6 +88,19 @@ export function RunesExtraSettingsScreen() {
           <SettingsList.ItemIcon icon={VisibilityIcon} />
           <SettingsList.ItemText>
             <Trans>Fetch records directly from PDS to fix broken quotes</Trans>
+          </SettingsList.ItemText>
+          <Toggle.Platform />
+        </SettingsList.Item>
+      </Toggle.Item>
+      <Toggle.Item
+        name="show_bite_button"
+        label={l`Show bite in post menus`}
+        value={showBiteButton}
+        onChange={value => setShowBiteButton(value)}>
+        <SettingsList.Item>
+          <SettingsList.ItemIcon icon={BiteIcon} />
+          <SettingsList.ItemText>
+            <Trans>Show bite in post menus</Trans>
           </SettingsList.ItemText>
           <Toggle.Platform />
         </SettingsList.Item>
