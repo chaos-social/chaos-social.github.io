@@ -60,6 +60,20 @@ jobs:
       - name: Strip source maps
         run: find dist -name '*.map' -type f -delete
 
+      # Tree shaking can prune chroma-js's format registrations, which makes
+      # every chroma('#rrggbb') throw "unknown format" at runtime. Static
+      # builds can't catch it, so assert the registration survived. See
+      # docs/web-build.md.
+      - name: Check chroma formats survived tree shaking
+        run: |
+          if ! grep -rq '\[3,4,5,6,7,8,9\]' dist --include='*.js'; then
+            echo "chroma-js hex format registration is missing from the bundle."
+            echo "chroma('#rrggbb') will throw 'unknown format' at runtime."
+            echo "Fix src/platform/chroma-formats.web.ts; see docs/web-build.md."
+            exit 1
+          fi
+          echo "OK: chroma hex registration present"
+
       - name: Check Pages size limits
         run: |
           oversized=$(find dist -type f -size +25M)
