@@ -201,6 +201,18 @@ export async function fetchPostAnon(
   }
 }
 
+/**
+ * Query options for a single anonymous post read. Exposed so a caller fetching
+ * many posts at once shares this cache and fallback chain.
+ */
+export function unblockedPostQueryOptions(uri: string, slingshot: string) {
+  return {
+    queryKey: RQKEY(uri),
+    staleTime: STALE.HOURS.ONE,
+    queryFn: () => fetchPostAnon(getPublicAppviewClient(), slingshot, uri),
+  }
+}
+
 export function useUnblockedPostQuery({
   uri,
   enabled,
@@ -211,9 +223,7 @@ export function useUnblockedPostQuery({
   const slingshot = useSlingshotInstance()
   const deferredEnabled = useDeferredEnable(Boolean(enabled) && !!uri)
   return useQuery({
-    queryKey: RQKEY(uri ?? ''),
-    staleTime: STALE.HOURS.ONE,
-    queryFn: () => fetchPostAnon(getPublicAppviewClient(), slingshot, uri!),
+    ...unblockedPostQueryOptions(uri ?? '', slingshot),
     enabled: deferredEnabled,
   })
 }

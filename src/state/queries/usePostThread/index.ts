@@ -1,14 +1,18 @@
 import {useCallback, useMemo, useState} from 'react'
 import {type AtUriString} from '@atproto/syntax'
-import {useQuery, useQueryClient} from '@tanstack/react-query'
+import {useQueries, useQuery, useQueryClient} from '@tanstack/react-query'
 
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
+import {useSlingshotInstance} from '#/state/preferences/slingshot-instance'
 import {
   type ThreadView,
   useThreadPreferences,
 } from '#/state/queries/preferences/useThreadPreferences'
-import {useUnblockedThreadQuery} from '#/state/queries/see-through-blocks'
+import {
+  unblockedPostQueryOptions,
+  useUnblockedThreadQuery,
+} from '#/state/queries/see-through-blocks'
 import {
   LINEAR_VIEW_BELOW,
   LINEAR_VIEW_BF,
@@ -23,7 +27,10 @@ import {
   getThreadPlaceholder,
 } from '#/state/queries/usePostThread/queryCache'
 import {extendSelfThreadChain} from '#/state/queries/usePostThread/selfThreadChain'
-import {swapInAnonThread} from '#/state/queries/usePostThread/swapInAnonThread'
+import {
+  mergeAnonPosts,
+  swapInAnonThread,
+} from '#/state/queries/usePostThread/swapInAnonThread'
 import {
   buildThread,
   sortAndAnnotateThreadItems,
@@ -207,10 +214,12 @@ export function usePostThread({
    * before traversal turns them into `threadPostBlocked`.
    */
   const seeThroughBlocks = useSeeThroughBlocks()
-  const hasBlockedItems = thread.some(
-    item =>
-      item.value.$type === 'app.bsky.unspecced.defs#threadItemBlocked',
-  )
+  const blockedUris = thread
+    .filter(
+      item => item.value.$type === 'app.bsky.unspecced.defs#threadItemBlocked',
+    )
+    .map(item => item.uri)
+  const hasBlockedItems = blockedUris.length > 0
   const anonThreadQuery = useUnblockedThreadQuery({
     anchor,
     params: {
@@ -220,7 +229,30 @@ export function usePostThread({
     },
     enabled: seeThroughBlocks && hasBlockedItems,
   })
-  const anonThread = anonThreadQuery.data?.thread
+  /*
+   * The anonymous thread can still come back blocked: the AppView hides a
+   * parent from everyone when its author blocks the person being replied to,
+   * which is not a viewer block at all. Those records are still served by
+   * `getPosts` and the PDS, so fall back to reading them one by one.
+   */
+  const slingshot = useSlingshotInstance()
+  const anonPosts = useQueries({
+    queries: (seeThroughBlocks ? blockedUris : []).map(uri =>
+      unblockedPostQueryOptions(uri, slingshot),
+    ),
+    combine: results =>
+      results
+        .map(r => r.data)
+        .filter((p): p is app.bsky.feed.defs.PostView => Boolean(p)),
+  })
+  const anonThread = useMemo(
+    () =>
+      mergeAnonPosts(
+        swapInAnonThread(thread, anonThreadQuery.data?.thread),
+        anonPosts,
+      ),
+    [thread, anonThreadQuery.data?.thread, anonPosts],
+  )
   const threadgate = useMemo(
     () => query.data?.threadgate,
     [query.data?.threadgate],
@@ -328,7 +360,7 @@ export function usePostThread({
    * moderation, and annotated with all UI state needed for rendering.
    */
   const {threadItems, otherThreadItems} = useMemo(() => {
-    const swapped = swapInAnonThread(thread, anonThread)
+    const swapped = anonThread ?? swapInAnonThread(thread, undefined)
     const result = sortAndAnnotateThreadItems(swapped.thread, {
       view: apiView,
       threadgateHiddenReplies: mergeThreadgateHiddenReplies(threadgate?.record),
