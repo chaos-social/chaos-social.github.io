@@ -6,23 +6,39 @@
 `sideEffects` support in package.json, so a package's side-effect-only imports
 can be pruned even though upstream declared them safe.
 
-chroma-js registers its color formats that way: importing `chroma-js` pulls in
-`src/io/*/index.js`, and each of those assigns into `input.format` and pushes
-an autodetect entry. Under tree shaking the format table ends up empty, so
-`chroma('#rrggbb')` throws `unknown format: #rrggbb`. In practice that made
-every profile page crash, because profile badges call `verifierColor()`.
+chroma-js works entirely through those side effects. Importing `chroma-js`
+pulls in:
 
-`src/platform/chroma-formats.web.ts` imports the format modules explicitly
-(`hex`, `rgb`, `oklch`) so they survive pruning, and `polyfills.web.ts` imports
-it before anything else runs. **If you add a new `chroma.<format>()` call, add
-the matching `src/io/<format>/index.js` import there**, or it will work in dev
-and throw in production.
+- `src/io/<format>/index.js` - assigns into `input.format` and pushes an
+  autodetect entry, which is what makes `chroma('#rrggbb')` parse at all.
+- `src/ops/<op>.js` - assigns methods onto `Color.prototype`, which is what
+  makes `.oklch()`, `.hex()`, `.luminance()`, `.darken()` etc. exist.
+- `src/generator/mix.js` - backs `chroma.mix` and `chroma.scale`.
 
-Symptoms to recognize:
+Under tree shaking all of that is dropped, and both failures are runtime-only:
 
-- Dev works, deployed build throws `unknown format: #119d56`.
-- Grepping the built chunk for the chroma autodetect entry finds only `p:5`
-  (the `named` format) instead of the full table.
+| Missing | Symptom |
+| --- | --- |
+| format registrations | `unknown format: #rrggbb` |
+| operator registrations | `e.luminance is not a function` |
+
+`src/platform/chroma-formats.web.ts` imports the **whole** io and ops set so
+both survive pruning, and `index.web.ts` references its exported value so the
+module itself is not pruned either - a bare side-effect import is dropped too.
+Registering the full set rather than only the methods currently called is
+deliberate: chroma reaches operators indirectly (`chroma.contrast` calls
+`.luminance()`, `chroma.mix` uses the mix generator), so a per-method list
+breaks again as soon as a new call site appears. The whole set is a few KB.
+
+To confirm a build is good, either run the deploy workflow's
+`Check chroma registrations survived tree shaking` step, or grep the bundle:
+
+```sh
+grep -c '\[3,4,5,6,7,8,9\]' dist/_expo/static/js/web/index-*.js   # hex format
+grep -c 'prototype\.luminance' dist/_expo/static/js/web/index-*.js # an operator
+```
+
+Both must be non-zero.
 
 Do not "fix" this by setting `EXPO_UNSTABLE_TREE_SHAKING=0`: that disables
 tree shaking for the whole app (roughly 2 MiB of extra JS) to work around one
