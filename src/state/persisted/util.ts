@@ -98,6 +98,11 @@ function migrateMetricsDisplayPrefs(data: Schema): Schema {
 export function normalizeData(data: Schema) {
   const next = hydrateWithDefaults(migrateMetricsDisplayPrefs(data))
 
+  if ((data.goLinksDefaultsVersion ?? 0) < 1) {
+    next.goLinksEnabled = false
+    next.goLinksDefaultsVersion = 1
+  }
+
   if ((data.imageFormatDefaultsVersion ?? 0) < 1) {
     /*
      * Older builds persisted automatic and explicitly selected WebP identically.
