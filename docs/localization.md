@@ -44,6 +44,16 @@ Install the [Crowdin CLI](https://crowdin.github.io/crowdin-cli/). You will need
 
 Every night, a GitHub action will run `pnpm intl:extract` to update the english `messages.po` file. This will be automatically synced with Crowdin. Crowdin should notify all subscribed users of new translations.
 
+> **Witchsky has no such nightly job.** Upstream's extraction action does not
+> run here, so the committed `messages.po` files drift behind the source. The
+> deploy workflow runs `pnpm intl:extract:all` before `pnpm intl:compile` to
+> close the gap, but the extracted `.po` changes should still be committed so
+> local builds and the Pages dashboard build see them too.
+>
+> Symptom of drift: a string renders as a six-character ID such as `HqoNLF`
+> instead of its text. `intl:compile` alone will not fix it - it only converts
+> existing `.po` entries to `.ts`, and the entry was never extracted.
+
 ### Release process
 
 1. Pull main and create a branch.

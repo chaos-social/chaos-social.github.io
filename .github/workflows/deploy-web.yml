@@ -43,10 +43,12 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      # messages.ts catalogs are gitignored and generated, and i18n.web.ts
-      # imports them dynamically, so the export fails if this is skipped.
-      - name: Compile translations
-        run: pnpm intl:compile
+      # This fork has no nightly catalog job, so the committed .po files drift:
+      # strings added to the source never reach the catalog, and the build then
+      # ships the message ID (e.g. "HqoNLF") instead of text. intl:build is
+      # extract + compile, so the catalogs match the source before bundling.
+      - name: Build translations
+        run: pnpm intl:build
 
       - name: Build web
         run: pnpm build-web
