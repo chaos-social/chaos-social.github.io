@@ -51,6 +51,23 @@ jobs:
       - name: Build web
         run: pnpm build-web
 
+      # Cloudflare Pages rejects any file over 25 MiB, and the main bundle's
+      # source map is ~38 MiB. Maps are only used by the Sentry upload inside
+      # build-web (which has already run by now) and are never requested by
+      # the app, so strip them before uploading.
+      - name: Strip source maps
+        run: find dist -name '*.map' -type f -delete
+
+      - name: Check Pages size limits
+        run: |
+          oversized=$(find dist -type f -size +25M)
+          if [ -n "$oversized" ]; then
+            echo "These files exceed the Cloudflare Pages 25 MiB limit:"
+            echo "$oversized"
+            exit 1
+          fi
+          echo "OK: $(find dist -type f | wc -l) files, largest $(du -sh dist | cut -f1) total"
+
       - name: Check browser support
         run: pnpm check-web-browser-support
 
