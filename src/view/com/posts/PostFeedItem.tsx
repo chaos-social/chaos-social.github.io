@@ -132,10 +132,14 @@ export function PostFeedItem({
    * The anonymous read has no `viewer`, so the card that renders it cannot
    * find the block again. Falls back to the original view until it arrives.
    */
-  const anonPost =
-    blocked && unblocked.data
-      ? withLabels(unblocked.data, post)
-      : undefined
+  const anonPost = useMemo(
+    () =>
+      blocked && unblocked.data
+        ? withLabels(unblocked.data, post)
+        : undefined,
+    // `usePostShadow` re-renders whenever this identity changes.
+    [blocked, unblocked.data, post],
+  )
   const displayPost = anonPost || post
   const displayRecord = bsky.isType(app.bsky.feed.post.main, displayPost.record)
     ? displayPost.record

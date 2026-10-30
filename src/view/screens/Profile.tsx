@@ -219,12 +219,24 @@ function ProfileScreenLoaded({
     did: profileUnshadowed.did,
     enabled: seeThroughBlocks && isBlockedProfile,
   })
-  const profileSource = anonProfile.data
-    ? withLabels(anonProfile.data, profileUnshadowed)
-    : profileUnshadowed
-  const seeThroughCauses = anonProfile.data
-    ? blockCausesFromViewer(profileUnshadowed.viewer)
-    : undefined
+  /*
+   * `useProfileShadow` compares by identity and re-renders when it changes, so
+   * this must be referentially stable or the screen loops forever.
+   */
+  const profileSource = useMemo(
+    () =>
+      anonProfile.data
+        ? withLabels(anonProfile.data, profileUnshadowed)
+        : profileUnshadowed,
+    [anonProfile.data, profileUnshadowed],
+  )
+  const seeThroughCauses = useMemo(
+    () =>
+      anonProfile.data
+        ? blockCausesFromViewer(profileUnshadowed.viewer)
+        : undefined,
+    [anonProfile.data, profileUnshadowed.viewer],
+  )
 
   const t = useTheme()
   const {gtMobile} = useBreakpoints()
