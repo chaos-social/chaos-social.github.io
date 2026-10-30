@@ -1,5 +1,6 @@
 import {type ModerationDecision} from '@bsky/sdk/moderation'
 
+import {type AppModerationCause} from '#/components/Pills'
 import {type app} from '#/lexicons'
 
 export type ApiThreadItem =
@@ -50,6 +51,11 @@ export type ThreadItem =
        * the same post.
        */
       seeThrough?: boolean
+      /**
+       * The block causes the anonymous read no longer carries, rendered as
+       * pills on the seen-through post.
+       */
+      seeThroughCauses?: AppModerationCause[]
       moderation: ModerationDecision
       ui: {
         isAnchor: boolean

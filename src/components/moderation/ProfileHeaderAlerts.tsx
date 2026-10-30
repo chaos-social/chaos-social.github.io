@@ -3,21 +3,29 @@ import {type ModerationDecision} from '@bsky/sdk/moderation'
 
 import {getModerationCauseKey, unique} from '#/lib/moderation'
 import * as Pills from '#/components/Pills'
+import {type AppModerationCause} from '#/components/Pills'
 import type * as bsky from '#/types/bsky'
 
 export function ProfileHeaderAlerts({
   moderation,
   profile,
   style,
+  additionalCauses,
 }: {
   moderation: ModerationDecision
   profile: bsky.profile.AnyProfileView
   style?: StyleProp<ViewStyle>
+  additionalCauses?: AppModerationCause[]
 }) {
   const modui = moderation.ui('profileView')
   const mutedOnlyReposts = profile.viewer?.mutedOnlyReposts
 
-  if (!mutedOnlyReposts && !modui.alert && !modui.inform) {
+  if (
+    !mutedOnlyReposts &&
+    !modui.alert &&
+    !modui.inform &&
+    !additionalCauses?.length
+  ) {
     return null
   }
 
@@ -31,6 +39,13 @@ export function ProfileHeaderAlerts({
         />
       ))}
       {modui.informs.filter(unique).map(cause => (
+        <Pills.Label
+          size="lg"
+          key={getModerationCauseKey(cause)}
+          cause={cause}
+        />
+      ))}
+      {additionalCauses?.map(cause => (
         <Pills.Label
           size="lg"
           key={getModerationCauseKey(cause)}

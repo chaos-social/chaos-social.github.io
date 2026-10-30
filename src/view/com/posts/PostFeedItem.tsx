@@ -25,8 +25,10 @@ import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
 import {unstableCacheProfileView} from '#/state/queries/profile'
 import {
+  blockCauses,
   isBlocked,
   useUnblockedPostQuery,
+  withLabels,
 } from '#/state/queries/see-through-blocks'
 import {useSession} from '#/state/session'
 import {useMergedThreadgateHiddenReplies} from '#/state/threadgate-hidden-replies'
@@ -130,11 +132,12 @@ export function PostFeedItem({
    * The anonymous read has no `viewer`, so the card that renders it cannot
    * find the block again. Falls back to the original view until it arrives.
    */
-  const displayPost = (blocked && unblocked.data) || post
-  const displayRecord = bsky.isType(
-    app.bsky.feed.post.main,
-    displayPost.record,
-  )
+  const anonPost =
+    blocked && unblocked.data
+      ? withLabels(unblocked.data, post)
+      : undefined
+  const displayPost = anonPost || post
+  const displayRecord = bsky.isType(app.bsky.feed.post.main, displayPost.record)
     ? displayPost.record
     : record
   const postShadowed = usePostShadow(displayPost)
@@ -150,13 +153,14 @@ export function PostFeedItem({
     return null
   }
   /*
-   * The block lived on the original view, so it has to be recomputed against
-   * the anonymous one. Without this the card would still blur itself after the
-   * content arrives.
+   * The block lived on the original view, so the decision is rebuilt against
+   * the anonymous one - otherwise the card would blur itself again once the
+   * content arrives. The block causes are rendered as pills separately; see
+   * `blockCauses`.
    */
   const displayModeration =
-    blocked && unblocked.data && moderationOpts
-      ? moderatePost(displayPost, moderationOpts)
+    anonPost && moderationOpts
+      ? moderatePost(anonPost, moderationOpts)
       : moderation
   if (richText && moderation) {
     return (
@@ -164,7 +168,8 @@ export function PostFeedItem({
         <FeedItemInner
           post={postShadowed}
           record={displayRecord}
-          seeThrough={Boolean(blocked && unblocked.data)}
+          seeThrough={Boolean(anonPost)}
+          seeThroughCauses={anonPost ? blockCauses(moderation) : undefined}
           postNumbering={postNumbering}
           reason={reason}
           feedContext={feedContext}
@@ -210,6 +215,7 @@ let FeedItemInner = ({
   rootPost,
   onShowLess,
   seeThrough,
+  seeThroughCauses,
 }: FeedItemProps & {
   richText: RichTextAPI
   post: Shadow<app.bsky.feed.defs.PostView>
@@ -217,6 +223,8 @@ let FeedItemInner = ({
   onShowLess?: (interaction: app.bsky.feed.defs.Interaction) => void
   /** This is an anonymous read of a post you're blocked from. */
   seeThrough?: boolean
+  /** The block causes the anonymous read no longer carries. */
+  seeThroughCauses?: AppModerationCause[]
 }): React.ReactNode => {
   const ax = useAnalytics()
   const queryClient = useQueryClient()
@@ -377,16 +385,20 @@ let FeedItemInner = ({
       : undefined
     const isControlledByViewer =
       rootPostUri && new AtUri(rootPostUri).host === currentAccount?.did
-    return isControlledByViewer && isPostHiddenByThreadgate
-      ? [
-          {
-            type: 'reply-hidden',
-            source: {type: 'user', did: currentAccount?.did},
-            priority: 6,
-          },
-        ]
-      : []
-  }, [post, currentAccount?.did, threadgateHiddenReplies])
+    const threadgateAlerts: AppModerationCause[] =
+      isControlledByViewer && isPostHiddenByThreadgate
+        ? [
+            {
+              type: 'reply-hidden',
+              source: {type: 'user', did: currentAccount?.did},
+              priority: 6,
+            },
+          ]
+        : []
+    return seeThroughCauses?.length
+      ? [...seeThroughCauses, ...threadgateAlerts]
+      : threadgateAlerts
+  }, [post, currentAccount?.did, threadgateHiddenReplies, seeThroughCauses])
 
   const feedItem = (
     <Link

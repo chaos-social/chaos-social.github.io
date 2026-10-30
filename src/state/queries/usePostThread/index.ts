@@ -10,6 +10,7 @@ import {
   useThreadPreferences,
 } from '#/state/queries/preferences/useThreadPreferences'
 import {
+  blockCausesFromViewer,
   unblockedPostQueryOptions,
   useUnblockedThreadQuery,
 } from '#/state/queries/see-through-blocks'
@@ -367,12 +368,30 @@ export function usePostThread({
       moderationOpts: moderationOpts!,
     })
     /*
+     * The tombstone is the only place the signed-in thread says what the block
+     * was; the anonymous replacement has no `viewer`. Record the causes here so
+     * the renderer can still show the pill.
+     */
+    const blockedViewers = new Map<
+      string,
+      app.bsky.actor.defs.ViewerState | undefined
+    >()
+    for (const item of thread) {
+      if (bsky.isType(app.bsky.unspecced.defs.threadItemBlocked, item.value)) {
+        blockedViewers.set(item.uri, item.value.author.viewer)
+      }
+    }
+    /*
      * Set explicitly either way: the items are cache objects, so a stale
      * `true` would otherwise survive turning the rune back off.
      */
     for (const item of result.threadItems) {
       if (item.type === 'threadPost') {
-        item.seeThrough = swapped.swapped.has(item.uri)
+        const seenThrough = swapped.swapped.has(item.uri)
+        item.seeThrough = seenThrough
+        item.seeThroughCauses = seenThrough
+          ? blockCausesFromViewer(blockedViewers.get(item.uri))
+          : undefined
       }
     }
     return result

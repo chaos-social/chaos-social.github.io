@@ -1,7 +1,7 @@
 import {type Did} from '@atproto/api'
 import {type Client} from '@atproto/lex'
 import {AtUri, type AtUriString} from '@atproto/syntax'
-import {type ModerationDecision} from '@bsky/sdk/moderation'
+import {ModerationDecision} from '@bsky/sdk/moderation'
 import {useQuery} from '@tanstack/react-query'
 
 import {useDeferredEnable} from '#/lib/hooks/useDeferredEnable'
@@ -10,7 +10,7 @@ import {STALE} from '#/state/queries'
 import {resolvePdsServiceUrl} from '#/state/queries/resolve-identity'
 import {createQueryKey} from '#/state/queries/util'
 import {getPublicAppviewClient} from '#/state/session/clients'
-import {app} from '#/lexicons'
+import {app, type com} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
 export {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
@@ -30,7 +30,6 @@ export {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
  */
 
 const RQKEY_ROOT = 'see-through-blocks'
-export const RQKEY = (uri: string) => createQueryKey(RQKEY_ROOT, {uri})
 
 /**
  * Whether the decision is about a block, as opposed to a mute, a label, or
@@ -39,6 +38,78 @@ export const RQKEY = (uri: string) => createQueryKey(RQKEY_ROOT, {uri})
  */
 export function isBlocked(decision: ModerationDecision | undefined) {
   return Boolean(decision?.blockCause)
+}
+
+/**
+ * The block causes that applied to the signed-in view.
+ *
+ * Seeing through a block is a request to read the content, not to forget the
+ * block happened, so these are rendered as pills on the seen-through content.
+ * They cannot go back into a `ModerationDecision`: in `contentList` a block
+ * cause is a blur with `noOverride`, which would hide the post again. Nor can
+ * they be downgraded, because `ui()` skips downgraded causes entirely and the
+ * pill would vanish. `PostAlerts` renders them through `additionalCauses`
+ * instead, which is the same path the threadgate "reply hidden" pill uses.
+ */
+export function blockCauses(decision: ModerationDecision | undefined) {
+  return (decision?.causes ?? []).filter(
+    cause =>
+      cause.type === 'blocking' ||
+      cause.type === 'blocked-by' ||
+      cause.type === 'block-other',
+  )
+}
+
+/**
+ * Rebuild the block causes from a `viewer`, for places that hold viewer state
+ * but no decision (thread tombstones, the profile header).
+ */
+export function blockCausesFromViewer(
+  viewer: app.bsky.actor.defs.ViewerState | undefined,
+) {
+  const decision = new ModerationDecision()
+  if (viewer?.blocking) {
+    if (viewer.blockingByList) {
+      decision.addBlockingByList(viewer.blockingByList)
+    } else {
+      decision.addBlocking(viewer.blocking)
+    }
+  }
+  decision.addBlockedBy(viewer?.blockedBy)
+  return decision.causes
+}
+
+/**
+ * Carry the signed-in view's labels onto an anonymous read.
+ *
+ * Labels are hydrated by the appview for the labelers a request names, and
+ * `public.api.bsky.app` - the host every anonymous read here goes to - hydrates
+ * none of the viewer's third-party subscriptions regardless of the
+ * `atproto-accept-labelers` header. So anything the viewer subscribed to would
+ * silently disappear and content they asked to blur would render in the clear.
+ * The signed-in view still carries them even when it is blocked, so it is the
+ * source. Labels only cover what the viewer was already shown: a post dropped
+ * from the signed-in response has nothing to carry.
+ */
+export function withLabels<
+  T extends {
+    labels?: com.atproto.label.defs.Label[]
+    author?: {labels?: com.atproto.label.defs.Label[]}
+  },
+>(anon: T, original: T): T {
+  return {
+    ...anon,
+    labels: original.labels?.length ? original.labels : anon.labels,
+    author:
+      anon.author && original.author
+        ? {
+            ...anon.author,
+            labels: original.author.labels?.length
+              ? original.author.labels
+              : anon.author.labels,
+          }
+        : anon.author,
+  }
 }
 
 function getErrorMessage(e: unknown) {
@@ -181,7 +252,10 @@ export async function fetchPostAnon(
     })
     if (posts[0]) return await withRealAuthor(posts[0])
   } catch (e) {
-    console.debug('see-through-blocks: appview getPosts failed', getErrorMessage(e))
+    console.debug(
+      'see-through-blocks: appview getPosts failed',
+      getErrorMessage(e),
+    )
   }
 
   for (const getRecord of [
@@ -207,7 +281,7 @@ export async function fetchPostAnon(
  */
 export function unblockedPostQueryOptions(uri: string, slingshot: string) {
   return {
-    queryKey: RQKEY(uri),
+    queryKey: createQueryKey(RQKEY_ROOT, {uri}),
     staleTime: STALE.HOURS.ONE,
     queryFn: () => fetchPostAnon(getPublicAppviewClient(), slingshot, uri),
   }
@@ -262,8 +336,7 @@ export function useUnblockedThreadQuery({
   return useQuery({
     queryKey: createQueryKey('see-through-blocks-thread', {anchor, params}),
     staleTime: STALE.MINUTES.FIVE,
-    queryFn: () =>
-      fetchThreadAnon(getPublicAppviewClient(), anchor!, params),
+    queryFn: () => fetchThreadAnon(getPublicAppviewClient(), anchor!, params),
     enabled: deferredEnabled,
   })
 }

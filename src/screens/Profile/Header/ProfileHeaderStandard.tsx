@@ -50,6 +50,7 @@ import {
   KnownFollowers,
   shouldShowKnownFollowers,
 } from '#/components/KnownFollowers'
+import {type AppModerationCause} from '#/components/Pills'
 import * as Prompt from '#/components/Prompt'
 import {PronounPill} from '#/components/PronounPill'
 import {RichText} from '#/components/RichText'
@@ -80,6 +81,7 @@ interface Props {
   hideBackButton?: boolean
   isPlaceholderProfile?: boolean
   labeler?: app.bsky.labeler.defs.LabelerViewDetailed
+  seeThroughCauses?: AppModerationCause[]
 }
 
 let ProfileHeaderStandard = ({
@@ -89,6 +91,7 @@ let ProfileHeaderStandard = ({
   moderationOpts,
   hideBackButton = false,
   isPlaceholderProfile,
+  seeThroughCauses,
 }: Props): React.ReactNode => {
   const t = useTheme()
   const profile =
@@ -160,6 +163,7 @@ let ProfileHeaderStandard = ({
       <ProfileHeaderShell
         profile={profile}
         moderation={moderation}
+        seeThroughCauses={seeThroughCauses}
         hideBackButton={hideBackButton}
         isPlaceholderProfile={isPlaceholderProfile}>
         <View

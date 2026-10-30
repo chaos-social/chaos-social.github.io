@@ -33,7 +33,11 @@ import {useLabelerInfoQuery} from '#/state/queries/labeler'
 import {resetProfilePostsQueries} from '#/state/queries/post-feed'
 import {useProfileQuery} from '#/state/queries/profile'
 import {useResolveDidQuery} from '#/state/queries/resolve-uri'
-import {useUnblockedProfileQuery} from '#/state/queries/see-through-blocks'
+import {
+  blockCausesFromViewer,
+  useUnblockedProfileQuery,
+  withLabels,
+} from '#/state/queries/see-through-blocks'
 import {useSession} from '#/state/session'
 import {ProfileFeedgens} from '#/view/com/feeds/ProfileFeedgens'
 import {ProfileLists} from '#/view/com/lists/ProfileLists'
@@ -208,14 +212,19 @@ function ProfileScreenLoaded({
   const seeThroughBlocks = useSeeThroughBlocks()
   const isBlockedProfile = Boolean(
     profileUnshadowed.viewer?.blocking ||
-      profileUnshadowed.viewer?.blockedBy ||
-      profileUnshadowed.viewer?.blockingByList,
+    profileUnshadowed.viewer?.blockedBy ||
+    profileUnshadowed.viewer?.blockingByList,
   )
   const anonProfile = useUnblockedProfileQuery({
     did: profileUnshadowed.did,
     enabled: seeThroughBlocks && isBlockedProfile,
   })
-  const profileSource = anonProfile.data ?? profileUnshadowed
+  const profileSource = anonProfile.data
+    ? withLabels(anonProfile.data, profileUnshadowed)
+    : profileUnshadowed
+  const seeThroughCauses = anonProfile.data
+    ? blockCausesFromViewer(profileUnshadowed.viewer)
+    : undefined
 
   const t = useTheme()
   const {gtMobile} = useBreakpoints()
@@ -431,6 +440,7 @@ function ProfileScreenLoaded({
           moderationOpts={moderationOpts}
           hideBackButton={hideBackButton}
           isPlaceholderProfile={isPlaceholderProfile}
+          seeThroughCauses={seeThroughCauses}
           setMinimumHeight={setMinimumHeight}
         />
       </ScrollForwarderView>
