@@ -24,6 +24,10 @@ import {
   useSetOmitViaField,
 } from '#/state/preferences/omit-via-field'
 import {
+  useRenderBridgedHtml,
+  useSetRenderBridgedHtml,
+} from '#/state/preferences/render-bridged-html'
+import {
   useSeeThroughBlocks,
   useSetSeeThroughBlocks,
 } from '#/state/preferences/see-through-blocks'
@@ -43,6 +47,7 @@ import {CodeBrackets_Stroke2_Corner2_Rounded as CodeBracketsIcon} from '#/compon
 import {Bite as BiteIcon} from '#/components/icons/Cookie'
 import {Explosion_Stroke2_Corner0_Rounded as ExplosionIcon} from '#/components/icons/Explosion'
 import {Eye_Stroke2_Corner0_Rounded as VisibilityIcon} from '#/components/icons/Eye'
+import {Fediverse as FediverseIcon} from '#/components/icons/Fediverse'
 import {Hashtag_Stroke2_Corner0_Rounded as HashtagIcon} from '#/components/icons/Hashtag'
 import {LikeRepost_Stroke2_Corner2_Rounded as LikeRepostIcon} from '#/components/icons/Heart2'
 import {Lab_Stroke2_Corner0_Rounded as BeakerIcon} from '#/components/icons/Lab'
@@ -71,6 +76,8 @@ export function RunesExtraSettingsScreen() {
 
   const seeThroughBlocks = useSeeThroughBlocks()
   const setSeeThroughBlocks = useSetSeeThroughBlocks()
+  const renderBridgedHtml = useRenderBridgedHtml()
+  const setRenderBridgedHtml = useSetRenderBridgedHtml()
   const showBiteButton = useShowBiteButton()
   const setShowBiteButton = useSetShowBiteButton()
   const tidSuffix = useTidSuffix()
@@ -114,6 +121,19 @@ export function RunesExtraSettingsScreen() {
           <SettingsList.ItemIcon icon={VisibilityIcon} />
           <SettingsList.ItemText>
             <Trans>See through blocks</Trans>
+          </SettingsList.ItemText>
+          <Toggle.Platform />
+        </SettingsList.Item>
+      </Toggle.Item>
+      <Toggle.Item
+        name="render_bridged_html"
+        label={l`Render formatted text from bridged fediverse posts`}
+        value={renderBridgedHtml}
+        onChange={value => setRenderBridgedHtml(value)}>
+        <SettingsList.Item>
+          <SettingsList.ItemIcon icon={FediverseIcon} />
+          <SettingsList.ItemText>
+            <Trans>Render formatted text from bridged fediverse posts</Trans>
           </SettingsList.ItemText>
           <Toggle.Platform />
         </SettingsList.Item>

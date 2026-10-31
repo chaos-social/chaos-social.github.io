@@ -24,6 +24,8 @@ overrides:
   'psl': '1.9.0'
   '@types/psl': '1.1.1'
   'react-native-screens': '4.30.0'
+  'unicodeit>typeahead': '-'
+  'unicodeit>@types/typeahead': '-'
 allowBuilds:
   '@sentry/cli': true
   '@swc/core': true

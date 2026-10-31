@@ -73,6 +73,7 @@ import {type AppModerationCause} from '#/components/Pills'
 import {Embed, PostEmbedViewContext} from '#/components/Post/Embed'
 import {KnownLikers} from '#/components/Post/KnownLikers'
 import {TranslatedPost} from '#/components/Post/Translated'
+import {useBridgedHtmlSegments} from '#/components/Post/useBridgedHtmlSegments'
 import {PostControls, PostControlsSkeleton} from '#/components/PostControls'
 import {PostTags} from '#/components/PostTags'
 import {ProfileBadges} from '#/components/ProfileBadges'
@@ -260,6 +261,7 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
       }),
     [record],
   )
+  const htmlSegments = useBridgedHtmlSegments(record)
 
   const threadRootUri = record.reply?.root?.uri || post.uri
   const authorHref = makeProfileLink(post.author)
@@ -547,11 +549,12 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
                   style={[isCompactPosts ? a.pb_2xs : a.pb_sm]}
                   additionalCauses={additionalPostAlerts}
                 />
-                {richText?.text ? (
+                {htmlSegments?.length || richText?.text ? (
                   <RichText
                     enableTags
                     selectable
                     value={richText}
+                    htmlSegments={htmlSegments}
                     style={[a.flex_1, isCompactPosts ? a.text_md : a.text_lg]}
                     authorHandle={post.author.handle}
                     shouldProxyLinks={true}

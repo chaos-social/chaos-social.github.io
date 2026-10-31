@@ -26,6 +26,7 @@ import {LabelsOnMyPost} from '#/components/moderation/LabelsOnMe'
 import {PostAlerts} from '#/components/moderation/PostAlerts'
 import {Embed, PostEmbedViewContext} from '#/components/Post/Embed'
 import {TranslatedPost} from '#/components/Post/Translated'
+import {useBridgedHtmlSegments} from '#/components/Post/useBridgedHtmlSegments'
 import {PostTags} from '#/components/PostTags'
 import {RichText} from '#/components/RichText'
 import {Text} from '#/components/Typography'
@@ -117,6 +118,7 @@ const ThreadItemReaderSegmentInner = memo(
         }),
       [record],
     )
+    const htmlSegments = useBridgedHtmlSegments(record)
     return (
       <View
         // @ts-expect-error web only -wsky
@@ -146,7 +148,7 @@ const ThreadItemReaderSegmentInner = memo(
                     />
                   </>
                 )}
-                {richText?.text ? (
+                {htmlSegments?.length || richText?.text ? (
                   <View style={[a.mb_2xs, userStyle('wsky-post__text')]}>
                     {/* Intentionally not line-limited: reader view is for
                       uninterrupted reading */}
@@ -154,6 +156,7 @@ const ThreadItemReaderSegmentInner = memo(
                       enableTags
                       selectable
                       value={richText}
+                      htmlSegments={htmlSegments}
                       style={[a.flex_1, a.text_lg]}
                       authorHandle={post.author.handle}
                       shouldProxyLinks={true}

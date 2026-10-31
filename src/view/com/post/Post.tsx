@@ -8,6 +8,7 @@ import {useQueryClient} from '@tanstack/react-query'
 import {MAX_POST_LINES} from '#/lib/constants'
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {makeProfileLink} from '#/lib/routes/links'
+import {segmentsToText} from '#/lib/strings/bridged-html'
 import {countLines} from '#/lib/strings/helpers'
 import {userStyle} from '#/lib/userstyles'
 import {
@@ -34,6 +35,7 @@ import {Embed, PostEmbedViewContext} from '#/components/Post/Embed'
 import {PostRepliedTo} from '#/components/Post/PostRepliedTo'
 import {ShowMoreTextButton} from '#/components/Post/ShowMoreTextButton'
 import {TranslatedPost} from '#/components/Post/Translated'
+import {useBridgedHtmlSegments} from '#/components/Post/useBridgedHtmlSegments'
 import {PostControls} from '#/components/PostControls'
 import {PostTags} from '#/components/PostTags'
 import {RichText} from '#/components/RichText'
@@ -126,8 +128,12 @@ function PostInner({
   const t = useTheme()
   const {openComposer} = useOpenComposer()
   const compactPosts = useCompactPosts()
+  const htmlSegments = useBridgedHtmlSegments(post.record)
   const [limitLines, setLimitLines] = useState(
-    () => countLines(richText?.text) >= MAX_POST_LINES,
+    () =>
+      countLines(
+        htmlSegments ? segmentsToText(htmlSegments) : richText?.text,
+      ) >= MAX_POST_LINES,
   )
   const itemUrip = new AtUri(post.uri)
   const itemHref = makeProfileLink(post.author, 'post', itemUrip.rkey)
@@ -244,12 +250,13 @@ function PostInner({
                 modui={moderation.ui('contentList')}
                 style={[a.pb_xs]}
               />
-              {richText.text ? (
+              {htmlSegments?.length || richText.text ? (
                 <View style={[a.mb_2xs, userStyle('wsky-post__text')]}>
                   <RichText
                     enableTags
                     testID="postText"
                     value={richText}
+                    htmlSegments={htmlSegments}
                     numberOfLines={limitLines ? MAX_POST_LINES : undefined}
                     style={[a.flex_1, a.text_md]}
                     authorHandle={post.author.handle}
