@@ -9,6 +9,7 @@ import {getLocalizedFeedName} from '#/lib/strings/feed-names'
 import {emitSoftReset} from '#/state/events'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
+import {useSeenPostsEnabled} from '#/state/preferences/seen-posts'
 import {
   type SavedFeedSourceInfo,
   usePinnedFeedsInfos,
@@ -17,6 +18,7 @@ import {useSelectedFeed, useSetSelectedFeed} from '#/state/shell/selected-feed'
 import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme, web} from '#/alf'
 import {useInteractionState} from '#/components/hooks/useInteractionState'
+import {Eye_Stroke2_Corner2_Rounded as EyeIcon} from '#/components/icons/Eye'
 import {FilterTimeline_Stroke2_Corner0_Rounded as FilterTimeline} from '#/components/icons/FilterTimeline'
 import {PlusSmall_Stroke2_Corner0_Rounded as Plus} from '#/components/icons/Plus'
 import {Link} from '#/components/Link'
@@ -30,6 +32,7 @@ export function DesktopFeeds() {
   const {t: l} = useLingui()
   const ax = useAnalytics()
   const {data: pinnedFeedInfos, isLoading} = usePinnedFeedsInfos()
+  const seenPostsEnabled = useSeenPostsEnabled()
   const selectedFeed = useSelectedFeed()
   const setSelectedFeed = useSetSelectedFeed()
   const navigation = useNavigation<NavigationProp>()
@@ -109,6 +112,10 @@ export function DesktopFeeds() {
           />
         )
       })}
+      {/* Local-only, so it sits after the server-ordered pinned feeds. */}
+      {seenPostsEnabled && (
+        <SeenPostsItem current={route.name === 'SeenPosts'} />
+      )}
       <Link
         to="/feeds"
         label={l`More feeds`}
@@ -171,6 +178,62 @@ export function DesktopFeeds() {
         }}
       </Link>
     </View>
+  )
+}
+
+function SeenPostsItem({current}: {current: boolean}) {
+  const t = useTheme()
+  const enableSquareButtons = useEnableSquareButtons()
+  const avatarShape = useEnableSquareAvatars()
+  const {t: l} = useLingui()
+
+  return (
+    <Link
+      to="/seen"
+      label={l`Seen posts`}
+      style={[
+        a.flex_row,
+        a.align_center,
+        a.gap_sm,
+        a.self_start,
+        getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_sm),
+        {paddingVertical: 6, paddingHorizontal: 8},
+        current && {backgroundColor: t.palette.primary_50},
+      ]}>
+      {({hovered}) => (
+        <>
+          <View
+            style={[
+              a.align_center,
+              a.justify_center,
+              getShapeStyle(avatarShape, a.rounded_xs, a.rounded_xs),
+              {
+                width: 20,
+                height: 20,
+                backgroundColor: t.palette.primary_500,
+              },
+            ]}>
+            <EyeIcon
+              style={{width: 14, height: 14}}
+              fill={accentForeground(t, t.palette.primary_500)}
+            />
+          </View>
+          <Text
+            style={[
+              a.text_md,
+              a.leading_snug,
+              current
+                ? [t.atoms.text, a.font_semi_bold]
+                : hovered
+                  ? t.atoms.text
+                  : t.atoms.text_contrast_medium,
+            ]}
+            numberOfLines={1}>
+            {l`Seen posts`}
+          </Text>
+        </>
+      )}
+    </Link>
   )
 }
 
