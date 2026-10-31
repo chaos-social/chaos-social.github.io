@@ -15,7 +15,7 @@ export function Composer() {
   const ref = useComposerCancelRef()
   const [width, setWidth] = useState<number>()
 
-  const open = !!state
+  const open = !!state && !state.isMinimized
 
   useEffect(() => {
     if (open && !IS_LIQUID_GLASS) {
@@ -28,50 +28,45 @@ export function Composer() {
     }
   }, [open])
 
+  if (!state) return null
+
   return (
-    <Modal
-      aria-modal
-      accessibilityViewIsModal
-      visible={open}
-      presentationStyle={IS_IPAD ? 'formSheet' : 'pageSheet'}
-      supportedOrientations={
-        IS_IPAD
-          ? [
-              'portrait',
-              'portrait-upside-down',
-              'landscape-left',
-              'landscape-right',
-            ]
-          : ['portrait']
-      }
-      animationType="slide"
-      onRequestClose={() => ref.current?.onPressCancel()}
-      backdropColor="transparent">
-      <ComposerSafeArea>
-        <View
-          onLayout={evt => setWidth(evt.nativeEvent.layout.width)}
-          style={[a.flex_1, t.atoms.bg]}>
-          <BreakpointWidthContext value={width}>
-            <TooltipSheetCompatProvider>
-              <ComposePost
-                recoveredState={state?.recoveredState}
-                activeAccountDid={state?.activeAccountDid}
-                tags={state?.tags}
-                cancelRef={ref}
-                replyTo={state?.replyTo}
-                onPost={state?.onPost}
-                onPostSuccess={state?.onPostSuccess}
-                quote={state?.quote}
-                mention={state?.mention}
-                text={state?.text}
-                imageUris={state?.imageUris}
-                videoUri={state?.videoUri}
-              />
-            </TooltipSheetCompatProvider>
-          </BreakpointWidthContext>
-        </View>
-      </ComposerSafeArea>
-    </Modal>
+    <BreakpointWidthContext value={width}>
+      <TooltipSheetCompatProvider>
+        <ComposePost
+          {...state}
+          cancelRef={ref}
+          renderPresentation={children => (
+            <Modal
+              aria-modal
+              accessibilityViewIsModal
+              visible={open}
+              presentationStyle={IS_IPAD ? 'formSheet' : 'pageSheet'}
+              supportedOrientations={
+                IS_IPAD
+                  ? [
+                      'portrait',
+                      'portrait-upside-down',
+                      'landscape-left',
+                      'landscape-right',
+                    ]
+                  : ['portrait']
+              }
+              animationType="slide"
+              onRequestClose={() => ref.current?.onPressCancel()}
+              backdropColor="transparent">
+              <ComposerSafeArea>
+                <View
+                  onLayout={evt => setWidth(evt.nativeEvent.layout.width)}
+                  style={[a.flex_1, t.atoms.bg]}>
+                  {children}
+                </View>
+              </ComposerSafeArea>
+            </Modal>
+          )}
+        />
+      </TooltipSheetCompatProvider>
+    </BreakpointWidthContext>
   )
 }
 

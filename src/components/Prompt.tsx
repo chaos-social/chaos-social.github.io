@@ -37,6 +37,7 @@ export function Outer({
   nativeOptions,
   webOptions,
   onClose,
+  onBack,
 }: React.PropsWithChildren<{
   control: Dialog.DialogControlProps
   testID?: string
@@ -51,6 +52,7 @@ export function Outer({
     onBackgroundPress?: (e: GestureResponderEvent) => void
   }
   onClose?: () => void
+  onBack?: () => void
 }>) {
   const titleId = useId()
   const descriptionId = useId()
@@ -67,6 +69,7 @@ export function Outer({
       control={control}
       testID={testID}
       onClose={onClose}
+      onBack={onBack}
       webOptions={{alignCenter: true, ...webOptions}}
       nativeOptions={{preventExpansion: true, ...nativeOptions}}>
       <Dialog.Handle />

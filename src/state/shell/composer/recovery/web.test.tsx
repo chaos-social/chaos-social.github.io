@@ -133,3 +133,84 @@ it('restores the tab composer through a signed-out transition into another accou
   screen.rerender(<Shell did={mockCurrentDid} />)
   expect(composer).toBeUndefined()
 })
+
+function observeComposer() {
+  const session: {
+    state?: ReturnType<typeof useComposerState>
+    controls?: ReturnType<typeof useComposerControls>
+    open?: ReturnType<typeof useOpenComposer>['openComposer']
+  } = {}
+
+  function Observer() {
+    session.state = useComposerState()
+    session.controls = useComposerControls()
+    session.open = useOpenComposer().openComposer
+    return null
+  }
+
+  render(
+    <Provider>
+      <Observer />
+    </Provider>,
+  )
+  return session
+}
+
+it('keeps minimized content and callbacks through navigation and restores it', () => {
+  const session = observeComposer()
+  const onPost = jest.fn()
+  const recoveredState = composition('unfinished post')
+  act(() => session.open!({text: 'original', onPost, recoveredState}))
+  act(() => session.controls!.minimizeComposer())
+
+  expect(session.state?.isMinimized).toBe(true)
+  expect(session.state?.recoveredState).toBe(recoveredState)
+  act(() => expect(session.controls!.closeComposer()).toBe(false))
+  expect(mockRemoveQueries).not.toHaveBeenCalled()
+
+  act(() => session.controls!.restoreComposer())
+  expect(session.state?.isMinimized).toBe(false)
+  expect(session.state?.onPost).toBe(onPost)
+
+  act(() => expect(session.controls!.closeComposer()).toBe(true))
+  expect(session.state).toBeUndefined()
+  expect(mockRemoveQueries).toHaveBeenCalledTimes(2)
+})
+
+it('reopens a minimized session instead of replacing it with a new composition', () => {
+  const session = observeComposer()
+  act(() =>
+    session.open!({
+      text: 'keep me',
+      openGallery: true,
+      openAccountSwitcher: true,
+    }),
+  )
+  act(() => session.controls!.minimizeComposer())
+  act(() => session.open!({text: 'replacement'}))
+
+  expect(session.state?.isMinimized).toBe(false)
+  expect(session.state?.text).toBe('keep me')
+  expect(session.state?.openGallery).toBe(false)
+  expect(session.state?.openAccountSwitcher).toBe(false)
+})
+
+it('does not create a session when minimizing or restoring a closed composer', () => {
+  const session = observeComposer()
+  act(() => session.controls!.minimizeComposer())
+  act(() => session.controls!.restoreComposer())
+  expect(session.state).toBeUndefined()
+})
+
+it('can finish and clean up a post that publishes while minimized', () => {
+  const session = observeComposer()
+  act(() => session.open!({text: 'publishing in the background'}))
+  act(() => session.controls!.minimizeComposer())
+  act(() =>
+    expect(session.controls!.closeComposer({includeMinimized: true})).toBe(
+      true,
+    ),
+  )
+  expect(session.state).toBeUndefined()
+  expect(mockRemoveQueries).toHaveBeenCalledTimes(2)
+})

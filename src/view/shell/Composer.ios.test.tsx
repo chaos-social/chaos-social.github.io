@@ -6,6 +6,10 @@ import * as env from '#/env'
 import {Composer} from './Composer.ios'
 
 const mockCancel = jest.fn()
+const mockMinimize = jest.fn()
+const mockMount = jest.fn()
+const mockUnmount = jest.fn()
+let mockComposerState: {isMinimized?: boolean} | undefined = {}
 
 jest.mock('#/env', () => ({
   __esModule: true,
@@ -13,11 +17,24 @@ jest.mock('#/env', () => ({
   IS_LIQUID_GLASS: true,
 }))
 jest.mock('#/state/shell/composer', () => ({
-  useComposerState: () => ({}),
+  useComposerState: () => mockComposerState,
 }))
 jest.mock('#/view/com/composer/Composer', () => ({
-  ComposePost: () => null,
-  useComposerCancelRef: () => ({current: {onPressCancel: mockCancel}}),
+  ComposePost: function ComposePost({
+    renderPresentation,
+  }: {
+    renderPresentation: (children: React.ReactNode) => React.ReactNode
+  }) {
+    const {useEffect} = jest.requireActual<typeof import('react')>('react')
+    useEffect(() => {
+      mockMount()
+      return () => mockUnmount()
+    }, [])
+    return renderPresentation(null)
+  },
+  useComposerCancelRef: () => ({
+    current: {onPressCancel: mockCancel, onPressMinimize: mockMinimize},
+  }),
 }))
 jest.mock('#/alf', () => {
   const {createContext} = jest.requireActual<typeof import('react')>('react')
@@ -35,6 +52,7 @@ jest.mock('react-native-edge-to-edge', () => ({
 }))
 
 afterEach(() => {
+  mockComposerState = {}
   jest.restoreAllMocks()
   jest.clearAllMocks()
 })
@@ -63,9 +81,32 @@ it('preserves the portrait page sheet on iPhone', () => {
   expect(result.UNSAFE_queryByType(SafeAreaProvider)).toBeNull()
 })
 
-it('keeps native dismissal routed through composer cancellation', () => {
+it('opens the exit prompt instead of minimizing on the first native back gesture', () => {
   const result = render(<Composer />)
   fireEvent(result.UNSAFE_getByType(Modal), 'requestClose')
 
   expect(mockCancel).toHaveBeenCalledTimes(1)
+  expect(mockMinimize).not.toHaveBeenCalled()
+  expect(result.UNSAFE_getByType(Modal).props.allowSwipeDismissal).not.toBe(
+    true,
+  )
+})
+
+it('retains the composer session while hiding and restoring its sheet', () => {
+  const screen = render(<Composer />)
+  expect(mockMount).toHaveBeenCalledTimes(1)
+
+  mockComposerState = {isMinimized: true}
+  screen.rerender(<Composer />)
+  expect(screen.UNSAFE_getByType(Modal).props.visible).toBe(false)
+  expect(mockUnmount).not.toHaveBeenCalled()
+
+  mockComposerState = {isMinimized: false}
+  screen.rerender(<Composer />)
+  expect(screen.UNSAFE_getByType(Modal).props.visible).toBe(true)
+  expect(mockMount).toHaveBeenCalledTimes(1)
+
+  mockComposerState = undefined
+  screen.rerender(<Composer />)
+  expect(mockUnmount).toHaveBeenCalledTimes(1)
 })

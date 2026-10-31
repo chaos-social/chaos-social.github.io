@@ -77,10 +77,12 @@ export interface ComposerOpts {
   logContext?: ComposerLogContext
 }
 
-type StateContext = ComposerOpts | undefined
+type StateContext = (ComposerOpts & {isMinimized?: boolean}) | undefined
 type ControlsContext = {
   openComposer: (opts: ComposerOpts) => void
-  closeComposer: () => boolean
+  closeComposer: (opts?: {includeMinimized?: boolean}) => boolean
+  minimizeComposer: () => void
+  restoreComposer: () => void
 }
 
 const stateContext = createContext<StateContext>(undefined)
@@ -90,6 +92,8 @@ const controlsContext = createContext<ControlsContext>({
   closeComposer() {
     return false
   },
+  minimizeComposer() {},
+  restoreComposer() {},
 })
 controlsContext.displayName = 'ComposerControlsContext'
 
@@ -110,6 +114,10 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
   const queryClient = useQueryClient()
 
   const openComposer = useNonReactiveCallback((opts: ComposerOpts) => {
+    if (state) {
+      setState({...state, isMinimized: false})
+      return
+    }
     if (opts.quote) {
       const path = postUriToRelativePath(opts.quote.uri)
       if (path) {
@@ -147,29 +155,52 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
     }
   })
 
-  const closeComposer = useNonReactiveCallback(() => {
-    let wasOpen = !!state
-    if (wasOpen) {
-      setState(undefined)
-      if (currentAccount) clearRecovery(currentAccount.did)
-      void purgeTemporaryImageFiles()
-      // Purging deletes cached thumbnails on disk, so remove the query
-      // caches that may hold references to those now-deleted file paths.
-      // Without this, restoring a draft would serve stale ResolvedLink
-      // data pointing at missing files, causing "Failed to load blob".
-      queryClient.removeQueries({queryKey: [RQKEY_LINK_ROOT]})
-      queryClient.removeQueries({queryKey: [RQKEY_GIF_ROOT]})
-    }
+  const closeComposer = useNonReactiveCallback(
+    (opts?: {includeMinimized?: boolean}) => {
+      let wasOpen = !!state && (!state.isMinimized || !!opts?.includeMinimized)
+      if (wasOpen) {
+        setState(undefined)
+        if (currentAccount) clearRecovery(currentAccount.did)
+        void purgeTemporaryImageFiles()
+        // Purging deletes cached thumbnails on disk, so remove the query
+        // caches that may hold references to those now-deleted file paths.
+        // Without this, restoring a draft would serve stale ResolvedLink
+        // data pointing at missing files, causing "Failed to load blob".
+        queryClient.removeQueries({queryKey: [RQKEY_LINK_ROOT]})
+        queryClient.removeQueries({queryKey: [RQKEY_GIF_ROOT]})
+      }
 
-    return wasOpen
+      return wasOpen
+    },
+  )
+
+  const minimizeComposer = useNonReactiveCallback(() => {
+    setState(previous =>
+      previous
+        ? {
+            ...previous,
+            isMinimized: true,
+            openGallery: false,
+            openAccountSwitcher: false,
+          }
+        : previous,
+    )
+  })
+
+  const restoreComposer = useNonReactiveCallback(() => {
+    setState(previous =>
+      previous ? {...previous, isMinimized: false} : previous,
+    )
   })
 
   const api = useMemo(
     () => ({
       openComposer,
       closeComposer,
+      minimizeComposer,
+      restoreComposer,
     }),
-    [openComposer, closeComposer],
+    [openComposer, closeComposer, minimizeComposer, restoreComposer],
   )
 
   return (
@@ -186,8 +217,12 @@ export function useComposerState() {
 }
 
 export function useComposerControls() {
-  const {closeComposer} = useContext(controlsContext)
-  return useMemo(() => ({closeComposer}), [closeComposer])
+  const {closeComposer, minimizeComposer, restoreComposer} =
+    useContext(controlsContext)
+  return useMemo(
+    () => ({closeComposer, minimizeComposer, restoreComposer}),
+    [closeComposer, minimizeComposer, restoreComposer],
+  )
 }
 
 /**

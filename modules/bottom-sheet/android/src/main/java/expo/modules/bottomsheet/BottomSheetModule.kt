@@ -16,6 +16,7 @@ class BottomSheetModule : Module() {
         Events(
           arrayOf(
             "onAttemptDismiss",
+            "onBackPress",
             "onSnapPointChange",
             "onStateChange",
           ),

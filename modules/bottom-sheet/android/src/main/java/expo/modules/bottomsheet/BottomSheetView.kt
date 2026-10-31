@@ -8,6 +8,7 @@ import android.view.ViewStructure
 import android.view.Window
 import android.view.accessibility.AccessibilityEvent
 import android.widget.FrameLayout
+import androidx.activity.OnBackPressedCallback
 import androidx.core.view.WindowInsetsControllerCompat
 import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.bridge.ReactContext
@@ -80,6 +81,7 @@ class BottomSheetView(
   }
 
   private val onAttemptDismiss by EventDispatcher()
+  private val onBackPress by EventDispatcher()
   private val onSnapPointChange by EventDispatcher()
   private val onStateChange by EventDispatcher()
 
@@ -339,6 +341,14 @@ class BottomSheetView(
     }
 
     dialog.setOnShowListener {
+      dialog.onBackPressedDispatcher.addCallback(
+        dialog,
+        object : OnBackPressedCallback(true) {
+          override fun handleOnBackPressed() {
+            if (!preventDismiss) onBackPress(emptyMap<String, Any>())
+          }
+        },
+      )
       dialog.window?.let { window ->
         val insetsController = WindowInsetsControllerCompat(window, window.decorView)
         if (originalNavBarAppearance != null) {

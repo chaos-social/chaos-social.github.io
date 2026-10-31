@@ -83,7 +83,10 @@ import {colors} from '#/lib/styles'
 import {userStyle} from '#/lib/userstyles'
 import {matchXrpcError} from '#/lib/xrpc-error'
 import {logger} from '#/logger'
-import {useDialogStateControlContext} from '#/state/dialogs'
+import {
+  useDialogStateContext,
+  useDialogStateControlContext,
+} from '#/state/dialogs'
 import {emitPostCreated} from '#/state/events'
 import {
   type ComposerImage,
@@ -158,6 +161,7 @@ import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, native, useBreakpoints, useTheme, web} from '#/alf'
 import {Admonition} from '#/components/Admonition'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
+import {ComposerExitDialog} from '#/components/ComposerExitDialog'
 import * as EmojiPicker from '#/components/EmojiPicker'
 import {EphemeralAccountSwitcher} from '#/components/EphemeralAccountSwitcher'
 import {useEphemeralAccountError} from '#/components/hooks/useEphemeralAccountError'
@@ -229,6 +233,7 @@ import {clearThumbnailCache} from './videos/VideoTranscodeBackdrop'
 
 type CancelRef = {
   onPressCancel: () => void
+  onPressMinimize: () => void
 }
 
 function applyGalleryCap(
@@ -309,8 +314,10 @@ export const ComposePost = ({
   openGallery,
   logContext,
   cancelRef,
+  renderPresentation = children => children,
 }: Props & {
   cancelRef?: RefObject<CancelRef | null>
+  renderPresentation?: (children: React.ReactNode) => React.ReactNode
 }) => {
   const [replyTo, setReplyTo] = useState(initialReplyTo)
   const {accounts, currentAccount} = useSession()
@@ -329,8 +336,10 @@ export const ComposePost = ({
   useEffect(() => {
     setActiveAccountDid(initialActiveAccountDid ?? currentDid)
   }, [initialActiveAccountDid, currentDid])
-  const {closeComposer} = useComposerControls()
-  const isComposerOpen = !!useComposerState()
+  const {closeComposer, minimizeComposer} = useComposerControls()
+  const shellComposerState = useComposerState()
+  const isComposerOpen = !!shellComposerState
+  const isComposerVisible = isComposerOpen && !shellComposerState.isMinimized
   const showEphemeralError = useEphemeralAccountError()
   const {t: l, i18n} = useLingui()
   const forceAltTextEnabled = useForceAltTextEnabled()
@@ -351,6 +360,7 @@ export const ComposePost = ({
   const {mutate: cleanupPublishedDraft} =
     useCleanupPublishedDraftMutation(activeAccountDid)
   const {closeAllDialogs} = useDialogStateControlContext()
+  const {openDialogs} = useDialogStateContext()
   const {data: preferences} = usePreferencesQuery()
   const navigation = useNavigation<NavigationProp>()
 
@@ -970,7 +980,7 @@ export const ComposePost = ({
     if (IS_ANDROID) {
       Keyboard.dismiss()
     }
-    closeComposer()
+    closeComposer({includeMinimized: true})
     clearThumbnailCache(queryClient)
     revokeAllMediaUrls()
   }, [closeComposer, queryClient])
@@ -1122,65 +1132,86 @@ export const ComposePost = ({
     })
   }, [composerDispatch, preferences?.postInteractionSettings])
 
-  const insets = useSafeAreaInsets()
-  const viewStyles = useMemo(
-    () => ({
-      paddingTop: IS_ANDROID || IS_IPAD ? insets.top : 0,
-      paddingBottom: insets.bottom,
-    }),
-    [insets.top, insets.bottom],
+  const onPressCancel = useCallback(
+    (forcePrompt = false) => {
+      if (textInputRef.current?.maybeClosePopup()) {
+        return
+      }
+
+      const hasContent = thread.posts.some(
+        post =>
+          post.shortenedGraphemeLength > 0 ||
+          post.embed.media ||
+          post.embed.link,
+      )
+
+      if (
+        hasContent &&
+        (forcePrompt || !composerState.draftId || composerState.isDirty)
+      ) {
+        closeAllDialogs()
+        Keyboard.dismiss()
+        discardPromptControl.open()
+      } else {
+        onClose()
+      }
+    },
+    [
+      thread,
+      composerState.draftId,
+      composerState.isDirty,
+      closeAllDialogs,
+      discardPromptControl,
+      onClose,
+    ],
   )
 
-  const onPressCancel = useCallback(() => {
-    if (textInputRef.current?.maybeClosePopup()) {
-      return
-    }
+  const onPressMinimize = useNonReactiveCallback(() => {
+    Keyboard.dismiss()
+    minimizeComposer()
+  })
 
-    const hasContent = thread.posts.some(
-      post =>
-        post.shortenedGraphemeLength > 0 || post.embed.media || post.embed.link,
-    )
-
-    // Show discard prompt if there's content AND either:
-    // - No draft is loaded (new composition)
-    // - Draft is loaded but has been modified
-    if (hasContent && (!composerState.draftId || composerState.isDirty)) {
-      closeAllDialogs()
-      Keyboard.dismiss()
-      discardPromptControl.open()
+  const onPressBack = useNonReactiveCallback(() => {
+    if (openDialogs.current.has(discardPromptControl.id)) {
+      discardPromptControl.close(onPressMinimize)
     } else {
-      onClose()
+      onPressCancel(true)
     }
-  }, [
-    thread,
-    composerState.draftId,
-    composerState.isDirty,
-    closeAllDialogs,
-    discardPromptControl,
-    onClose,
-  ])
+  })
 
-  useImperativeHandle(cancelRef, () => ({onPressCancel}))
+  useImperativeHandle(cancelRef, () => ({
+    onPressCancel: onPressBack,
+    onPressMinimize,
+  }))
 
-  // On Android, pressing Back should ask confirmation.
   useEffect(() => {
-    if (!IS_ANDROID) {
+    if (!IS_ANDROID || !isComposerVisible) {
       return
     }
     const backHandler = BackHandler.addEventListener(
       'hardwareBackPress',
       () => {
-        if (closeAllDialogs()) {
+        if (
+          openDialogs.current.size > 0 &&
+          !openDialogs.current.has(discardPromptControl.id)
+        ) {
+          closeAllDialogs()
           return true
         }
-        onPressCancel()
+        onPressBack()
         return true
       },
     )
     return () => {
       backHandler.remove()
     }
-  }, [onPressCancel, closeAllDialogs])
+  }, [
+    onPressBack,
+    closeAllDialogs,
+    openDialogs,
+    discardPromptControl.id,
+    isComposerVisible,
+  ])
 
   // eslint-disable-next-line react-hooks/preserve-manual-memoization -- restored memoization
   const missingAltError = useMemo(() => {
@@ -1745,7 +1776,7 @@ export const ComposePost = ({
     }
     el.addEventListener('wheel', onWheel, {passive: false})
     return () => el.removeEventListener('wheel', onWheel)
-  }, [scrollViewRef])
+  }, [scrollViewRef, isComposerVisible])
 
   const isLastThreadedPost = thread.posts.length > 1 && nextPost === undefined
   const {
@@ -1758,8 +1789,6 @@ export const ComposePost = ({
     scrollViewRef,
     stickyBottom: isLastThreadedPost,
   })
-
-  const keyboardVerticalOffset = useKeyboardVerticalOffset()
 
   const footer = (
     <>
@@ -1798,157 +1827,108 @@ export const ComposePost = ({
   )
 
   const IS_WEBFooterSticky = !IS_NATIVE && thread.posts.length > 1
-  return (
+  return renderPresentation(
     <BottomSheetPortalProvider>
-      <KeyboardAvoidingView
-        testID="composePostView"
-        behavior={IS_IOS ? 'padding' : 'height'}
-        keyboardVerticalOffset={keyboardVerticalOffset}
-        automaticOffset={IS_IPAD}
-        style={[a.flex_1, userStyle('wsky-composer')]}>
-        <View
-          style={[a.flex_1, viewStyles]}
-          aria-modal
-          accessibilityViewIsModal>
-          <ComposerTopBar
-            canPost={canPost}
-            isReply={!!replyTo}
-            isPublishQueued={publishOnUpload}
-            isPublishing={isPublishing}
-            isThread={thread.posts.length > 1}
-            publishingStage={publishingStage}
-            topBarAnimatedStyle={topBarAnimatedStyle}
-            onCancel={onPressCancel}
-            onPublish={() => void onPressPublish()}
-            draftAccountDid={activeAccountDid}
-            onSelectDraft={draft => void handleSelectDraft(draft)}
-            onSaveDraft={saveCurrentDraft}
-            onDiscard={handleClearComposer}
-            isEmpty={isComposerEmpty}
-            isDirty={composerState.isDirty}
-            isEditingDraft={!!composerState.draftId}
-            canSaveDraft={allPostsWithinLimit}
-            textLength={thread.posts[0].richtext.text.length}>
-            {missingAltError && (
-              <AltTextReminder
-                error={missingAltError}
-                thread={thread}
+      <ComposerLayout>
+        <ComposerTopBar
+          canPost={canPost}
+          isReply={!!replyTo}
+          isPublishQueued={publishOnUpload}
+          isPublishing={isPublishing}
+          isThread={thread.posts.length > 1}
+          publishingStage={publishingStage}
+          topBarAnimatedStyle={topBarAnimatedStyle}
+          onCancel={() => onPressCancel()}
+          onPublish={() => void onPressPublish()}
+          draftAccountDid={activeAccountDid}
+          onSelectDraft={draft => void handleSelectDraft(draft)}
+          onSaveDraft={saveCurrentDraft}
+          onDiscard={handleClearComposer}
+          isEmpty={isComposerEmpty}
+          isDirty={composerState.isDirty}
+          isEditingDraft={!!composerState.draftId}
+          canSaveDraft={allPostsWithinLimit}
+          textLength={thread.posts[0].richtext.text.length}>
+          {missingAltError && (
+            <AltTextReminder
+              error={missingAltError}
+              thread={thread}
+              dispatch={composerDispatch}
+            />
+          )}
+          <ErrorBanner
+            error={error}
+            videoState={erroredVideo}
+            clearError={() => setError('')}
+            clearVideo={
+              erroredVideoPostId
+                ? () => clearVideo(erroredVideoPostId)
+                : () => {}
+            }
+          />
+        </ComposerTopBar>
+
+        <Animated.ScrollView
+          ref={scrollViewRef}
+          onScroll={scrollHandler}
+          contentContainerStyle={a.flex_grow}
+          style={[
+            a.flex_1,
+            web({
+              scrollbarGutter: 'stable',
+              scrollbarColor: `${t.palette.contrast_200} transparent`,
+              // Prevent horizontal trackpad swipes from triggering the
+              // browser's back/forward overscroll-navigation gesture.
+              // Handles Chrome and Firefox; Safari is handled separately
+              // via a wheel listener since it ignores overscroll-behavior.
+              overscrollBehaviorX: 'contain',
+            }),
+          ]}
+          keyboardShouldPersistTaps="always"
+          onContentSizeChange={onScrollViewContentSizeChange}
+          onLayout={onScrollViewLayout}>
+          {replyTo ? <ComposerReplyTo replyTo={replyTo} /> : undefined}
+          {thread.posts.map((post, index) => (
+            <Fragment key={post.id + (composerState.draftId ?? '')}>
+              <ComposerPost
+                post={post}
                 dispatch={composerDispatch}
+                textInputRef={post.id === activePost.id ? textInputRef : null}
+                isFirstPost={index === 0}
+                isLastPost={index === thread.posts.length - 1}
+                isPartOfThread={thread.posts.length > 1}
+                isReply={index > 0 || !!replyTo}
+                isActive={post.id === activePost.id}
+                canRemovePost={thread.posts.length > 1}
+                canMovePostUp={index > 0}
+                canMovePostDown={index < thread.posts.length - 1}
+                canAddPost={post.id === activePost.id && canAddPost}
+                canRemoveQuote={index > 0 || !initQuote}
+                onSelectVideo={selectVideo}
+                onClearVideo={clearVideo}
+                onError={setError}
+                onPublish={onComposerPostPublish}
+                openAccountSwitcher={openAccountSwitcher && index === 0}
+                activeAccountDid={activeAccountDid}
+                setActiveAccountDid={did => {
+                  void selectActiveAccount(did)
+                }}
               />
-            )}
-            <ErrorBanner
-              error={error}
-              videoState={erroredVideo}
-              clearError={() => setError('')}
-              clearVideo={
-                erroredVideoPostId
-                  ? () => clearVideo(erroredVideoPostId)
-                  : () => {}
-              }
-            />
-          </ComposerTopBar>
-
-          <Animated.ScrollView
-            ref={scrollViewRef}
-            onScroll={scrollHandler}
-            contentContainerStyle={a.flex_grow}
-            style={[
-              a.flex_1,
-              web({
-                scrollbarGutter: 'stable',
-                scrollbarColor: `${t.palette.contrast_200} transparent`,
-                // Prevent horizontal trackpad swipes from triggering the
-                // browser's back/forward overscroll-navigation gesture.
-                // Handles Chrome and Firefox; Safari is handled separately
-                // via a wheel listener since it ignores overscroll-behavior.
-                overscrollBehaviorX: 'contain',
-              }),
-            ]}
-            keyboardShouldPersistTaps="always"
-            onContentSizeChange={onScrollViewContentSizeChange}
-            onLayout={onScrollViewLayout}>
-            {replyTo ? <ComposerReplyTo replyTo={replyTo} /> : undefined}
-            {thread.posts.map((post, index) => (
-              <Fragment key={post.id + (composerState.draftId ?? '')}>
-                <ComposerPost
-                  post={post}
-                  dispatch={composerDispatch}
-                  textInputRef={post.id === activePost.id ? textInputRef : null}
-                  isFirstPost={index === 0}
-                  isLastPost={index === thread.posts.length - 1}
-                  isPartOfThread={thread.posts.length > 1}
-                  isReply={index > 0 || !!replyTo}
-                  isActive={post.id === activePost.id}
-                  canRemovePost={thread.posts.length > 1}
-                  canMovePostUp={index > 0}
-                  canMovePostDown={index < thread.posts.length - 1}
-                  canAddPost={post.id === activePost.id && canAddPost}
-                  canRemoveQuote={index > 0 || !initQuote}
-                  onSelectVideo={selectVideo}
-                  onClearVideo={clearVideo}
-                  onError={setError}
-                  onPublish={onComposerPostPublish}
-                  openAccountSwitcher={openAccountSwitcher && index === 0}
-                  activeAccountDid={activeAccountDid}
-                  setActiveAccountDid={did => {
-                    void selectActiveAccount(did)
-                  }}
-                />
-                {IS_WEBFooterSticky && post.id === activePost.id && (
-                  <View style={styles.stickyFooterWeb}>{footer}</View>
-                )}
-              </Fragment>
-            ))}
-          </Animated.ScrollView>
-          {!IS_WEBFooterSticky && footer}
-        </View>
-
-        <Prompt.Outer control={discardPromptControl}>
-          <Prompt.Content>
-            <Prompt.TitleText>
-              {allPostsWithinLimit ? (
-                composerState.draftId ? (
-                  <Trans>Save changes?</Trans>
-                ) : (
-                  <Trans>Save draft?</Trans>
-                )
-              ) : (
-                <Trans>Discard post?</Trans>
+              {IS_WEBFooterSticky && post.id === activePost.id && (
+                <View style={styles.stickyFooterWeb}>{footer}</View>
               )}
-            </Prompt.TitleText>
-            <Prompt.DescriptionText>
-              {allPostsWithinLimit ? (
-                composerState.draftId ? (
-                  <Trans>
-                    You have unsaved changes to this draft, would you like to
-                    save them?
-                  </Trans>
-                ) : (
-                  <Trans>
-                    Would you like to save this as a draft to edit later?
-                  </Trans>
-                )
-              ) : (
-                <Trans>You can only save drafts up to 1000 characters.</Trans>
-              )}
-            </Prompt.DescriptionText>
-          </Prompt.Content>
-          <Prompt.Actions>
-            {allPostsWithinLimit && (
-              <Prompt.Action
-                cta={composerState.draftId ? l`Save changes` : l`Save draft`}
-                onPress={() => void handleSaveDraft()}
-                color="primary"
-              />
-            )}
-            <Prompt.Cancel cta={l`Keep editing`} />
-            <Prompt.Action
-              cta={l`Discard`}
-              onPress={handleDiscard}
-              color="negative_subtle"
-            />
-          </Prompt.Actions>
-        </Prompt.Outer>
+            </Fragment>
+          ))}
+        </Animated.ScrollView>
+        {!IS_WEBFooterSticky && footer}
+        <ComposerExitDialog
+          control={discardPromptControl}
+          isEditingDraft={!!composerState.draftId}
+          canSaveDraft={allPostsWithinLimit}
+          onSave={() => void handleSaveDraft()}
+          onEditLater={onPressMinimize}
+          onDiscard={handleDiscard}
+        />
 
         <Prompt.Basic
           control={emptyPostsPromptControl}
@@ -1966,8 +1946,35 @@ export const ComposePost = ({
           cancelButtonCta={l`Add alt text`}
           onConfirm={handleConfirmMissingAltText}
         />
-      </KeyboardAvoidingView>
-    </BottomSheetPortalProvider>
+      </ComposerLayout>
+    </BottomSheetPortalProvider>,
+  )
+}
+
+function ComposerLayout({children}: {children: React.ReactNode}) {
+  const insets = useSafeAreaInsets()
+  const keyboardVerticalOffset = useKeyboardVerticalOffset()
+
+  return (
+    <KeyboardAvoidingView
+      testID="composePostView"
+      behavior={IS_IOS ? 'padding' : 'height'}
+      keyboardVerticalOffset={keyboardVerticalOffset}
+      automaticOffset={IS_IPAD}
+      style={[a.flex_1, userStyle('wsky-composer')]}>
+      <View
+        style={[
+          a.flex_1,
+          {
+            paddingTop: IS_ANDROID || IS_IPAD ? insets.top : 0,
+            paddingBottom: insets.bottom,
+          },
+        ]}
+        aria-modal
+        accessibilityViewIsModal>
+        {children}
+      </View>
+    </KeyboardAvoidingView>
   )
 }
 

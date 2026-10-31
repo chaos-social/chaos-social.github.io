@@ -46,6 +46,7 @@ import {useProfilesQuery} from '#/state/queries/profile'
 import {type SessionAccount, useSession, useSessionApi} from '#/state/session'
 import {useSortedAccountItems} from '#/state/session/sorting'
 import {useThemePrefs} from '#/state/shell'
+import {useComposerState} from '#/state/shell/composer'
 import {useLoggedOutViewControls} from '#/state/shell/logged-out'
 import {useCloseAllActiveElements} from '#/state/util'
 import {LoadingPlaceholder} from '#/view/com/util/LoadingPlaceholder'
@@ -684,6 +685,7 @@ function NavItem({
 }
 
 function ComposeBtn({minimal}: {minimal: boolean}) {
+  const composer = useComposerState()
   const {currentAccount} = useSession()
   const {getState} = useNavigation()
   const {openComposer} = useOpenComposer()
@@ -734,7 +736,7 @@ function ComposeBtn({minimal}: {minimal: boolean}) {
     <View style={[userStyle('wsky-nav__compose'), layout.container]}>
       <Button
         disabled={isFetchingHandle}
-        label={l`Compose new post`}
+        label={composer ? l`Open post` : l`Compose new post`}
         onPress={() => void onPressCompose()}
         size="large"
         color="primary"
@@ -746,7 +748,11 @@ function ComposeBtn({minimal}: {minimal: boolean}) {
         <ButtonIcon icon={EditBigIcon} size={minimal ? 'lg' : 'sm'} />
         {!minimal && (
           <ButtonText>
-            <Trans context="action">New post</Trans>
+            {composer ? (
+              <Trans context="action">Open post</Trans>
+            ) : (
+              <Trans context="action">New post</Trans>
+            )}
           </ButtonText>
         )}
       </Button>

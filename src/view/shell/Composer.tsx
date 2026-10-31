@@ -14,7 +14,7 @@ export function Composer() {
   const state = useComposerState()
   const t = useTheme()
 
-  const open = !!state
+  const open = !!state && !state.isMinimized
 
   useEffect(() => {
     if (open) {
@@ -27,31 +27,25 @@ export function Composer() {
     }
   }, [open, t.name])
 
-  if (!open) {
+  if (!state) {
     return null
   }
 
   return (
-    <Animated.View
-      style={[a.absolute, a.inset_0, t.atoms.bg]}
-      entering={SlideInDown.duration(300).easing(Easing.out(Easing.exp))}
-      exiting={SlideOutDown.duration(200).easing(Easing.in(Easing.quad))}
-      aria-modal
-      accessibilityViewIsModal>
-      <ComposePost
-        recoveredState={state.recoveredState}
-        activeAccountDid={state.activeAccountDid}
-        replyTo={state.replyTo}
-        onPost={state.onPost}
-        onPostSuccess={state.onPostSuccess}
-        quote={state.quote}
-        mention={state.mention}
-        text={state.text}
-        tags={state.tags}
-        imageUris={state.imageUris}
-        videoUri={state.videoUri}
-        openGallery={state.openGallery}
-      />
-    </Animated.View>
+    <ComposePost
+      {...state}
+      renderPresentation={children =>
+        open ? (
+          <Animated.View
+            style={[a.absolute, a.inset_0, t.atoms.bg]}
+            entering={SlideInDown.duration(300).easing(Easing.out(Easing.exp))}
+            exiting={SlideOutDown.duration(200).easing(Easing.in(Easing.quad))}
+            aria-modal
+            accessibilityViewIsModal>
+            {children}
+          </Animated.View>
+        ) : null
+      }
+    />
   )
 }
