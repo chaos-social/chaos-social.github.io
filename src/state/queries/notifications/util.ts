@@ -1,3 +1,4 @@
+import {TID} from '@atproto/common-web'
 import {type Client} from '@atproto/lex'
 import {type AtUriString} from '@atproto/syntax'
 import {
@@ -9,6 +10,7 @@ import {type QueryClient} from '@tanstack/react-query'
 import chunk from 'lodash.chunk'
 
 import {labelIsHideableOffense} from '#/lib/moderation'
+import * as persisted from '#/state/persisted'
 import {isInGroupedFeed} from '#/state/queries/notifications/grouped/membership'
 import {type GroupedNotificationsFeed} from '#/state/queries/notifications/grouped/types'
 import {app} from '#/lexicons'
@@ -16,12 +18,11 @@ import * as bsky from '#/types/bsky'
 import {
   asyncGenCollect,
   asyncGenDedupe,
-  asyncGenTryMap,
+  asyncGenTake,
   type ConstellationLink,
   constellationLinks,
 } from '../constellation'
 import {precacheProfile} from '../profile'
-import {resolvePdsServiceUrl} from '../resolve-identity'
 import {fetchNotificationPosts} from './fetch-posts'
 import {
   type FeedNotification,
@@ -45,15 +46,16 @@ const GROUPABLE_REASONS = [
 const MS_1HR = 1e3 * 60 * 60
 const MS_2DAY = MS_1HR * 48
 
-type BiteRecord = {
-  createdAt: string
-  subject: string
-}
-
-type LinkedRecord = {
-  link: ConstellationLink
-  record: BiteRecord
-}
+/**
+ * Bites pulled from Constellation, newest first. A Constellation link gives
+ * us everything a bite notification shows, so the records aren't read.
+ */
+const BITE_LINKS_LIMIT = 100
+/**
+ * `app.bsky.actor.getProfiles` takes at most this many actors per call.
+ */
+const GET_PROFILES_MAX_ACTORS = 25
+const BITE_COLLECTION = 'net.wafrn.feed.bite'
 
 // exported api
 // =
@@ -91,55 +93,31 @@ export async function fetchPage({
     notif => !shouldFilterNotif(notif, moderationOpts),
   )
 
-  console.log('notifs')
-  console.log(notifs)
-
-  const constellationInstance = 'https://constellation.microcosm.blue/' //useConstellationInstance()
-  const biteLinks = asyncGenDedupe(
-    constellationLinks(constellationInstance, {
-      target: 'at://did:plc:loise3eov323mj7pgmc5dj5z',
-      collection: 'net.wafrn.feed.bite',
-      path: '.subject',
-      from_dids: [],
-    }),
-    link => link.did,
-  )
-
-  const biteRecords = asyncGenTryMap<ConstellationLink, LinkedRecord>(
-    biteLinks,
-    async link => {
-      let service = await resolvePdsServiceUrl(link.did)
-
-      const request = `${service}/xrpc/com.atproto.repo.getRecord?repo=${link.did}&collection=net.wafrn.feed.bite&rkey=${link.rkey}`
-      const record = (
-        (await (await fetch(request)).json()) as {
-          value?: unknown
-        }
-      ).value as BiteRecord
-      return {link, record}
-    },
-    (_, e) => {
-      console.error(e)
-    },
-  )
-
-  for (const {link, record} of await asyncGenCollect(biteRecords)) {
-    const author = (await client.call(app.bsky.actor.getProfile, {
-      actor: link.did,
-    })) as app.bsky.actor.defs.ProfileView
-
+  /*
+   * Bites are wafrn records the appview doesn't index, so they're found
+   * through Constellation. Only the first page of the unfiltered feed shows
+   * them: every page would show the same bites again, and the unread poll
+   * doesn't need them, since they're never unread.
+   */
+  const viewerDid = client.did
+  const bites =
+    fetchAdditionalData && !cursor && !reasons.length && viewerDid
+      ? await fetchBites(client, viewerDid)
+      : []
+  for (const {author, link} of bites) {
     notifs.unshift({
-      uri: `at://${link.did}/net.wafrn.feed.bite/${link.rkey}`,
-      cid: 'bafyreidjgv4tniv5t5zzmzpy4i65enbgxyk4njnpgbdmcnloytppam7eqm',
+      uri: `at://${link.did}/${BITE_COLLECTION}/${link.rkey}`,
+      // Nothing reads a bite notification's cid, and the link has none.
+      cid: '',
       author,
       reason: 'user-bite',
-      record: {
-        $type: 'net.wafrn.feed.bite',
-        createdAt: record.createdAt,
-        subject: record.subject,
-      },
+      record: {$type: BITE_COLLECTION},
       isRead: true,
-      indexedAt: '2026-07-12T20:26:45.729Z',
+      // A TID's first 11 characters are its creation time in microseconds.
+      // oxlint-disable-next-line typescript/no-unnecessary-type-assertion -- toISOString() types as `string`, not the datetime template
+      indexedAt: new Date(
+        Math.floor(TID.fromStr(link.rkey).timestamp() / 1000),
+      ).toISOString() as Notification['indexedAt'],
       labels: [],
     })
   }
@@ -325,6 +303,56 @@ export function groupNotifications(notifs: Notification[]): FeedNotification[] {
     }
   }
   return groupedNotifs
+}
+
+/**
+ * Everyone who bit `did`, newest bite first, with the profile of each.
+ *
+ * A Constellation link carries who bit and when, which is all a bite
+ * notification shows, so this is one Constellation page plus one batched
+ * `getProfiles`, not a read per bite.
+ */
+async function fetchBites(
+  client: Client,
+  did: string,
+): Promise<
+  {author: app.bsky.actor.defs.ProfileView; link: ConstellationLink}[]
+> {
+  const instance =
+    persisted.get('constellationInstance') ||
+    persisted.defaults.constellationInstance!
+  const links = await asyncGenCollect(
+    asyncGenTake(
+      asyncGenDedupe(
+        constellationLinks(instance, {
+          target: `at://${did}`,
+          collection: BITE_COLLECTION,
+          path: '.subject',
+        }),
+        link => link.did,
+      ),
+      BITE_LINKS_LIMIT,
+    ),
+  )
+  if (!links.length) return []
+
+  const profiles = new Map<string, app.bsky.actor.defs.ProfileView>()
+  for (const actors of chunk(
+    links.map(link => link.did),
+    GET_PROFILES_MAX_ACTORS,
+  )) {
+    const res = await client.call(app.bsky.actor.getProfiles, {actors})
+    for (const profile of res.profiles) {
+      // A detailed profile has everything a basic one does, minus the type tag.
+      profiles.set(profile.did, profile as app.bsky.actor.defs.ProfileView)
+    }
+  }
+
+  // Bites from accounts that don't resolve, e.g. deleted, have no one to show.
+  return links.flatMap(link => {
+    const author = profiles.get(link.did)
+    return author ? [{author, link}] : []
+  })
 }
 
 async function fetchSubjects(
