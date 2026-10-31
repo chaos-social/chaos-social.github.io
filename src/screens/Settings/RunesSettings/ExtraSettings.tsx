@@ -23,7 +23,11 @@ import {
   useOmitViaField,
   useSetOmitViaField,
 } from '#/state/preferences/omit-via-field'
-import {useSetTidSuffix,useTidSuffix} from '#/state/preferences/tid-suffix'
+import {
+  useRenderBridgedHtml,
+  useSetRenderBridgedHtml,
+} from '#/state/preferences/render-bridged-html'
+import {useSetTidSuffix, useTidSuffix} from '#/state/preferences/tid-suffix'
 import * as SettingsList from '#/screens/Settings/components/SettingsList'
 import {atoms as a} from '#/alf'
 import {Admonition} from '#/components/Admonition'
@@ -34,6 +38,7 @@ import {BellRinging_Stroke2_Corner0_Rounded as BellRingingIcon} from '#/componen
 import {CodeBrackets_Stroke2_Corner2_Rounded as CodeBracketsIcon} from '#/components/icons/CodeBrackets'
 import {Explosion_Stroke2_Corner0_Rounded as ExplosionIcon} from '#/components/icons/Explosion'
 import {Eye_Stroke2_Corner0_Rounded as VisibilityIcon} from '#/components/icons/Eye'
+import {Fediverse as FediverseIcon} from '#/components/icons/Fediverse'
 import {Hashtag_Stroke2_Corner0_Rounded as HashtagIcon} from '#/components/icons/Hashtag'
 import {LikeRepost_Stroke2_Corner2_Rounded as LikeRepostIcon} from '#/components/icons/Heart2'
 import {Lab_Stroke2_Corner0_Rounded as BeakerIcon} from '#/components/icons/Lab'
@@ -59,6 +64,8 @@ export function RunesExtraSettingsScreen() {
 
   const omitViaField = useOmitViaField()
   const setOmitViaField = useSetOmitViaField()
+  const renderBridgedHtml = useRenderBridgedHtml()
+  const setRenderBridgedHtml = useSetRenderBridgedHtml()
   const tidSuffix = useTidSuffix()
   const setTidSuffixControl = Dialog.useDialogControl()
   const [devMode, setDevMode] = useDevMode()
@@ -74,6 +81,19 @@ export function RunesExtraSettingsScreen() {
           <SettingsList.ItemIcon icon={VisibilityIcon} />
           <SettingsList.ItemText>
             <Trans>Fetch records directly from PDS to fix broken quotes</Trans>
+          </SettingsList.ItemText>
+          <Toggle.Platform />
+        </SettingsList.Item>
+      </Toggle.Item>
+      <Toggle.Item
+        name="render_bridged_html"
+        label={l`Render formatted text from bridged fediverse posts`}
+        value={renderBridgedHtml}
+        onChange={value => setRenderBridgedHtml(value)}>
+        <SettingsList.Item>
+          <SettingsList.ItemIcon icon={FediverseIcon} />
+          <SettingsList.ItemText>
+            <Trans>Render formatted text from bridged fediverse posts</Trans>
           </SettingsList.ItemText>
           <Toggle.Platform />
         </SettingsList.Item>

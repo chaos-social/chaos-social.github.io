@@ -11,6 +11,7 @@ import {MAX_POST_LINES} from '#/lib/constants'
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {usePalette} from '#/lib/hooks/usePalette'
 import {makeProfileLink} from '#/lib/routes/links'
+import {segmentsToText} from '#/lib/strings/bridged-html'
 import {countLines} from '#/lib/strings/helpers'
 import {userStyle} from '#/lib/userstyles'
 import {
@@ -51,6 +52,7 @@ import {KnownLikers} from '#/components/Post/KnownLikers'
 import {PostRepliedTo} from '#/components/Post/PostRepliedTo'
 import {ShowMoreTextButton} from '#/components/Post/ShowMoreTextButton'
 import {TranslatedPost} from '#/components/Post/Translated'
+import {useBridgedHtmlSegments} from '#/components/Post/useBridgedHtmlSegments'
 import {PostControls} from '#/components/PostControls'
 import {DiscoverDebug} from '#/components/PostControls/DiscoverDebug'
 import {PostTags} from '#/components/PostTags'
@@ -547,8 +549,11 @@ let PostContent = ({
   additionalPostAlerts?: AppModerationCause[]
   feedDescriptor?: string
 }): React.ReactNode => {
+  const htmlSegments = useBridgedHtmlSegments(post.record)
   const [limitLines, setLimitLines] = useState(
-    () => countLines(richText.text) >= MAX_POST_LINES,
+    () =>
+      countLines(htmlSegments ? segmentsToText(htmlSegments) : richText.text) >=
+      MAX_POST_LINES,
   )
   const showPostNumber = useHasThreadItemPostNumber(postNumbering)
 
@@ -580,12 +585,13 @@ let PostContent = ({
         style={[a.pb_xs]}
         additionalCauses={additionalPostAlerts}
       />
-      {richText.text ? (
+      {htmlSegments?.length || richText.text ? (
         <View style={[a.mb_2xs, userStyle('wsky-post__text')]}>
           <RichText
             enableTags
             testID="postText"
             value={richText}
+            htmlSegments={htmlSegments}
             numberOfLines={limitLines ? MAX_POST_LINES : undefined}
             style={[isCarouselItem ? a.text_md : [a.flex_1, a.text_md]]}
             authorHandle={postAuthor.handle}
