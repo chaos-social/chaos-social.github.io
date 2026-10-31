@@ -131,3 +131,25 @@ export async function testPlcDirectoryUrl(url: string): Promise<boolean> {
     return false
   }
 }
+
+export async function testTagSearchUrl(url: string): Promise<boolean> {
+  try {
+    return await withFetchTimeout(async signal => {
+      // an empty query is a 400 NoTags error, which still proves it's a tag search server
+      const res = await fetch(new URL('/search?tags=', normalizeOrigin(url)), {
+        method: 'GET',
+        headers,
+        signal,
+      })
+      const json: unknown = await res.json()
+      return (
+        typeof json === 'object' &&
+        json !== null &&
+        (('posts' in json && Array.isArray(json.posts)) ||
+          ('error' in json && typeof json.error === 'string'))
+      )
+    })
+  } catch {
+    return false
+  }
+}

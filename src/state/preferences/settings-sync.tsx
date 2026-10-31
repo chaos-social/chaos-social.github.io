@@ -113,6 +113,7 @@ export const SYNCED_PREFS_KEYS = [
   'atprotoExplorer',
   'translationServicePreference',
   'libreTranslateInstance',
+  'tagSearchInstance',
   'openRouterApiKey',
   'openRouterModel',
   'openRouterPrompt',

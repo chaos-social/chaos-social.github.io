@@ -69,6 +69,7 @@ import {Provider as ShowViaClientProvider} from './show-via-client'
 import {Provider as SixSevenCelebrationProvider} from './six-seven-celebration'
 import {Provider as SlingshotInstanceProvider} from './slingshot-instance'
 import {Provider as SubtitlesProvider} from './subtitles'
+import {Provider as TagSearchInstanceProvider} from './tag-search-instance'
 import {Provider as ThumbnailFormatProvider} from './thumbnail-format'
 import {Provider as TidSuffixProvider} from './tid-suffix'
 import {Provider as TranslationServicePreferenceProvider} from './translation-service-preference'
@@ -252,9 +253,11 @@ export function Provider({children}: PropsWithChildren<{}>) {
                                                                                                                                                     <ShowPostTagsProvider>
                                                                                                                                                       <EmojiFontProvider>
                                                                                                                                                         <PasteToLinkEnabledProvider>
-                                                                                                                                                          {
-                                                                                                                                                            children
-                                                                                                                                                          }
+                                                                                                                                                          <TagSearchInstanceProvider>
+                                                                                                                                                            {
+                                                                                                                                                              children
+                                                                                                                                                            }
+                                                                                                                                                          </TagSearchInstanceProvider>
                                                                                                                                                         </PasteToLinkEnabledProvider>
                                                                                                                                                       </EmojiFontProvider>
                                                                                                                                                     </ShowPostTagsProvider>

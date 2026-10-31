@@ -16,6 +16,7 @@ import {useActorSearch} from '#/state/queries/actor-search'
 import {usePopularFeedsSearch} from '#/state/queries/feed'
 import {useSearchPostsV2Query} from '#/state/queries/search-posts-v2'
 import {useStarterPackSearch} from '#/state/queries/starter-pack-search'
+import {useTagSearchQuery} from '#/state/queries/tag-search'
 import {useSession} from '#/state/session'
 import {useLoggedOutViewControls} from '#/state/shell/logged-out'
 import {useCloseAllActiveElements} from '#/state/util'
@@ -119,6 +120,17 @@ let SearchResults = ({
           <SearchScreenStarterPackResults
             query={query}
             active={activePage === 4}
+          />
+        ),
+      },
+      noFilters && {
+        title: l`Tags`,
+        component: (
+          <SearchScreenPostResults
+            tags
+            hasFilters={false}
+            query={query}
+            active={activePage === 5}
           />
         ),
       },
@@ -367,12 +379,15 @@ let SearchScreenPostResults = ({
   filters,
   sort,
   active,
+  tags = false,
 }: {
   hasFilters: boolean
   query: string
   filters?: SearchFilters
   sort?: 'top' | 'latest'
   active: boolean
+  /** Search the tag search server's labels instead of post text. */
+  tags?: boolean
 }): React.ReactNode => {
   const ax = useAnalytics()
   const {t: l} = useLingui()
@@ -390,9 +405,15 @@ let SearchScreenPostResults = ({
     query: augmentedV2Query,
     filters,
     sort,
-    enabled: active,
+    enabled: active && !tags,
   })
-  const pagination = usePaginatedList(v2, paginated)
+  const tagSearch = useTagSearchQuery({
+    paginated,
+    query,
+    enabled: active && tags,
+  })
+  const postQuery = tags ? tagSearch : v2
+  const pagination = usePaginatedList(postQuery, paginated)
   const {
     isFetched,
     data: results,
@@ -401,7 +422,7 @@ let SearchScreenPostResults = ({
     fetchNextPage,
     isFetchingNextPage,
     hasNextPage,
-  } = v2
+  } = postQuery
 
   const t = useTheme()
   const onPullToRefresh = useCallback(async () => {

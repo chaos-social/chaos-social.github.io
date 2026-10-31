@@ -41,10 +41,12 @@ import {
   useInfrastructureUrlSave,
 } from '#/screens/Settings/components/infrastructureUrlSave'
 import * as SettingsList from '#/screens/Settings/components/SettingsList'
+import {TagSearchInstanceDialog} from '#/screens/Settings/components/TagSearchInstanceDialog'
 import {atoms as a} from '#/alf'
 import {Admonition} from '#/components/Admonition'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
+import {createStaticClick, InlineLinkText} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import * as Select from '#/components/Select'
 import {Text} from '#/components/Typography'
@@ -97,6 +99,8 @@ export function RunesInfrastructureSettingsScreen() {
   const setSlingshotInstance = useSetSlingshotInstance()
   const setSlingshotInstanceControl = Dialog.useDialogControl()
   const [slingshotDialogSession, setSlingshotDialogSession] = useState(0)
+
+  const tagSearchInstanceControl = Dialog.useDialogControl()
 
   const openImageCdnCustomDialog = () => {
     setImageCdnDialogSession(session => session + 1)
@@ -314,6 +318,30 @@ export function RunesInfrastructureSettingsScreen() {
         </View>
       </SettingsList.Group>
 
+      <SettingsList.Divider />
+
+      <SettingsList.Group iconInset={false}>
+        <SettingsList.ItemText>
+          <Trans>Tag Search Server</Trans>
+        </SettingsList.ItemText>
+        <View style={[a.gap_md, a.w_full]}>
+          <Text style={[a.leading_snug]}>
+            <Trans>
+              Used by the Tags tab in search to find posts by their
+              auto-generated image tags.
+            </Trans>
+          </Text>
+          <View style={[a.w_full, a.align_start]}>
+            <InlineLinkText
+              label={l`Change server`}
+              {...createStaticClick(() => tagSearchInstanceControl.open())}>
+              <Trans>Change server</Trans>
+            </InlineLinkText>
+          </View>
+        </View>
+      </SettingsList.Group>
+
+      <TagSearchInstanceDialog control={tagSearchInstanceControl} />
       <ConstellationInstanceDialog
         control={setConstellationInstanceControl}
         openGeneration={constellationDialogSession}
