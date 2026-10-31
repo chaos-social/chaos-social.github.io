@@ -41,7 +41,7 @@ it('writes the wafrn bite record for the post', async () => {
     expect.objectContaining({
       repo: 'did:plc:me',
       collection: 'net.wafrn.feed.bite',
-      rkey: 'did:plc:author-3kabc',
+      rkey: expect.stringMatching(/^[2-7][a-z2-7]{12}$/),
       validate: false,
       record: expect.objectContaining({
         $type: 'net.wafrn.feed.bite',
@@ -51,12 +51,27 @@ it('writes the wafrn bite record for the post', async () => {
   )
 })
 
-it('derives the same rkey for the same post so a second bite overwrites', async () => {
-  const postUri = 'at://did:plc:author/app.bsky.feed.post/3kabc'
+it('bites a profile with the bare at-uri as the subject', async () => {
+  const {result} = renderBite('at://did:plc:author')
 
-  renderBite(postUri).result.current.mutate()
-  renderBite(postUri).result.current.mutate()
+  result.current.mutate()
+
+  await waitFor(() => expect(mockPutRecord).toHaveBeenCalled())
+  expect(mockPutRecord).toHaveBeenCalledWith(
+    expect.objectContaining({
+      record: expect.objectContaining({subject: 'at://did:plc:author'}),
+    }),
+  )
+})
+
+it('uses a fresh tid for every bite', async () => {
+  renderBite(
+    'at://did:plc:author/app.bsky.feed.post/3kabc',
+  ).result.current.mutate()
+  renderBite(
+    'at://did:plc:author/app.bsky.feed.post/3kabc',
+  ).result.current.mutate()
 
   await waitFor(() => expect(mockPutRecord).toHaveBeenCalledTimes(2))
-  expect(biteRkeys()).toEqual(['did:plc:author-3kabc', 'did:plc:author-3kabc'])
+  expect(biteRkeys()[0]).not.toBe(biteRkeys()[1])
 })

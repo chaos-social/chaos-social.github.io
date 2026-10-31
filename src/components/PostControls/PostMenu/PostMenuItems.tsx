@@ -818,7 +818,8 @@ let PostMenuItems = ({
 
   /*
    * Wafrn consumes these from the firehose; we cannot read back whether a
-   * bite exists, so the item just remembers this session's success.
+   * bite exists, so the item just remembers this session's success. Each
+   * press writes a new tid-keyed record.
    */
   const onBite = async () => {
     haptics.confirm()

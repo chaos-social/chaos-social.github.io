@@ -5,6 +5,7 @@ import {Trans, useLingui} from '@lingui/react/macro'
 import {useNavigation} from '@react-navigation/native'
 import {useQueryClient} from '@tanstack/react-query'
 
+import {useHaptics} from '#/lib/haptics'
 import {useOpenLink} from '#/lib/hooks/useOpenLink'
 import {makeProfileLink} from '#/lib/routes/links'
 import {type NavigationProp} from '#/lib/routes/types'
@@ -23,6 +24,7 @@ import {
   useSetDeerVerificationTrust,
 } from '#/state/preferences/deer-verification'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
+import {useShowBiteButton} from '#/state/preferences/show-bite-button'
 import {useDeerVerificationProfileOverlay} from '#/state/queries/deer-verification'
 import {
   RQKEY as profileQueryKey,
@@ -44,6 +46,7 @@ import {ChevronRight_Stroke2_Corner0_Rounded as ChevronRightIcon} from '#/compon
 import {CircleCheck_Stroke2_Corner0_Rounded as CircleCheckIcon} from '#/components/icons/CircleCheck'
 import {CircleX_Stroke2_Corner0_Rounded as CircleXIcon} from '#/components/icons/CircleX'
 import {Clipboard_Stroke2_Corner2_Rounded as ClipboardIcon} from '#/components/icons/Clipboard'
+import {Bite as BiteIcon} from '#/components/icons/Cookie'
 import {DotGrid3x1_Stroke2_Corner0_Rounded as EllipsisIcon} from '#/components/icons/DotGrid'
 import {Flag_Stroke2_Corner0_Rounded as FlagIcon} from '#/components/icons/Flag'
 import {ListSparkle_Stroke2_Corner0_Rounded as ListIcon} from '#/components/icons/ListSparkle'
@@ -73,6 +76,7 @@ import {
   ReportDialog,
   useReportDialogControl,
 } from '#/components/moderation/ReportDialog'
+import {useBiteMutation} from '#/components/PostControls/PostMenu/useBiteMutation'
 import * as Prompt from '#/components/Prompt'
 import * as Toast from '#/components/Toast'
 import {useFullVerificationState} from '#/components/verification'
@@ -116,6 +120,17 @@ let ProfileMenu = ({
   })
   const {canGoLive} = useLiveNowConfig()
   const status = useActorStatus(profile)
+  const haptics = useHaptics()
+  const showBiteButton = useShowBiteButton()
+  const {mutateAsync: bite, isPending: isBitePending} = useBiteMutation(
+    `at://${profile.did}`,
+  )
+  /*
+   * Keyed by did: this menu stays mounted while navigating between profiles,
+   * so a bare flag would make every profile look bitten.
+   */
+  const [bittenDid, setBittenDid] = useState<string>()
+  const hasBitten = bittenDid === profile.did
 
   const deerVerificationEnabled = useDeerVerificationEnabled()
   const deerVerificationTrusted = useDeerVerificationTrusted().has(profile.did)
@@ -372,6 +387,27 @@ let ProfileMenu = ({
   const onPressReportAccount = useCallback(() => {
     reportDialogControl.open()
   }, [reportDialogControl])
+
+  const onPressBite = useCallback(async () => {
+    haptics.confirm()
+    try {
+      await bite()
+      setBittenDid(profile.did)
+      Toast.show(l({message: 'Bitten', comment: 'Wafrn bite action'}), {
+        type: 'success',
+      })
+    } catch (e) {
+      ax.logger.error('Failed to bite account', {safeMessage: e})
+      Toast.show(l`Could not bite this account`, {type: 'error'})
+    }
+  }, [ax, bite, haptics, l, profile.did])
+
+  const biteLabel = hasBitten
+    ? l({message: 'Bitten', comment: 'Account already bitten on wafrn'})
+    : l({
+        message: 'Bite',
+        comment: 'Bite an account, like a like, as on wafrn',
+      })
 
   const onPressShareATUri = useCallback(() => {
     void simpleShareText(`at://${profile.did}`)
@@ -720,6 +756,16 @@ let ProfileMenu = ({
                   ))}
                 {!isSelf && (
                   <>
+                    {showBiteButton && !profile.viewer?.blocking && (
+                      <Menu.Item
+                        testID="profileHeaderDropdownBiteBtn"
+                        disabled={hasBitten || isBitePending}
+                        label={biteLabel}
+                        onPress={() => void onPressBite()}>
+                        <Menu.ItemText>{biteLabel}</Menu.ItemText>
+                        <Menu.ItemIcon icon={BiteIcon} />
+                      </Menu.Item>
+                    )}
                     {!profile.viewer?.blocking &&
                       !profile.viewer?.mutedByList && (
                         <>
