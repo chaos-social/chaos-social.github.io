@@ -8,8 +8,7 @@ import {
 } from 'react'
 import {type BlobRef} from '@atproto/api'
 import {type ModerationDecision} from '@bsky/sdk/moderation'
-import {msg} from '@lingui/core/macro'
-import {useLingui} from '@lingui/react'
+import {useLingui} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
 import {useNonReactiveCallback} from '#/lib/hooks/useNonReactiveCallback'
@@ -24,6 +23,7 @@ import {useSession} from '#/state/session'
 import {clearRecovery, readRecovery} from '#/state/shell/composer/recovery'
 import {type Recovery} from '#/state/shell/composer/recovery/codec'
 import {type ComposerState} from '#/view/com/composer/state/composer'
+import * as Prompt from '#/components/Prompt'
 import * as Toast from '#/components/Toast'
 import {type app} from '#/lexicons'
 
@@ -85,7 +85,9 @@ export interface ComposerOpts {
   logContext?: ComposerLogContext
 }
 
-type StateContext = (ComposerOpts & {isMinimized?: boolean}) | undefined
+type ComposerTarget = Pick<ComposerOpts, 'replyTo' | 'quote'>
+type StateContext =
+  (ComposerOpts & {isMinimized?: boolean; target?: ComposerTarget}) | undefined
 type ControlsContext = {
   openComposer: (opts: ComposerOpts) => void
   closeComposer: (opts?: {includeMinimized?: boolean}) => boolean
@@ -106,7 +108,12 @@ const controlsContext = createContext<ControlsContext>({
 controlsContext.displayName = 'ComposerControlsContext'
 
 export function Provider({children}: React.PropsWithChildren<{}>) {
-  const {_} = useLingui()
+  const {t: l} = useLingui()
+  const switchControl = Prompt.usePromptControl()
+  const [pendingTarget, setPendingTarget] = useState<{
+    opts: ComposerOpts
+    session: NonNullable<StateContext>
+  }>()
   const {currentAccount, accounts} = useSession()
   const [recovery] = useState<
     Recovery | Promise<Recovery | undefined> | undefined
@@ -150,10 +157,6 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
 
   const openComposer = useNonReactiveCallback((opts: ComposerOpts) => {
     recoveryCancelled.current = true
-    if (state) {
-      setState({...state, isMinimized: false})
-      return
-    }
     if (opts.quote) {
       const path = postUriToRelativePath(opts.quote.uri)
       if (path) {
@@ -177,10 +180,19 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
         author.viewer?.blockingByList),
     )
     if (isBlocked) {
-      Toast.show(_(msg`Cannot interact with a blocked user`), {
+      Toast.show(l`Cannot interact with a blocked user`, {
         type: 'warning',
       })
     } else {
+      if (state) {
+        if (state.isMinimized && (opts.replyTo || opts.quote)) {
+          setPendingTarget({opts, session: state})
+          switchControl.open()
+        } else {
+          setState({...state, isMinimized: false})
+        }
+        return
+      }
       setState(prevOpts => {
         if (prevOpts) {
           // Never replace an already open composer.
@@ -244,6 +256,39 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
     <stateContext.Provider value={state}>
       <controlsContext.Provider value={api}>
         {children}
+        <Prompt.Basic
+          control={switchControl}
+          title={
+            pendingTarget?.opts.replyTo
+              ? l`Reply to this post?`
+              : l`Quote this post?`
+          }
+          description={l`Your minimized post will stay the same, besides any current reply or quote, which will be replaced.`}
+          confirmButtonCta={
+            pendingTarget?.opts.replyTo
+              ? l`Switch to reply`
+              : l`Switch to quote`
+          }
+          onClose={() => setPendingTarget(undefined)}
+          onConfirm={() => {
+            if (!pendingTarget) return
+            const {opts, session} = pendingTarget
+            setState(previous =>
+              previous === session
+                ? {
+                    ...previous,
+                    replyTo: opts.replyTo,
+                    quote: opts.quote,
+                    onPost: opts.onPost,
+                    onPostSuccess: opts.onPostSuccess,
+                    logContext: opts.logContext,
+                    target: {replyTo: opts.replyTo, quote: opts.quote},
+                    isMinimized: false,
+                  }
+                : previous,
+            )
+          }}
+        />
       </controlsContext.Provider>
     </stateContext.Provider>
   )

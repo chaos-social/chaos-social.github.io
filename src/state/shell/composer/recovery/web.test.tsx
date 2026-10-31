@@ -3,6 +3,7 @@ import {RichText} from '@bsky/sdk/richtext'
 import {act, render, waitFor} from '@testing-library/react-native'
 
 import {
+  type ComposerOpts,
   Provider,
   useComposerControls,
   useComposerState,
@@ -18,6 +19,20 @@ const mockRemoveQueries = jest.fn()
 const mockSessionStorage = new Map<string, string>()
 const mockMediaStorage = new Map<string, Record<string, Blob>>()
 let mockReadRecovery: typeof readRecovery | undefined
+const mockSwitchOpen = jest.fn()
+let mockSwitchPrompt: {
+  title: string
+  onConfirm: () => void
+  onClose: () => void
+}
+
+jest.mock('#/components/Prompt', () => ({
+  usePromptControl: () => ({open: mockSwitchOpen}),
+  Basic: (props: typeof mockSwitchPrompt) => {
+    mockSwitchPrompt = props
+    return null
+  },
+}))
 
 jest.unmock('multiformats/cid')
 
@@ -46,7 +61,7 @@ jest.mock('#/lib/media/video/telemetry', () => ({
 }))
 
 jest.mock('@lingui/react', () => ({
-  useLingui: () => ({_: (message: unknown) => message}),
+  useLingui: () => ({_: (message: {message: string}) => message.message}),
 }))
 jest.mock('@tanstack/react-query', () => ({
   useQueryClient: () => ({removeQueries: mockRemoveQueries}),
@@ -568,4 +583,81 @@ it('can finish and clean up a post that publishes while minimized', () => {
   )
   expect(session.state).toBeUndefined()
   expect(mockRemoveQueries).toHaveBeenCalledTimes(2)
+})
+
+function targetPost(): NonNullable<ComposerOpts['quote']> {
+  return {
+    uri: 'at://did:plc:bob/app.bsky.feed.post/target',
+    cid: 'target-cid',
+    author: {did: 'did:plc:bob', handle: 'bob.test'},
+    record: {text: 'target post'},
+    indexedAt: '2026-10-31T12:00:00.000Z',
+  }
+}
+
+it.each(['replyTo', 'quote'] as const)(
+  'confirms switching a minimized post to %s without replacing its contents',
+  kind => {
+    const session = observeComposer()
+    const recoveredState = composition('keep this post')
+    const oldOnPost = jest.fn()
+    const onPost = jest.fn()
+    const post = targetPost()
+    const target =
+      kind === 'quote'
+        ? {quote: post}
+        : {replyTo: {...post, text: 'target post'}}
+    act(() => session.open!({recoveredState, onPost: oldOnPost}))
+    act(() => session.controls!.minimizeComposer())
+    act(() => session.open!({...target, onPost, logContext: 'PostReply'}))
+
+    expect(mockSwitchOpen).toHaveBeenCalledTimes(1)
+    expect(session.state?.isMinimized).toBe(true)
+    expect(session.state?.target).toBeUndefined()
+    expect(session.state?.onPost).toBe(oldOnPost)
+
+    const confirm = mockSwitchPrompt.onConfirm
+    act(() => mockSwitchPrompt.onClose())
+    act(() => confirm())
+
+    expect(session.state?.isMinimized).toBe(false)
+    expect(session.state?.recoveredState).toBe(recoveredState)
+    expect(session.state?.target).toEqual(target)
+    expect(session.state?.[kind]?.uri).toBe(post.uri)
+    expect(session.state?.onPost).toBe(onPost)
+  },
+)
+
+it('keeps the original target and contents minimized when switching is cancelled', () => {
+  const session = observeComposer()
+  const recoveredState = composition('keep this post')
+  const original = targetPost()
+  act(() => session.open!({quote: original, recoveredState}))
+  act(() => session.controls!.minimizeComposer())
+  const minimized = session.state
+  act(() =>
+    session.open!({replyTo: {...targetPost(), text: 'new reply target'}}),
+  )
+  act(() => mockSwitchPrompt.onClose())
+
+  expect(session.state).toBe(minimized)
+  act(() => session.open!({}))
+  expect(session.state?.quote).toBe(original)
+  expect(session.state?.recoveredState).toBe(recoveredState)
+})
+
+it('does not apply a pending target to a different composition', () => {
+  const session = observeComposer()
+  act(() => session.open!({text: 'first post'}))
+  act(() => session.controls!.minimizeComposer())
+  act(() => session.open!({quote: targetPost()}))
+  const confirm = mockSwitchPrompt.onConfirm
+  act(() => {
+    session.controls!.closeComposer({includeMinimized: true})
+  })
+  act(() => session.open!({text: 'another post'}))
+  act(() => confirm())
+
+  expect(session.state?.text).toBe('another post')
+  expect(session.state?.quote).toBeUndefined()
 })

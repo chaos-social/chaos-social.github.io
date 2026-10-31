@@ -492,6 +492,14 @@ export const ComposePost = ({
   }, [isComposerOpen, currentDid, activeAccountDid, replyTo, composerState])
 
   const thread = composerState.thread
+  const target = shellComposerState?.target
+
+  useEffect(() => {
+    if (!target) return
+    setReplyTo(target.replyTo)
+    setReplyToLanguages(target.replyTo?.langs ?? [])
+    composerDispatch({type: 'retarget', quoteUri: target.quote?.uri})
+  }, [target, composerDispatch])
 
   // Clear error when composer content changes, but only if all posts are
   // back within the character limit.

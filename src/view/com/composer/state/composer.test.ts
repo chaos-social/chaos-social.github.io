@@ -26,6 +26,49 @@ function createState() {
 }
 
 describe('composerReducer', () => {
+  describe('retarget', () => {
+    it.each(['reply', 'quote'])(
+      'switches to a %s while preserving thread contents and media',
+      kind => {
+        const initial = createComposerState({
+          initText: 'keep my words',
+          initMention: undefined,
+          initImageUris: undefined,
+          initQuoteUri: 'at://did:plc:alice/app.bsky.feed.post/original',
+          initInteractionSettings: undefined,
+        })
+        initial.thread.posts[0].embed.media = {type: 'images', images: []}
+        initial.draftId = 'saved-draft'
+        initial.loadedMediaMap = new Map([['photo', 'cached-photo']])
+        const state = composerReducer(initial, {type: 'add_post'})
+        const first = state.thread.posts[0]
+        const next = composerReducer(state, {
+          type: 'retarget',
+          quoteUri:
+            kind === 'quote'
+              ? 'at://did:plc:bob/app.bsky.feed.post/target'
+              : undefined,
+        })
+
+        expect(next.thread.posts[0].richtext).toBe(first.richtext)
+        expect(next.thread.posts[0].embed.media).toBe(first.embed.media)
+        expect(next.thread.posts[0].embed.link).toBe(first.embed.link)
+        if (kind === 'quote') {
+          expect(next.thread.posts[0].embed.quote?.uri).toContain(
+            '/post/target',
+          )
+        } else {
+          expect(next.thread.posts[0].embed.quote).toBeUndefined()
+        }
+        expect(next.thread.posts[1]).toBe(state.thread.posts[1])
+        expect(next.draftId).toBe('saved-draft')
+        expect(next.loadedMediaMap).toBe(state.loadedMediaMap)
+        expect(next.activePostIndex).toBe(0)
+        expect(next.isDirty).toBe(true)
+        expect(next.mutableNeedsFocusActive).toBe(true)
+      },
+    )
+  })
   describe('add_post', () => {
     it('selects the appended post and requests focus', () => {
       const state = createState()
