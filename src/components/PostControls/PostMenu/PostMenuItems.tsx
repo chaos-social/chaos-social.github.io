@@ -93,7 +93,7 @@ import {
   Mute_Stroke2_Corner0_Rounded as Mute,
   Mute_Stroke2_Corner0_Rounded as MuteIcon,
 } from '#/components/icons/Mute'
-import {Pencil_Stroke2_Corner0_Rounded as Pen} from '#/components/icons/Pencil'
+import {PencilLine_Stroke2_Corner0_Rounded as Pen} from '#/components/icons/Pencil'
 import {PersonX_Stroke2_Corner0_Rounded as PersonX} from '#/components/icons/Person'
 import {Pin_Stroke2_Corner0_Rounded as PinIcon} from '#/components/icons/Pin'
 import {SettingsGear2_Stroke2_Corner0_Rounded as Gear} from '#/components/icons/SettingsGear2'
