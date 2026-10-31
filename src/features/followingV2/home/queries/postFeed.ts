@@ -71,6 +71,7 @@ export type FeedDescriptor =
   | `likes|${ActorDid}`
   | `list|${ListUri}`
   | `posts|${PostsUriList}`
+  | 'seen'
   | 'demo'
 export interface FeedParams {
   feedCacheKey?: 'discover' | 'explore' | undefined

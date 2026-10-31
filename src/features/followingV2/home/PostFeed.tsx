@@ -42,9 +42,11 @@ import {useDisableComposerPrompt} from '#/state/preferences/disable-composer-pro
 import {useHideQuotesOfBlockedAccounts} from '#/state/preferences/hide-quotes-of-blocked-accounts'
 import {useHideUnreplyablePosts} from '#/state/preferences/hide-unreplyable-posts'
 import {useRepostCarouselEnabled} from '#/state/preferences/repost-carousel-enabled'
+import {useSeenPostsEnabled} from '#/state/preferences/seen-posts'
 import {useTrendingSettings} from '#/state/preferences/trending'
 import {STALE} from '#/state/queries'
 import {truncateAndInvalidate} from '#/state/queries/util'
+import {markSeen} from '#/state/seen-posts'
 import {useSession} from '#/state/session'
 import {useProgressGuide} from '#/state/shell/progress-guide'
 import {useSelectedFeed} from '#/state/shell/selected-feed'
@@ -348,6 +350,7 @@ let PostFeed = ({
   const disableComposerPrompt = useDisableComposerPrompt()
   const hideUnreplyablePosts = useHideUnreplyablePosts()
   const hideQuotesOfBlockedAccounts = useHideQuotesOfBlockedAccounts()
+  const seenPostsEnabled = useSeenPostsEnabled()
   const repostCarouselEnabled = useRepostCarouselEnabled()
   const pdsViewabilityStore = useMemo(() => createPdsViewabilityStore(), [feed])
   const {rightNavVisible} = useLayoutBreakpoints()
@@ -655,11 +658,15 @@ let PostFeed = ({
   const feedItems: FeedRow[] = useMemo(() => {
     const isFeed =
       feedType === 'following' || feedType === 'feedgen' || feedType === 'list'
-    const visibleSlices = (slices: FeedPostSlice[]) =>
-      filterFeedSlices(slices, {
+    const visibleSlices = (page: {
+      slices: FeedPostSlice[]
+      fetchedAt: number
+    }) =>
+      filterFeedSlices(page.slices, {
         hideUnreplyablePosts: isFeed && !!hideUnreplyablePosts,
         hideQuotesOfBlockedAccounts: isFeed && !!hideQuotesOfBlockedAccounts,
         blockedOrMutedAuthors,
+        seenBefore: isFeed && seenPostsEnabled ? page.fetchedAt : undefined,
       })
     // wraps a slice item, and replaces it with a showLessFollowup item
     // if the user has pressed show less on it
@@ -720,7 +727,7 @@ let PostFeed = ({
             reqId: string | undefined
           }[] = []
           for (const page of data.pages) {
-            for (const slice of visibleSlices(page.slices)) {
+            for (const slice of visibleSlices(page)) {
               const item = slice.items.find(
                 item => item.uri === slice.feedPostUri,
               )
@@ -775,8 +782,8 @@ let PostFeed = ({
           for (const [pageIndex, page] of data.pages.entries()) {
             const slices: FeedPostSliceOrGroup[] =
               feedType === 'following' && repostCarouselEnabled
-                ? groupReposts(visibleSlices(page.slices))
-                : visibleSlices(page.slices)
+                ? groupReposts(visibleSlices(page))
+                : visibleSlices(page)
             for (const slice of slices) {
               sliceIndex++
 
@@ -1014,6 +1021,7 @@ let PostFeed = ({
     disableComposerPrompt,
     hideUnreplyablePosts,
     hideQuotesOfBlockedAccounts,
+    seenPostsEnabled,
     repostCarouselEnabled,
     isVideoFeed,
     areVideoFeedsEnabled,
@@ -1388,6 +1396,8 @@ let PostFeed = ({
         if (seenPerPostUrisRef.current.has(post.uri)) return
         seenPerPostUrisRef.current.add(post.uri)
 
+        if (seenPostsEnabled) markSeen(post.uri)
+
         // Standard site embed view tracking
         if (
           bsky.isType(app.bsky.embed.external.view, post.embed) &&
@@ -1509,6 +1519,7 @@ let PostFeed = ({
       getPostPosition,
       ax,
       pdsViewabilityStore,
+      seenPostsEnabled,
     ],
   )
 

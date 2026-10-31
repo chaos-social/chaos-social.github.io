@@ -24,6 +24,7 @@ import {ListFeedAPI} from '#/lib/api/feed/list'
 import {MergeFeedAPI} from '#/lib/api/feed/merge'
 import {PaginatedFeedAPI} from '#/lib/api/feed/paginated'
 import {PostListFeedAPI} from '#/lib/api/feed/posts'
+import {SeenPostsFeedAPI} from '#/lib/api/feed/seen'
 import {type FeedAPI, type ReasonFeedSource} from '#/lib/api/feed/types'
 import {aggregateUserInterests} from '#/lib/api/feed/utils'
 import {
@@ -74,6 +75,7 @@ export type FeedDescriptor =
   | `likes|${ActorDid}`
   | `list|${ListUri}`
   | `posts|${PostsUriList}`
+  | 'seen'
   | 'demo'
 export interface FeedParams {
   mergeFeedEnabled?: boolean
@@ -529,6 +531,8 @@ function createApi({
       client,
       feedParams: {uris: uriList.split(',') as AtUriString[]},
     })
+  } else if (feedDesc === 'seen') {
+    return new SeenPostsFeedAPI({client})
   } else if (feedDesc === 'demo') {
     return new DemoFeedAPI({client})
   } else {

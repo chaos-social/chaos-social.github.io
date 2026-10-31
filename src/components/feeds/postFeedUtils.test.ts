@@ -1,4 +1,5 @@
 import {type FeedPostSlice} from '#/state/queries/post-feed'
+import {markSeen} from '#/state/seen-posts'
 import {
   collectPdsProfileDidsForFeedRow,
   filterFeedSlices,
@@ -19,6 +20,7 @@ function slice(
 ): FeedPostSlice {
   return {
     _reactKey: name,
+    feedPostUri: `at://${name}`,
     items: [
       {
         post: {
@@ -60,6 +62,33 @@ it('applies feed filters before a repost carousel can hide their contents', () =
       blockedOrMutedAuthors: [],
     }),
   ).toEqual(slices)
+})
+
+it('hides posts seen before the page was fetched', () => {
+  const before = slice('before')
+  const after = slice('after')
+  const never = slice('never')
+  markSeen(before.feedPostUri)
+  const fetchedAt = Date.now() + 1
+  jest.spyOn(Date, 'now').mockReturnValue(fetchedAt + 1)
+  markSeen(after.feedPostUri)
+  jest.restoreAllMocks()
+  const filters = {
+    hideUnreplyablePosts: false,
+    hideQuotesOfBlockedAccounts: false,
+    blockedOrMutedAuthors: [],
+  }
+  expect(
+    filterFeedSlices([before, after, never], {
+      ...filters,
+      seenBefore: fetchedAt,
+    }),
+  ).toEqual([after, never])
+  expect(filterFeedSlices([before, after, never], filters)).toEqual([
+    before,
+    after,
+    never,
+  ])
 })
 
 it('groups reposts without dropping ordinary posts or reordering them', () => {

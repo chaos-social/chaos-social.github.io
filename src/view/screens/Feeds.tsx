@@ -19,6 +19,7 @@ import {s} from '#/lib/styles'
 import {userStyle} from '#/lib/userstyles'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
+import {useSeenPostsEnabled} from '#/state/preferences/seen-posts'
 import {
   type SavedFeedItem,
   useGetPopularFeedsQuery,
@@ -41,6 +42,7 @@ import {SearchInput} from '#/components/forms/SearchInput'
 import {IconCircle} from '#/components/IconCircle'
 import {ChevronRight_Stroke2_Corner0_Rounded as ChevronRight} from '#/components/icons/Chevron'
 import {EditBig_Stroke2_Corner2_Rounded as EditBigIcon} from '#/components/icons/EditBig'
+import {Eye_Stroke2_Corner2_Rounded as EyeIcon} from '#/components/icons/Eye'
 import {FilterTimeline_Stroke2_Corner0_Rounded as FilterTimeline} from '#/components/icons/FilterTimeline'
 import {ListMagnifyingGlass_Stroke2_Corner0_Rounded} from '#/components/icons/ListMagnifyingGlass'
 import {ListSparkle_Stroke2_Corner0_Rounded} from '#/components/icons/ListSparkle'
@@ -107,6 +109,10 @@ type FlatlistSlice =
       type: 'noFollowingFeed'
       key: string
     }
+  | {
+      type: 'seenPostsFeed'
+      key: string
+    }
 
 export function FeedsScreen(_props: Props) {
   const pal = usePalette('default')
@@ -115,6 +121,7 @@ export function FeedsScreen(_props: Props) {
   const {isMobile} = useWebMediaQueries()
   const [query, setQuery] = useState('')
   const [isPTR, setIsPTR] = useState(false)
+  const seenPostsEnabled = useSeenPostsEnabled()
   const {
     data: savedFeeds,
     isPlaceholderData: isSavedFeedsPlaceholder,
@@ -261,6 +268,9 @@ export function FeedsScreen(_props: Props) {
                   savedFeed: s,
                 })),
             )
+            if (seenPostsEnabled) {
+              slices.push({key: 'seenPostsFeed', type: 'seenPostsFeed'})
+            }
             slices = slices.concat(
               savedFeeds.feeds
                 .filter(s => {
@@ -377,6 +387,7 @@ export function FeedsScreen(_props: Props) {
     isSearchPending,
     searchError,
     isUserSearching,
+    seenPostsEnabled,
   ])
 
   const searchBarIndex = items.findIndex(
@@ -436,6 +447,8 @@ export function FeedsScreen(_props: Props) {
         return <SavedFeedPlaceholder />
       } else if (item.type === 'savedFeed') {
         return <FeedOrFollowing savedFeed={item.savedFeed} />
+      } else if (item.type === 'seenPostsFeed') {
+        return <SeenPostsFeed />
       } else if (item.type === 'popularFeedsHeader') {
         return (
           <>
@@ -613,6 +626,45 @@ function FollowingFeed() {
         />
       </FeedCard.Header>
     </View>
+  )
+}
+
+function SeenPostsFeed() {
+  const t = useTheme()
+  const avatarShape = useEnableSquareAvatars()
+  const {_} = useLingui()
+  return (
+    <Link
+      testID="saved-feed-seen-posts"
+      to="/seen"
+      label={_(msg`Seen posts`)}
+      style={[
+        a.flex_1,
+        a.px_lg,
+        a.py_md,
+        a.border_b,
+        t.atoms.border_contrast_low,
+      ]}>
+      <FeedCard.Header>
+        <View
+          style={[
+            a.align_center,
+            a.justify_center,
+            {
+              width: 28,
+              height: 28,
+              borderRadius: getShapeRadius(avatarShape, 3, 3),
+              backgroundColor: t.palette.primary_500,
+            },
+          ]}>
+          <EyeIcon
+            style={[{width: 18, height: 18}]}
+            fill={accentForeground(t, t.palette.primary_500)}
+          />
+        </View>
+        <FeedCard.TitleAndByline title={_(msg`Seen posts`)} />
+      </FeedCard.Header>
+    </Link>
   )
 }
 

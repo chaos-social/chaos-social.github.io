@@ -352,6 +352,7 @@ const schema = z.object({
   plcDirectory: z.string().optional(),
   plcDirectoryCustom: z.string().optional(),
   hideUnreplyablePosts: z.boolean().optional(),
+  seenPostsEnabled: z.boolean().optional(),
   hideQuotesOfBlockedAccounts: z.boolean().optional(),
   pdsLabel: z
     .object({
@@ -551,6 +552,7 @@ export const defaults: Schema = {
   loadAsPngs: true,
   plcDirectory: 'https://plc.directory',
   hideUnreplyablePosts: false,
+  seenPostsEnabled: false,
   hideQuotesOfBlockedAccounts: false,
   pdsLabel: {
     enabled: true,

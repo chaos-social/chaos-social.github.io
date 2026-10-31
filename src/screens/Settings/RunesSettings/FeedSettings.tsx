@@ -29,6 +29,10 @@ import {
   useSetNoDiscoverFallback,
 } from '#/state/preferences/no-discover-fallback'
 import {
+  useSeenPostsSetting,
+  useSetSeenPostsEnabled,
+} from '#/state/preferences/seen-posts'
+import {
   useSetShowAvatarFollowButton,
   useShowAvatarFollowButton,
 } from '#/state/preferences/show-avatar-follow-button'
@@ -69,6 +73,9 @@ export function RunesUsabilityFeedSettingsScreen() {
 
   const hideUnreplyablePosts = useHideUnreplyablePosts()
   const setHideUnreplyablePosts = useSetHideUnreplyablePosts()
+
+  const seenPostsEnabled = useSeenPostsSetting()
+  const setSeenPostsEnabled = useSetSeenPostsEnabled()
 
   const hideQuotesOfBlockedAccounts = useHideQuotesOfBlockedAccounts()
   const setHideQuotesOfBlockedAccounts = useSetHideQuotesOfBlockedAccounts()
@@ -174,6 +181,28 @@ export function RunesUsabilityFeedSettingsScreen() {
           <Toggle.Platform />
         </SettingsList.Item>
       </Toggle.Item>
+      <Toggle.Item
+        testID="seenPostsToggle"
+        name="seen_posts_enabled"
+        label={l`Hide posts you’ve already seen from feeds`}
+        value={seenPostsEnabled}
+        onChange={value => setSeenPostsEnabled(value)}>
+        <SettingsList.Item>
+          <SettingsList.ItemIcon icon={EyeSlashIcon} />
+          <SettingsList.ItemText>
+            <Trans>Hide posts you’ve already seen from feeds</Trans>
+          </SettingsList.ItemText>
+          <Toggle.Platform />
+        </SettingsList.Item>
+      </Toggle.Item>
+      <SettingsList.Item>
+        <Admonition type="info" style={[a.flex_1]}>
+          <Trans>
+            Seen posts are stored on this device and listed under “Seen posts”
+            in My Feeds.
+          </Trans>
+        </Admonition>
+      </SettingsList.Item>
       <Toggle.Item
         testID="hideQuotesOfBlockedAccountsToggle"
         name="hide_quotes_of_blocked_accounts"

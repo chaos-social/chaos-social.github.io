@@ -4,6 +4,7 @@ import {
   type FeedPostSliceItem,
 } from '#/state/queries/post-feed'
 import {embedViewRecordToPostView, getEmbeddedPost} from '#/state/queries/util'
+import {getSeenAt} from '#/state/seen-posts'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
@@ -114,14 +115,24 @@ export function filterFeedSlices(
     hideUnreplyablePosts,
     hideQuotesOfBlockedAccounts,
     blockedOrMutedAuthors,
+    seenBefore,
   }: {
     hideUnreplyablePosts: boolean
     hideQuotesOfBlockedAccounts: boolean
     blockedOrMutedAuthors: string[]
+    /**
+     * Drop posts last seen before this time, usually the page's `fetchedAt`,
+     * so posts seen while scrolling stay put until the next refresh.
+     */
+    seenBefore?: number
   },
 ) {
   return slices.filter(
     slice =>
+      !(
+        seenBefore !== undefined &&
+        (getSeenAt(slice.feedPostUri) ?? Infinity) < seenBefore
+      ) &&
       !slice.items.some(
         item =>
           (hideUnreplyablePosts && item.post.viewer?.replyDisabled === true) ||

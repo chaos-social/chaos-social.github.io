@@ -114,5 +114,6 @@ export const router = new Router<AllNavigatableRoutes>({
   StarterPackWizard: '/starter-pack/create',
   VideoFeed: '/video-feed',
   Bookmarks: '/saved',
+  SeenPosts: '/seen',
   FindContactsFlow: '/find-contacts',
 })

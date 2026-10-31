@@ -161,6 +161,10 @@ const BookmarksScreen = deferredNamedScreen(
   () => require('#/screens/Bookmarks'),
   'BookmarksScreen',
 )
+const SeenPostsScreen = deferredNamedScreen(
+  () => require('#/screens/SeenPosts'),
+  'SeenPostsScreen',
+)
 const SharedPreferencesTesterScreen = deferredNamedScreen(
   () => require('#/screens/E2E/SharedPreferencesTesterScreen'),
   'SharedPreferencesTesterScreen',
@@ -952,6 +956,14 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         getComponent={() => BookmarksScreen}
         options={{
           title: title(msg`Saved Posts`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="SeenPosts"
+        getComponent={() => SeenPostsScreen}
+        options={{
+          title: title(msg`Seen Posts`),
           requireAuth: true,
         }}
       />

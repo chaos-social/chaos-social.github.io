@@ -36,6 +36,7 @@ import {Provider as HideQuotesOfBlockedAccountsProvider} from './hide-quotes-of-
 import {Provider as HideScaryFollowButtonsProvider} from './hide-scary-follow-buttons.tsx'
 import {Provider as HideSimilarAccountsRecommProvider} from './hide-similar-accounts-recommendations'
 import {Provider as HideUnreplyablePostsProvider} from './hide-unreplyable-posts'
+import {Provider as SeenPostsProvider} from './seen-posts'
 import {Provider as IgnoredAppLabelersProvider} from './ignored-app-labelers'
 import {Provider as ImageCdnHostProvider} from './image-cdn-host'
 import {Provider as InAppBrowserProvider} from './in-app-browser'
@@ -229,6 +230,7 @@ export function Provider({children}: PropsWithChildren<{}>) {
                                                                                                     <HideScaryFollowButtonsProvider>
                                                                                                       <ConfirmFollowProvider>
                                                                                                         <HideUnreplyablePostsProvider>
+                                                                                                        <SeenPostsProvider>
                                                                                                           <CompactPostsProvider>
                                                                                                             <EnableSquareAvatarsProvider>
                                                                                                               <EnableSquareButtonsProvider>
@@ -282,6 +284,7 @@ export function Provider({children}: PropsWithChildren<{}>) {
                                                                                                               </EnableSquareButtonsProvider>
                                                                                                             </EnableSquareAvatarsProvider>
                                                                                                           </CompactPostsProvider>
+                                                                                                        </SeenPostsProvider>
                                                                                                         </HideUnreplyablePostsProvider>
                                                                                                       </ConfirmFollowProvider>
                                                                                                     </HideScaryFollowButtonsProvider>

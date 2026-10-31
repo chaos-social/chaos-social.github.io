@@ -43,6 +43,7 @@ import {useDisableInfiniteScroll} from '#/state/preferences/disable-infinite-scr
 import {useHideQuotesOfBlockedAccounts} from '#/state/preferences/hide-quotes-of-blocked-accounts'
 import {useHideUnreplyablePosts} from '#/state/preferences/hide-unreplyable-posts'
 import {useRepostCarouselEnabled} from '#/state/preferences/repost-carousel-enabled'
+import {useSeenPostsEnabled} from '#/state/preferences/seen-posts'
 import {useTrendingSettings} from '#/state/preferences/trending'
 import {STALE} from '#/state/queries'
 import {
@@ -56,6 +57,7 @@ import {
   usePostFeedQuery,
 } from '#/state/queries/post-feed'
 import {truncateAndInvalidate} from '#/state/queries/util'
+import {markSeen} from '#/state/seen-posts'
 import {useSession} from '#/state/session'
 import {useProgressGuide} from '#/state/shell/progress-guide'
 import {useSelectedFeed} from '#/state/shell/selected-feed'
@@ -470,6 +472,7 @@ let PostFeed = ({
   const repostCarouselEnabled = useRepostCarouselEnabled()
   const hideUnreplyablePosts = useHideUnreplyablePosts()
   const hideQuotesOfBlockedAccounts = useHideQuotesOfBlockedAccounts()
+  const seenPostsEnabled = useSeenPostsEnabled()
   const disableComposerPrompt = useDisableComposerPrompt()
 
   if (feedType === 'following') {
@@ -609,6 +612,8 @@ let PostFeed = ({
               hideUnreplyablePosts: !!filterUnreplyablePosts,
               hideQuotesOfBlockedAccounts: !!filterQuotesOfBlockedAccounts,
               blockedOrMutedAuthors,
+              seenBefore:
+                isFeed && seenPostsEnabled ? page.fetchedAt : undefined,
             })
             const slices = useRepostCarousel
               ? groupReposts(visibleSlices)
@@ -834,6 +839,7 @@ let PostFeed = ({
     disableComposerPrompt,
     hideUnreplyablePosts,
     hideQuotesOfBlockedAccounts,
+    seenPostsEnabled,
   ])
 
   // events
@@ -1212,6 +1218,8 @@ let PostFeed = ({
         if (seenPerPostUrisRef.current.has(post.uri)) return
         seenPerPostUrisRef.current.add(post.uri)
 
+        if (seenPostsEnabled && feed !== 'seen') markSeen(post.uri)
+
         // Standard site embed view tracking
         if (
           bsky.isType(app.bsky.embed.external.view, post.embed) &&
@@ -1332,6 +1340,7 @@ let PostFeed = ({
       getPostPosition,
       ax,
       markPdsProfilesVisible,
+      seenPostsEnabled,
     ],
   )
 
