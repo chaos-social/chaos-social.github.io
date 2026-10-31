@@ -76,7 +76,29 @@ jest.mock('#/view/com/composer/Composer', () => {
   }
 })
 
-afterEach(() => jest.clearAllMocks())
+afterEach(() => {
+  jest.restoreAllMocks()
+  jest.clearAllMocks()
+})
+
+it('does not block leaving the page with an unsaved composer', () => {
+  const addListener = jest.spyOn(window, 'addEventListener')
+  const container = document.createElement('div')
+  document.body.append(container)
+  const root = createRoot(container)
+  try {
+    act(() => root.render(<Composer />))
+    expect(
+      addListener.mock.calls.some(([event]) => event === 'beforeunload'),
+    ).toBe(false)
+    const event = new Event('beforeunload', {cancelable: true})
+    window.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+  } finally {
+    act(() => root.unmount())
+    container.remove()
+  }
+})
 
 it('opens the exit prompt on the first escape and minimizes on the second', () => {
   const container = document.createElement('div')

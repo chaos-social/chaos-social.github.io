@@ -1,4 +1,3 @@
-import {useEffect} from 'react'
 import {StyleSheet, View} from 'react-native'
 import * as DismissableLayer from '@radix-ui/react-dismissable-layer'
 import * as FocusGuards from '@radix-ui/react-focus-guards'
@@ -16,19 +15,7 @@ const BOTTOM_BAR_HEIGHT = 61
 
 export function Composer() {
   const state = useComposerState()
-  const isActive = !!state
-
-  useEffect(() => {
-    if (!isActive) return
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault()
-      event.returnValue = ''
-    }
-    window.addEventListener('beforeunload', onBeforeUnload)
-    return () => window.removeEventListener('beforeunload', onBeforeUnload)
-  }, [isActive])
-
-  if (!isActive) {
+  if (!state) {
     return null
   }
 

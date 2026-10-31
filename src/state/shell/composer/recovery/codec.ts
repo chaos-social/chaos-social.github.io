@@ -13,7 +13,11 @@ export type Recovery = {
 }
 
 /** Store only composition data, never callbacks or live upload machinery. */
-export function encodeRecovery(opts: ComposerOpts, state: ComposerState) {
+export function encodeRecovery(
+  opts: ComposerOpts,
+  state: ComposerState,
+  serializeFile?: (file: File) => unknown,
+) {
   return JSON.stringify(
     {
       version: 1,
@@ -40,6 +44,13 @@ export function encodeRecovery(opts: ComposerOpts, state: ComposerState) {
         return undefined
       }
       const original = this[key]
+      if (
+        serializeFile &&
+        typeof File !== 'undefined' &&
+        original instanceof File
+      ) {
+        return serializeFile(original)
+      }
       return isCid(original) ? lexToJson(original) : value
     },
   )

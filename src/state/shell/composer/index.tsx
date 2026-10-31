@@ -1,4 +1,11 @@
-import {createContext, useContext, useMemo, useState} from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import {type BlobRef} from '@atproto/api'
 import {type ModerationDecision} from '@bsky/sdk/moderation'
 import {msg} from '@lingui/core/macro'
@@ -15,6 +22,7 @@ import {
 } from '#/state/queries/resolve-link'
 import {useSession} from '#/state/session'
 import {clearRecovery, readRecovery} from '#/state/shell/composer/recovery'
+import {type Recovery} from '#/state/shell/composer/recovery/codec'
 import {type ComposerState} from '#/view/com/composer/state/composer'
 import * as Toast from '#/components/Toast'
 import {type app} from '#/lexicons'
@@ -100,11 +108,14 @@ controlsContext.displayName = 'ComposerControlsContext'
 export function Provider({children}: React.PropsWithChildren<{}>) {
   const {_} = useLingui()
   const {currentAccount, accounts} = useSession()
+  const [recovery] = useState<
+    Recovery | Promise<Recovery | undefined> | undefined
+  >(() => (currentAccount ? readRecovery(currentAccount.did) : undefined))
+  const recoveryCancelled = useRef(false)
   const [state, setState] = useState<StateContext>(() => {
-    if (!currentAccount) return undefined
-    const recovery = readRecovery(currentAccount.did)
     if (
       !recovery ||
+      recovery instanceof Promise ||
       !accounts.some(a => a.did === recovery.opts.activeAccountDid)
     ) {
       return undefined
@@ -113,7 +124,32 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
   })
   const queryClient = useQueryClient()
 
+  useEffect(() => {
+    if (!(recovery instanceof Promise)) return
+    let cancelled = false
+    void recovery.then(restored => {
+      if (
+        cancelled ||
+        recoveryCancelled.current ||
+        !restored ||
+        !accounts.some(
+          account => account.did === restored.opts.activeAccountDid,
+        )
+      ) {
+        return
+      }
+      setState(
+        previous =>
+          previous ?? {...restored.opts, recoveredState: restored.state},
+      )
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [recovery, accounts])
+
   const openComposer = useNonReactiveCallback((opts: ComposerOpts) => {
+    recoveryCancelled.current = true
     if (state) {
       setState({...state, isMinimized: false})
       return
@@ -159,6 +195,7 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
     (opts?: {includeMinimized?: boolean}) => {
       let wasOpen = !!state && (!state.isMinimized || !!opts?.includeMinimized)
       if (wasOpen) {
+        recoveryCancelled.current = true
         setState(undefined)
         if (currentAccount) clearRecovery(currentAccount.did)
         void purgeTemporaryImageFiles()
