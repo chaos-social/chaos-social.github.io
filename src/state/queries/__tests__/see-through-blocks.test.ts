@@ -4,6 +4,7 @@ import {
   blockCauses,
   blockCausesFromViewer,
   fetchPostAnon,
+  hasBlockCause,
   isBlocked,
   withLabels,
 } from '#/state/queries/see-through-blocks'
@@ -44,6 +45,68 @@ describe('blockCauses', () => {
      */
     expect(blockedDecision().ui('contentList').blurs).toHaveLength(1)
     expect(blockedDecision().ui('contentList').noOverride).toBe(true)
+  })
+})
+
+describe('quoted blocks do not belong to the post showing them', () => {
+  const opts = {
+    userDid: 'did:plc:viewer',
+    prefs: {
+      labelers: [],
+      labels: {},
+      adultContentEnabled: false,
+      mutedWords: [],
+      hiddenPosts: [],
+    },
+    labelDefs: {},
+  } as never
+  const now = '2026-01-01T00:00:00.000Z'
+
+  function postBy(did: string, extra: Record<string, unknown> = {}) {
+    return {
+      uri: `at://${did}/app.bsky.feed.post/1`,
+      cid: 'cid',
+      author: {did, handle: 'test'},
+      record: {$type: 'app.bsky.feed.post', text: 'hi', createdAt: now},
+      indexedAt: now,
+      ...extra,
+    } as never
+  }
+
+  function quoting(blockedAuthorViewer: Record<string, unknown>) {
+    return postBy('did:plc:friendly', {
+      embed: {
+        $type: 'app.bsky.embed.record#view',
+        record: {
+          $type: 'app.bsky.embed.record#viewRecord',
+          uri: 'at://did:plc:blocked/app.bsky.feed.post/9',
+          cid: 'c2',
+          author: {did: 'did:plc:blocked', handle: 'b', viewer: blockedAuthorViewer},
+          value: {$type: 'app.bsky.feed.post', text: 'q', createdAt: now},
+          indexedAt: now,
+        },
+      },
+    })
+  }
+
+  it('is not this post*s block', () => {
+    // decidePost downgrades the quoted decision and merges it in
+    const decision = moderatePost(quoting({blocking: 'at://x'}), opts)
+    expect(hasBlockCause(decision)).toBe(true)
+    expect(isBlocked(decision)).toBe(false)
+    expect(blockCauses(decision)).toEqual([])
+  })
+
+  it('stays a block on the post itself', () => {
+    const decision = moderatePost(
+      postBy('did:plc:blocked2', {
+        author: {did: 'did:plc:blocked2', handle: 'x', viewer: {blocking: 'at://y'}},
+      }),
+      opts,
+    )
+    expect(hasBlockCause(decision)).toBe(true)
+    expect(isBlocked(decision)).toBe(true)
+    expect(blockCauses(decision).map(c => c.type)).toEqual(['blocking'])
   })
 })
 

@@ -31,32 +31,52 @@ export {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
 
 const RQKEY_ROOT = 'see-through-blocks'
 
-/**
- * Whether the decision is about a block, as opposed to a mute, a label, or
- * hidden-post preference. Only blocks are see-through; everything else keeps
- * its normal behaviour.
- */
-export function isBlocked(decision: ModerationDecision | undefined) {
-  return Boolean(decision?.blockCause)
+function isBlockCause(cause: ModerationDecision['causes'][number]) {
+  return (
+    cause.type === 'blocking' ||
+    cause.type === 'blocked-by' ||
+    cause.type === 'block-other'
+  )
 }
 
 /**
- * The block causes that applied to the signed-in view.
+ * Whether the decision is about a block of this subject, as opposed to a mute,
+ * a label, or hidden-post preference. Only blocks are see-through; everything
+ * else keeps its normal behaviour.
+ */
+export function isBlocked(decision: ModerationDecision | undefined) {
+  return blockCauses(decision).length > 0
+}
+
+/**
+ * Whether any block cause applies, including one inherited from a quoted post.
+ *
+ * `decidePost` merges the quoted post's decision and downgrades it, so a quote
+ * of a blocked account leaves a `downgraded` block cause on the top post. That
+ * is not a blocked post - it is a post with a blocked quote - but the feed
+ * still drops it, so this is the check that keeps it.
+ */
+export function hasBlockCause(decision: ModerationDecision | undefined) {
+  return Boolean(decision?.causes.some(isBlockCause))
+}
+
+/**
+ * The block causes that applied to this subject, for rendering as pills.
  *
  * Seeing through a block is a request to read the content, not to forget the
- * block happened, so these are rendered as pills on the seen-through content.
- * They cannot go back into a `ModerationDecision`: in `contentList` a block
- * cause is a blur with `noOverride`, which would hide the post again. Nor can
- * they be downgraded, because `ui()` skips downgraded causes entirely and the
- * pill would vanish. `PostAlerts` renders them through `additionalCauses`
- * instead, which is the same path the threadgate "reply hidden" pill uses.
+ * block happened. They cannot go back into a `ModerationDecision`: in
+ * `contentList` a block cause is a blur with `noOverride`, which would hide the
+ * post again. Nor can they be downgraded, because `ui()` skips downgraded
+ * causes entirely and the pill would vanish. `PostAlerts` renders them through
+ * `additionalCauses` instead, the same path the threadgate "reply hidden" pill
+ * uses.
+ *
+ * Downgraded causes are skipped: those come from quoted content, so the pill
+ * belongs on the quote, not on the post showing it.
  */
 export function blockCauses(decision: ModerationDecision | undefined) {
   return (decision?.causes ?? []).filter(
-    cause =>
-      cause.type === 'blocking' ||
-      cause.type === 'blocked-by' ||
-      cause.type === 'block-other',
+    cause => !cause.downgraded && isBlockCause(cause),
   )
 }
 

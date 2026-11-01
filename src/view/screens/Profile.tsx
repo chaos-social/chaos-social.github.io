@@ -34,7 +34,6 @@ import {resetProfilePostsQueries} from '#/state/queries/post-feed'
 import {useProfileQuery} from '#/state/queries/profile'
 import {useResolveDidQuery} from '#/state/queries/resolve-uri'
 import {
-  blockCausesFromViewer,
   useUnblockedProfileQuery,
   withLabels,
 } from '#/state/queries/see-through-blocks'
@@ -220,22 +219,23 @@ function ProfileScreenLoaded({
     enabled: seeThroughBlocks && isBlockedProfile,
   })
   /*
+   * The anonymous read is the same account, so it takes the signed-in labels
+   * and viewer. Keeping the viewer is what holds the block together: the pill,
+   * the avatar and banner blur, and the unblock button all come from it, and
+   * without it the profile looks unblocked while behaving as if it were not.
+   *
    * `useProfileShadow` compares by identity and re-renders when it changes, so
    * this must be referentially stable or the screen loops forever.
    */
   const profileSource = useMemo(
     () =>
       anonProfile.data
-        ? withLabels(anonProfile.data, profileUnshadowed)
+        ? {
+            ...withLabels(anonProfile.data, profileUnshadowed),
+            viewer: profileUnshadowed.viewer,
+          }
         : profileUnshadowed,
     [anonProfile.data, profileUnshadowed],
-  )
-  const seeThroughCauses = useMemo(
-    () =>
-      anonProfile.data
-        ? blockCausesFromViewer(profileUnshadowed.viewer)
-        : undefined,
-    [anonProfile.data, profileUnshadowed.viewer],
   )
 
   const t = useTheme()
@@ -452,7 +452,7 @@ function ProfileScreenLoaded({
           moderationOpts={moderationOpts}
           hideBackButton={hideBackButton}
           isPlaceholderProfile={isPlaceholderProfile}
-          seeThroughCauses={seeThroughCauses}
+          isSeeThrough={!!anonProfile.data}
           setMinimumHeight={setMinimumHeight}
         />
       </ScrollForwarderView>

@@ -40,7 +40,7 @@ import {useNoDiscoverFallback} from '#/state/preferences/no-discover-fallback'
 import {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
 import {STALE} from '#/state/queries'
 import {DEFAULT_LOGGED_OUT_PREFERENCES} from '#/state/queries/preferences/const'
-import {isBlocked} from '#/state/queries/see-through-blocks'
+import {hasBlockCause} from '#/state/queries/see-through-blocks'
 import {useAppviewClient, useSession} from '#/state/session'
 import * as userActionHistory from '#/state/userActionHistory'
 import {KnownError} from '#/view/com/posts/PostFeedErrorMessage'
@@ -365,10 +365,12 @@ export function usePostFeedQuery(
                     ) {
                       /*
                        * With the see-through rune on, a post dropped purely
-                       * because of a block is kept. The card replaces it with
-                       * an anonymous read of the same post; see PostFeedItem.
+                       * because of a block is kept. When the block is this
+                       * post's own, the card replaces it with an anonymous read
+                       * (see PostFeedItem); when it comes from a quoted post,
+                       * the post renders normally and the quote shows the pill.
                        */
-                      if (seeThroughBlocks && isBlocked(moderations[i])) {
+                      if (seeThroughBlocks && hasBlockCause(moderations[i])) {
                         continue
                       }
                       return undefined

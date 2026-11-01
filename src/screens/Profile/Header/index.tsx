@@ -25,7 +25,6 @@ import {usePagerHeaderContext} from '#/view/com/pager/PagerHeaderContext'
 import {LoadingPlaceholder} from '#/view/com/util/LoadingPlaceholder'
 import {atoms as a, useBreakpoints, useTheme} from '#/alf'
 import {Header} from '#/components/Layout'
-import {type AppModerationCause} from '#/components/Pills'
 import * as ProfileCard from '#/components/ProfileCard'
 import {IS_NATIVE} from '#/env'
 import {type app} from '#/lexicons'
@@ -81,8 +80,8 @@ interface Props {
   moderationOpts: ModerationOpts
   hideBackButton?: boolean
   isPlaceholderProfile?: boolean
-  /** Block causes the anonymous read of this profile no longer carries. */
-  seeThroughCauses?: AppModerationCause[]
+  /** The profile is an anonymous read of a blocked account. */
+  isSeeThrough?: boolean
   setMinimumHeight: (height: number) => void
 }
 

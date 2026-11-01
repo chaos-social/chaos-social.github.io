@@ -35,7 +35,6 @@ import {ArrowLeft_Stroke2_Corner0_Rounded as ArrowLeftIcon} from '#/components/i
 import {useLightboxControls} from '#/components/Lightbox/state'
 import {LabelsOnMe} from '#/components/moderation/LabelsOnMe'
 import {ProfileHeaderAlerts} from '#/components/moderation/ProfileHeaderAlerts'
-import {type AppModerationCause} from '#/components/Pills'
 import {useAnalytics} from '#/analytics'
 import {IS_IOS} from '#/env'
 import {useActorStatus} from '#/features/liveNow'
@@ -53,8 +52,6 @@ interface Props {
   moderation: ModerationDecision
   hideBackButton?: boolean
   isPlaceholderProfile?: boolean
-  /** Block causes the anonymous read of this profile no longer carries. */
-  seeThroughCauses?: AppModerationCause[]
 }
 
 let ProfileHeaderShell = ({
@@ -63,7 +60,6 @@ let ProfileHeaderShell = ({
   moderation,
   hideBackButton = false,
   isPlaceholderProfile,
-  seeThroughCauses,
 }: React.PropsWithChildren<Props>): React.ReactNode => {
   const t = useTheme()
   const {gtMobile} = useBreakpoints()
@@ -287,7 +283,6 @@ let ProfileHeaderShell = ({
           <ProfileHeaderAlerts
             moderation={moderation}
             profile={profile}
-            additionalCauses={seeThroughCauses}
             style={[
               a.px_lg,
               a.pt_xs,

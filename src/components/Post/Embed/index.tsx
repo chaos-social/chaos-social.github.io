@@ -8,8 +8,6 @@ import {
   moderateViewExternal,
 } from '@bsky/sdk/moderation'
 import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
-import {msg} from '@lingui/core/macro'
-import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
 import {useQueryClient} from '@tanstack/react-query'
 
@@ -23,7 +21,10 @@ import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
 import {useDirectFetchEmbedRecord} from '#/state/queries/direct-fetch-record'
 import {unstableCacheProfileView} from '#/state/queries/profile'
-import {useUnblockedPostQuery} from '#/state/queries/see-through-blocks'
+import {
+  blockCausesFromViewer,
+  useUnblockedPostQuery,
+} from '#/state/queries/see-through-blocks'
 import {useSession} from '#/state/session'
 import {Link} from '#/view/com/util/Link'
 import {PostMeta} from '#/view/com/util/PostMeta'
@@ -38,6 +39,7 @@ import {GalleryBleed} from '#/components/images/Gallery'
 import {ContentHider} from '#/components/moderation/ContentHider'
 import {PostAlerts} from '#/components/moderation/PostAlerts'
 import * as ReportDialogMetadataContext from '#/components/moderation/ReportDialog/ReportDialogMetadataContext'
+import {type AppModerationCause} from '#/components/Pills'
 import {AtCard} from '#/components/Post/Embed/AtCard'
 import {getAtCardProvider} from '#/components/Post/Embed/AtCard/providers'
 import {StandardSiteEmbed} from '#/components/Post/Embed/StandardSiteEmbed'
@@ -277,7 +279,6 @@ function RecordEmbed({
 }: CommonProps & {
   embed: TEmbed
 }) {
-  const {_} = useLingui()
   const directFetchEnabled = useDirectFetchRecords()
   const shouldDirectFetch =
     (embed.type === 'post_blocked' ||
@@ -383,7 +384,6 @@ function RecordEmbed({
           <DirectFetchEmbed
             {...rest}
             embed={record}
-            visibilityLabel={_(msg`Blocked`)}
           />
         )
       }
@@ -408,7 +408,7 @@ function RecordEmbed({
           <DirectFetchEmbed
             {...rest}
             embed={anonEmbed}
-            visibilityLabel={_(msg`Blocked - shown anonymously`)}
+            blockedAuthor={embed.view.author as never}
           />
         )
       }
@@ -420,7 +420,6 @@ function RecordEmbed({
           <DirectFetchEmbed
             {...rest}
             embed={record}
-            visibilityLabel={_(msg`Blocked`)}
           />
         )
       }
@@ -448,8 +447,6 @@ function RecordEmbed({
           <DirectFetchEmbed
             {...rest}
             embed={record}
-            visibilityLabel={_(msg`Removed by author`)}
-            visibilityLabelOwner={_(msg`Removed by you`)}
           />
         )
       }
@@ -469,20 +466,14 @@ function RecordEmbed({
 
 export function DirectFetchEmbed({
   embed,
-  visibilityLabel,
-  visibilityLabelOwner,
+  blockedAuthor,
   ...rest
 }: Omit<CommonProps, 'viewContext'> & {
   embed: EmbedType<'post'>
   viewContext?: PostEmbedViewContext
-  visibilityLabel: string
-  visibilityLabelOwner?: string
+  /** Viewer state of the blocked author, from the original `viewBlocked`. */
+  blockedAuthor?: app.bsky.actor.defs.ProfileViewBasic
 }) {
-  const {currentAccount} = useSession()
-  const isViewerOwner = currentAccount?.did
-    ? embed.view.uri.includes(currentAccount.did)
-    : false
-
   return (
     <View>
       <QuoteEmbed
@@ -491,11 +482,7 @@ export function DirectFetchEmbed({
         viewContext={rest.viewContext}
         isWithinQuote={rest.isWithinQuote}
         allowNestedQuotes={rest.allowNestedQuotes}
-        visibilityLabel={
-          isViewerOwner && visibilityLabelOwner
-            ? visibilityLabelOwner
-            : visibilityLabel
-        }
+        additionalCauses={blockCausesFromViewer(blockedAuthor?.viewer)}
       />
     </View>
   )
@@ -537,10 +524,12 @@ export function QuoteEmbed({
   allowNestedQuotes: parentAllowNestedQuotes,
   showPronouns,
   viewContext,
+  additionalCauses,
 }: Omit<CommonProps, 'viewContext'> & {
   embed: EmbedType<'post'>
   viewContext?: PostEmbedViewContext
-  visibilityLabel?: string
+  /** Moderation causes of the quoted post that the view itself does not carry. */
+  additionalCauses?: AppModerationCause[]
   linkDisabled?: boolean
 }) {
   const shapePreference = useEnableSquareButtons()
@@ -611,6 +600,7 @@ export function QuoteEmbed({
           post={quote}
           modui={moderation.ui('contentView')}
           style={[a.py_xs]}
+          additionalCauses={additionalCauses}
         />
       ) : null}
       {richText?.text ? (

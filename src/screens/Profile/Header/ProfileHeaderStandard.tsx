@@ -50,7 +50,6 @@ import {
   KnownFollowers,
   shouldShowKnownFollowers,
 } from '#/components/KnownFollowers'
-import {type AppModerationCause} from '#/components/Pills'
 import * as Prompt from '#/components/Prompt'
 import {PronounPill} from '#/components/PronounPill'
 import {RichText} from '#/components/RichText'
@@ -81,7 +80,8 @@ interface Props {
   hideBackButton?: boolean
   isPlaceholderProfile?: boolean
   labeler?: app.bsky.labeler.defs.LabelerViewDetailed
-  seeThroughCauses?: AppModerationCause[]
+  /** The profile is an anonymous read of a blocked account. */
+  isSeeThrough?: boolean
 }
 
 let ProfileHeaderStandard = ({
@@ -91,7 +91,7 @@ let ProfileHeaderStandard = ({
   moderationOpts,
   hideBackButton = false,
   isPlaceholderProfile,
-  seeThroughCauses,
+  isSeeThrough,
 }: Props): React.ReactNode => {
   const t = useTheme()
   const profile =
@@ -109,10 +109,16 @@ let ProfileHeaderStandard = ({
   const [hasSeenAllSuggestedFollows, setHasSeenAllSuggestedFollows] =
     useState(false)
   const [joinDateTooltipVisible, setJoinDateTooltipVisible] = useState(false)
+  /*
+   * A seen-through profile keeps its block pill and avatar blur, but the bio
+   * and metrics are the content the rune exists to show, so the hide does not
+   * apply to them.
+   */
   const isBlockedUser =
-    profile.viewer?.blocking ||
-    profile.viewer?.blockedBy ||
-    profile.viewer?.blockingByList
+    !isSeeThrough &&
+    (profile.viewer?.blocking ||
+      profile.viewer?.blockedBy ||
+      profile.viewer?.blockingByList)
 
   const dateJoined = useMemo(() => {
     if (!profile.createdAt) return ''
@@ -163,7 +169,6 @@ let ProfileHeaderStandard = ({
       <ProfileHeaderShell
         profile={profile}
         moderation={moderation}
-        seeThroughCauses={seeThroughCauses}
         hideBackButton={hideBackButton}
         isPlaceholderProfile={isPlaceholderProfile}>
         <View

@@ -304,16 +304,26 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
     const isPostHiddenByThreadgate = threadgateHiddenReplies.has(post.uri)
     const isControlledByViewer =
       new AtUri(threadRootUri).host === currentAccount?.did
-    return isControlledByViewer && isPostHiddenByThreadgate
-      ? [
-          {
-            type: 'reply-hidden',
-            source: {type: 'user', did: currentAccount?.did},
-            priority: 6,
-          },
-        ]
-      : []
-  }, [post, currentAccount?.did, threadgateHiddenReplies, threadRootUri])
+    const threadgateAlerts: AppModerationCause[] =
+      isControlledByViewer && isPostHiddenByThreadgate
+        ? [
+            {
+              type: 'reply-hidden',
+              source: {type: 'user', did: currentAccount?.did},
+              priority: 6,
+            },
+          ]
+        : []
+    return item.seeThroughCauses?.length
+      ? [...item.seeThroughCauses, ...threadgateAlerts]
+      : threadgateAlerts
+  }, [
+    post,
+    currentAccount?.did,
+    threadgateHiddenReplies,
+    threadRootUri,
+    item.seeThroughCauses,
+  ])
   const onlyFollowersCanReply = !!threadgateRecord?.allow?.find(
     rule => rule.$type === 'app.bsky.feed.threadgate#followerRule',
   )

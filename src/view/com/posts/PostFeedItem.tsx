@@ -125,6 +125,10 @@ export function PostFeedItem({
 }): React.ReactNode {
   const seeThroughBlocks = useSeeThroughBlocks()
   const moderationOpts = useModerationOpts()
+  /*
+   * Only this post's own block is replaced with an anonymous read. A block
+   * inherited from a quoted post is not this post's, so it is left to the quote.
+   */
   const blocked = seeThroughBlocks && isBlocked(moderation)
   const unblocked = useUnblockedPostQuery({
     uri: post.uri,
