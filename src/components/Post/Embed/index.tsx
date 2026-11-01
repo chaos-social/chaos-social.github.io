@@ -42,6 +42,8 @@ import * as ReportDialogMetadataContext from '#/components/moderation/ReportDial
 import {type AppModerationCause} from '#/components/Pills'
 import {AtCard} from '#/components/Post/Embed/AtCard'
 import {getAtCardProvider} from '#/components/Post/Embed/AtCard/providers'
+import {GameEmbed} from '#/components/Post/Embed/GameEmbed'
+import {getGameEmbedFromRecord} from '#/components/Post/Embed/GameEmbed/utils'
 import {StandardSiteEmbed} from '#/components/Post/Embed/StandardSiteEmbed'
 import {isStandardSiteEmbed} from '#/components/Post/Embed/StandardSiteEmbed/utils'
 import {ThemeEmbed} from '#/components/Post/Embed/ThemeEmbed'
@@ -167,6 +169,25 @@ function MediaEmbed({
       )
     }
     case 'link': {
+      /*
+       * Read from the record, not the view: the AppView strips unknown fields
+       * off `external`, so the attachment only exists on the raw post.
+       */
+      const game = getGameEmbedFromRecord(rest.post?.record)
+      if (game) {
+        return (
+          <ContentHider
+            modui={rest.moderation?.ui('contentMedia')}
+            activeStyle={[a.mt_sm]}>
+            <GameEmbed
+              view={embed.view.external}
+              game={game}
+              onOpen={rest.onOpen}
+              style={rest.style}
+            />
+          </ContentHider>
+        )
+      }
       if (isThemeEmbed(embed.view.external)) {
         return (
           <ContentHider

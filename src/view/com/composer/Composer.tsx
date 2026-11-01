@@ -142,6 +142,9 @@ import {GifAltTextDialog} from '#/view/com/composer/GifAltText'
 import {LabelsBtn} from '#/view/com/composer/labels/LabelsBtn'
 import {Gallery} from '#/view/com/composer/photos/Gallery'
 import {OpenCameraBtn} from '#/view/com/composer/photos/OpenCameraBtn'
+import {type GameMedia} from '#/view/com/composer/state/composer'
+import {GamePreview} from '#/view/com/composer/games/GamePreview'
+import {SelectGameBtn} from '#/view/com/composer/games/SelectGameBtn'
 import {SelectGifBtn} from '#/view/com/composer/photos/SelectGifBtn'
 import {SuggestedLanguage} from '#/view/com/composer/select-language/SuggestedLanguage'
 import {TagsBtn} from '#/view/com/composer/tags/TagsBtn'
@@ -1002,6 +1005,17 @@ export const ComposePost = ({
   const handleSaveDraft = useCallback(async () => {
     setError('')
     if (!validateDraftTextOrError()) {
+      return
+    }
+    /*
+     * Drafts can't carry a game file: the record shape has no slot for a blob
+     * and the file is not stored locally. Blocking is better than silently
+     * dropping the attachment and losing the user's work.
+     */
+    if (composerState.thread.posts.some(p => p.embed.media?.type === 'game')) {
+      setError(
+        l`Games can’t be saved in drafts yet. Post it, or remove the game first.`,
+      )
       return
     }
     const isNewDraft = !composerState.draftId
@@ -2548,6 +2562,13 @@ function ComposerEmbeds({
         <Gallery images={embed.media.images} dispatch={dispatch} />
       )}
 
+      {embed.media?.type === 'game' && (
+        <GamePreview
+          game={embed.media}
+          onRemove={() => dispatch({type: 'embed_remove_game'})}
+        />
+      )}
+
       {embed.media?.type === 'gif' && (
         <View style={[a.relative, a.mt_lg]} key={embed.media.gif.url}>
           <ExternalEmbedGif
@@ -2805,6 +2826,13 @@ function ComposerFooter({
     [dispatch],
   )
 
+  const onSelectGame = useCallback(
+    (game: Omit<GameMedia, 'type'>) => {
+      dispatch({type: 'embed_add_game', game})
+    },
+    [dispatch],
+  )
+
   /*
    * Reset if the user clears any selected media
    */
@@ -2887,6 +2915,9 @@ function ComposerFooter({
                 onAdd={onImageAdd}
               />
               <SelectGifBtn onSelectGif={onSelectGif} disabled={!!media} />
+              {IS_WEB && (
+                <SelectGameBtn onSelectGame={onSelectGame} disabled={!!media} />
+              )}
               {IS_WEB && gtPhone ? (
                 <EmojiPicker.Root nextFocusRef={textInputRef}>
                   <EmojiPicker.Trigger label={l`Open emoji picker`}>

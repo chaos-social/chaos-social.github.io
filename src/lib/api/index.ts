@@ -13,6 +13,7 @@ import {type LinkResolvers} from '#/lib/api/resolve'
 import {withCreator} from '#/lib/at-card'
 import {IMAGE_SIZE_CONFIG_POSTS} from '#/lib/constants'
 import {MAX_TAGS} from '#/lib/constants'
+import {IFRAME_HOST} from '#/lib/strings/embed-player'
 import {isNetworkError} from '#/lib/strings/errors'
 import {
   applyFacetSyntax,
@@ -36,6 +37,12 @@ import {
   type PostDraft,
   type ThreadDraft,
 } from '#/view/com/composer/state/composer'
+import {
+  createGameDescription,
+  GAME_FIELD,
+  getGameMimeType,
+  getGameUrl,
+} from '#/components/Post/Embed/GameEmbed/utils'
 import {IS_IOS, IS_WEB} from '#/env'
 import {app, chat, com} from '#/lexicons'
 import * as bsky from '#/types/bsky'
@@ -517,6 +524,39 @@ async function resolveMedia(
       aspectRatio,
       presentation:
         videoDraft.video?.mimeType === 'image/gif' ? 'gif' : 'default',
+    }
+  }
+  if (embedDraft.media?.type === 'game') {
+    const game = embedDraft.media
+    onStateChange?.(t`Uploading game...`)
+    const uploaded = await uploadBlob(
+      pdsClient,
+      game.file,
+      getGameMimeType(game.kind),
+    )
+    const external = {
+      uri: getGameUrl(
+        IFRAME_HOST,
+        pdsClient.assertDid,
+        uploaded.blob,
+      ) as UriString,
+      title: game.title,
+      description: createGameDescription(game.kind, game.alt),
+      /*
+       * Extra field on `external`. The AppView keeps unknown fields here, so
+       * both our renderer and the player page can read the attachment.
+       */
+      [GAME_FIELD]: {
+        kind: game.kind,
+        file: uploaded.blob,
+        width: game.width,
+        height: game.height,
+        alt: game.alt || undefined,
+      },
+    }
+    return {
+      $type: 'app.bsky.embed.external',
+      external,
     }
   }
   if (embedDraft.media?.type === 'gif') {

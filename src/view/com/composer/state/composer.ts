@@ -30,6 +30,7 @@ import {
   type LinkFacetMatch,
   suggestLinkCardUri,
 } from '#/view/com/composer/text-input/text-input-util'
+import {type GameKind} from '#/components/Post/Embed/GameEmbed/utils'
 import {type Gif} from '#/features/gifPicker/types'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
@@ -63,6 +64,21 @@ type GifMedia = {
   alt: string
 }
 
+/**
+ * A game attached to the post. Held in memory until submit because the file is
+ * only uploadable from the composer's `<input type="file">`; drafts persist the
+ * metadata and ask for the file again.
+ */
+export type GameMedia = {
+  type: 'game'
+  file: Blob
+  kind: GameKind
+  title: string
+  alt: string
+  width?: number
+  height?: number
+}
+
 type Link = {
   type: 'link'
   /*
@@ -78,7 +94,13 @@ type Link = {
 export type EmbedDraft = {
   // We'll always submit quote and actual media (images, video, gifs) chosen by the user.
   quote: Link | undefined
-  media: ImagesMedia | GalleryMedia | VideoMedia | GifMedia | undefined
+  media:
+    | ImagesMedia
+    | GalleryMedia
+    | VideoMedia
+    | GifMedia
+    | GameMedia
+    | undefined
   // This field may end up ignored if we have more important things to display than a link card:
   link: Link | undefined
 }
@@ -116,6 +138,9 @@ export type PostAction =
   | {type: 'embed_add_gif'; gif: Gif}
   | {type: 'embed_update_gif'; alt: string}
   | {type: 'embed_remove_gif'}
+  | {type: 'embed_add_game'; game: Omit<GameMedia, 'type'>}
+  | {type: 'embed_update_game'; alt: string}
+  | {type: 'embed_remove_game'}
 
 export type ThreadDraft = {
   posts: PostDraft[]
@@ -674,6 +699,39 @@ function postReducer(state: PostDraft, action: PostAction): PostDraft {
         embed: {
           ...state.embed,
           media: nextMedia,
+        },
+      }
+    }
+    case 'embed_add_game': {
+      // One game per post, and it displaces any other media like video does.
+      if (state.embed.media) return state
+      return {
+        ...state,
+        embed: {
+          ...state.embed,
+          media: {type: 'game', ...action.game},
+        },
+      }
+    }
+    case 'embed_update_game': {
+      const prevMedia = state.embed.media
+      if (prevMedia?.type !== 'game') return state
+      return {
+        ...state,
+        embed: {
+          ...state.embed,
+          media: {...prevMedia, alt: action.alt},
+        },
+      }
+    }
+    case 'embed_remove_game': {
+      const prevMedia = state.embed.media
+      if (prevMedia?.type !== 'game') return state
+      return {
+        ...state,
+        embed: {
+          ...state.embed,
+          media: undefined,
         },
       }
     }

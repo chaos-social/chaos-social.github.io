@@ -1,0 +1,45 @@
+{
+  "lexicon": 1,
+  "id": "app.witchsky.embed.game",
+  "defs": {
+    "main": {
+      "type": "object",
+      "description": "A playable game attached to an external embed. Stored as the `witchsky$game` field on `app.bsky.embed.external#external`, so clients without support render the surrounding link card and the `uri` player page.",
+      "required": ["kind", "file"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "knownValues": ["flash", "jar", "vnds"],
+          "description": "Runtime required to play the file."
+        },
+        "file": {
+          "type": "blob",
+          "accept": [
+            "application/x-shockwave-flash",
+            "application/java-archive",
+            "application/zip",
+            "application/gzip"
+          ],
+          "maxSize": 10000000,
+          "description": "The playable file. Matches the upstream PDS default blob limit."
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Player width in pixels. Defaults to 4:3 with `height` when absent."
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Player height in pixels. Defaults to 4:3 with `width` when absent."
+        },
+        "alt": {
+          "type": "string",
+          "maxLength": 1000,
+          "maxGraphemes": 1000,
+          "description": "Description of the game for assistive technology."
+        }
+      }
+    }
+  }
+}

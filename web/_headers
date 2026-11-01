@@ -1,4 +1,6 @@
 /sw.js
   Cache-Control: no-cache
+/static/iframe/vnds/sw.js
+  Cache-Control: no-cache
 /pwa/manifest.webmanifest
   Cache-Control: no-cache

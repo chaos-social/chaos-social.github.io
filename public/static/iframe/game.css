@@ -1,0 +1,31 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+}
+
+#root {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+#root > * {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.status {
+  font: 500 14px/1.4 system-ui, sans-serif;
+  color: #c8c4c2;
+  text-align: center;
+  padding: 16px;
+  max-width: 34em;
+}
+
+.status--error {
+  color: #ff9d93;
+}

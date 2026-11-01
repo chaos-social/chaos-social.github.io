@@ -4,7 +4,11 @@ import {isDid} from '@atproto/api'
 import {isValidHandle} from '#/lib/strings/handles'
 import {IS_WEB} from '#/env'
 
-const IFRAME_HOST = IS_WEB
+/**
+ * Origin the iframe-hosted players are served from. Also used for game player
+ * pages, which need to be reachable by clients that can't run the app.
+ */
+export const IFRAME_HOST = IS_WEB
   ? window.location.host === 'localhost:8100'
     ? 'http://localhost:8100'
     : 'https://witchsky.app'

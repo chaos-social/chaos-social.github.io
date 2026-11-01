@@ -37,6 +37,10 @@ jest.mock('#/components/Post/Embed/ThemeEmbed', () => ({}))
 jest.mock('#/components/Post/Embed/ThemeEmbed/utils', () => ({
   isThemeEmbed: () => false,
 }))
+jest.mock('#/components/Post/Embed/GameEmbed', () => ({}))
+jest.mock('#/components/Post/Embed/GameEmbed/utils', () => ({
+  getGameEmbedFromRecord: () => undefined,
+}))
 jest.mock('#/components/images/Gallery', () => ({}))
 jest.mock('#/components/moderation/PostAlerts', () => ({}))
 jest.mock('#/components/PostTags', () => ({}))
