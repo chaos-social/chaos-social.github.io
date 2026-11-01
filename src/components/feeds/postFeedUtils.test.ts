@@ -2,6 +2,7 @@ import {type FeedPostSlice} from '#/state/queries/post-feed'
 import {markSeen} from '#/state/seen-posts'
 import {
   collectPdsProfileDidsForFeedRow,
+  collectPostUrisForFeedRow,
   filterFeedSlices,
   groupReposts,
 } from '#/components/feeds/postFeedUtils'
@@ -24,6 +25,7 @@ function slice(
     items: [
       {
         post: {
+          uri: `at://did:plc:${name}/app.bsky.feed.post/1`,
           author: {did: `did:plc:${name}`},
           viewer: {replyDisabled},
           embed,
@@ -126,4 +128,28 @@ it('collects authors from post, carousel, and video rows for PDS priorities', ()
       items: slices.flatMap(s => s.items),
     }),
   ]).toEqual(['did:plc:a', 'did:plc:b'])
+})
+
+it('collects only the row’s own post URIs, not quoted ones', () => {
+  const slices = [slice('a'), slice('b')]
+  expect(
+    collectPostUrisForFeedRow({
+      type: 'sliceItem',
+      slice: slices[1],
+      indexInSlice: 0,
+    }),
+  ).toEqual(['at://did:plc:b/app.bsky.feed.post/1'])
+  expect(collectPostUrisForFeedRow({type: 'reposts', items: slices})).toEqual([
+    'at://did:plc:a/app.bsky.feed.post/1',
+    'at://did:plc:b/app.bsky.feed.post/1',
+  ])
+  expect(
+    collectPostUrisForFeedRow({
+      type: 'videoGridRow',
+      items: slices.flatMap(s => s.items),
+    }),
+  ).toEqual([
+    'at://did:plc:a/app.bsky.feed.post/1',
+    'at://did:plc:b/app.bsky.feed.post/1',
+  ])
 })

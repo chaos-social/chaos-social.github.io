@@ -38,6 +38,7 @@ import {
   createPdsViewabilityStore,
   PdsViewabilityProvider,
 } from '#/state/pds-viewability'
+import {PostVisibilityProvider} from '#/state/post-visibility'
 import {useDisableComposerPrompt} from '#/state/preferences/disable-composer-prompt'
 import {useHideQuotesOfBlockedAccounts} from '#/state/preferences/hide-quotes-of-blocked-accounts'
 import {useHideUnreplyablePosts} from '#/state/preferences/hide-unreplyable-posts'
@@ -69,6 +70,7 @@ import {
 import {ProgressGuide, SuggestedFollows} from '#/components/FeedInterstitials'
 import {
   collectPdsProfileDidsForFeedRow,
+  collectPostUrisForFeedRow,
   type FeedPostSliceOrGroup,
   filterFeedSlices,
   groupReposts,
@@ -353,6 +355,7 @@ let PostFeed = ({
   const seenPostsEnabled = useSeenPostsEnabled()
   const repostCarouselEnabled = useRepostCarouselEnabled()
   const pdsViewabilityStore = useMemo(() => createPdsViewabilityStore(), [feed])
+  const postVisibilityStore = useMemo(() => createPdsViewabilityStore(), [feed])
   const {rightNavVisible} = useLayoutBreakpoints()
   const areVideoFeedsEnabled = IS_NATIVE
 
@@ -1387,6 +1390,7 @@ let PostFeed = ({
   const onItemSeen = useCallback(
     (item: FeedRow) => {
       pdsViewabilityStore.markVisible(collectPdsProfileDidsForFeedRow(item))
+      postVisibilityStore.markVisible(collectPostUrisForFeedRow(item))
       feedFeedback.onItemSeen(item)
       onTopRowSeen(item)
 
@@ -1519,60 +1523,63 @@ let PostFeed = ({
       getPostPosition,
       ax,
       pdsViewabilityStore,
+      postVisibilityStore,
       seenPostsEnabled,
     ],
   )
 
   return (
     <PdsViewabilityProvider store={pdsViewabilityStore}>
-      <View testID={testID} style={[style, userStyle('wsky-feed')]}>
-        <ScrollProvider {...scrollHandlers}>
-          <List
-            testID={testID ? `${testID}-flatlist` : undefined}
-            ref={scrollElRef}
-            data={feedItems}
-            keyExtractor={(item: FeedRow) => item.key}
-            renderItem={renderItem}
-            ListFooterComponent={FeedFooter}
-            ListHeaderComponent={ListHeaderComponent}
-            refreshing={isPTRing}
-            onRefresh={() => void onRefresh()}
-            headerOffset={headerOffset}
-            progressViewOffset={progressViewOffset}
-            contentContainerStyle={{
-              minHeight: Dimensions.get('window').height * 1.5,
-            }}
-            onScrolledDownChange={handleScrolledDownChange}
-            onEndReached={() => void onEndReached()}
-            onEndReachedThreshold={2} // number of posts left to trigger load more
-            removeClippedSubviews={true}
-            extraData={extraData}
-            desktopFixedHeight={
-              desktopFixedHeightOffset ? desktopFixedHeightOffset : true
-            }
-            initialNumToRender={
-              initialNumToRenderOverride ?? initialNumToRender
-            }
-            windowSize={9}
-            maxToRenderPerBatch={IS_IOS ? 5 : 1}
-            updateCellsBatchingPeriod={40}
-            onItemNearViewport={markPdsProfilesNearViewport}
-            onItemSeen={onItemSeen}
-            maintainVisibleContentPosition={
-              isAnchored ? {minIndexForVisible: leadingRowCount} : undefined
-            }
-            onLayout={isAnchored ? listRest.onLayout : undefined}
-          />
-        </ScrollProvider>
-        {isAnchored && (
-          <PrependPill
-            visible={pill.visible}
-            count={pill.count}
-            authors={pill.authors}
-            onPress={pill.onPress}
-          />
-        )}
-      </View>
+      <PostVisibilityProvider store={postVisibilityStore}>
+        <View testID={testID} style={[style, userStyle('wsky-feed')]}>
+          <ScrollProvider {...scrollHandlers}>
+            <List
+              testID={testID ? `${testID}-flatlist` : undefined}
+              ref={scrollElRef}
+              data={feedItems}
+              keyExtractor={(item: FeedRow) => item.key}
+              renderItem={renderItem}
+              ListFooterComponent={FeedFooter}
+              ListHeaderComponent={ListHeaderComponent}
+              refreshing={isPTRing}
+              onRefresh={() => void onRefresh()}
+              headerOffset={headerOffset}
+              progressViewOffset={progressViewOffset}
+              contentContainerStyle={{
+                minHeight: Dimensions.get('window').height * 1.5,
+              }}
+              onScrolledDownChange={handleScrolledDownChange}
+              onEndReached={() => void onEndReached()}
+              onEndReachedThreshold={2} // number of posts left to trigger load more
+              removeClippedSubviews={true}
+              extraData={extraData}
+              desktopFixedHeight={
+                desktopFixedHeightOffset ? desktopFixedHeightOffset : true
+              }
+              initialNumToRender={
+                initialNumToRenderOverride ?? initialNumToRender
+              }
+              windowSize={9}
+              maxToRenderPerBatch={IS_IOS ? 5 : 1}
+              updateCellsBatchingPeriod={40}
+              onItemNearViewport={markPdsProfilesNearViewport}
+              onItemSeen={onItemSeen}
+              maintainVisibleContentPosition={
+                isAnchored ? {minIndexForVisible: leadingRowCount} : undefined
+              }
+              onLayout={isAnchored ? listRest.onLayout : undefined}
+            />
+          </ScrollProvider>
+          {isAnchored && (
+            <PrependPill
+              visible={pill.visible}
+              count={pill.count}
+              authors={pill.authors}
+              onPress={pill.onPress}
+            />
+          )}
+        </View>
+      </PostVisibilityProvider>
     </PdsViewabilityProvider>
   )
 }

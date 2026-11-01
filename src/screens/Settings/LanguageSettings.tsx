@@ -55,6 +55,7 @@ export function LanguageSettingsScreen({}: Props) {
     {value: 'kagi', label: l`Kagi Translate`},
     {value: 'papago', label: l`Naver Papago`},
     {value: 'libreTranslate', label: l`LibreTranslate`},
+    {value: 'mymemory', label: l`MyMemory (in-app)`},
   ] as const
 
   // changing langPrefs causes a slow re-render, so we use a local state copy
@@ -386,6 +387,15 @@ export function LanguageSettingsScreen({}: Props) {
                     <Trans>Change instance</Trans>
                   </InlineLinkText>
                 </View>
+              )}
+              {translationServicePreference === 'mymemory' && (
+                <Text style={[a.leading_snug]}>
+                  <Trans>
+                    MyMemory translates posts in the app, including on the web.
+                    Its free daily limit can be raised by setting an email in
+                    Runes → Extra settings.
+                  </Trans>
+                </Text>
               )}
             </View>
           </SettingsList.Group>

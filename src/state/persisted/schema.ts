@@ -382,8 +382,11 @@ const schema = z.object({
     'kagi',
     'papago',
     'libreTranslate',
+    'mymemory',
   ]),
   libreTranslateInstance: z.string().optional(),
+  autoTranslatePosts: z.boolean().optional(),
+  mymemoryEmail: z.string().optional(),
 
   openRouterApiKey: z.string().optional(),
   openRouterModel: z.string().optional(),
@@ -565,6 +568,8 @@ export const defaults: Schema = {
   },
   translationServicePreference: 'google',
   libreTranslateInstance: 'https://libretranslate.com/',
+  autoTranslatePosts: false,
+  mymemoryEmail: undefined,
 
   openRouterApiKey: undefined,
   openRouterModel: DEFAULT_ALT_TEXT_AI_MODEL,

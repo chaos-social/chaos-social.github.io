@@ -1088,6 +1088,10 @@ export type Events = {
      */
     textLength: number
     googleTranslate: boolean
+    /** Translated automatically when it scrolled into view, not by a tap. */
+    isAuto?: boolean
+    /** False when the translation opens an external service instead. */
+    inline?: boolean
   }
   'translate:result': {
     success: boolean

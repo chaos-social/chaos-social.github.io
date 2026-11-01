@@ -22,6 +22,8 @@ import {
   type StateContext as FeedFeedbackStateContext,
   useFeedFeedback,
 } from '#/state/feed-feedback'
+import {createPdsViewabilityStore} from '#/state/pds-viewability'
+import {PostVisibilityProvider} from '#/state/post-visibility'
 import {useAlsoLikedCollapseByDefault} from '#/state/preferences/also-liked-collapse-by-default'
 import {useAlsoLikedFeedEnabled} from '#/state/preferences/also-liked-feed-enabled'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
@@ -107,6 +109,7 @@ export function PostThread({
   const {height: windowHeight} = useWindowDimensions()
   const moderationOpts = useModerationOpts()
   const anchorPostSource = useUnstablePostSource(uri)
+  const postVisibilityStore = useMemo(() => createPdsViewabilityStore(), [uri])
   const feedFeedback = useFeedFeedback(
     anchorPostSource?.feedSourceInfo,
     hasSession,
@@ -146,6 +149,8 @@ export function PostThread({
     ) {
       const post = anchor.value.post
       seenPostUriRef.current = post.uri
+      // The anchor renders outside the list, so mark it visible here.
+      postVisibilityStore.markVisible([post.uri])
 
       ax.metric('post:view', {
         uri: post.uri,
@@ -155,7 +160,7 @@ export function PostThread({
         feedDescriptor: feedFeedback.feedDescriptor,
       })
     }
-  }, [ax, anchor, feedFeedback.feedDescriptor])
+  }, [ax, anchor, feedFeedback.feedDescriptor, postVisibilityStore])
 
   // Track post:view events for parent posts and replies (non-anchor posts)
   const trackThreadItemView = usePostViewTracking('PostThreadItem')
@@ -900,83 +905,87 @@ export function PostThread({
           onRetry={thread.actions.refetch}
         />
       ) : (
-        <List
-          ref={listRef}
-          data={deferredSlices}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          onContentSizeChange={platform({
-            web: onContentSizeChangeWebOnly,
-            default: onContentSizeChangeNativeOnly,
-          })}
-          onStartReached={onStartReached}
-          onEndReached={onEndReached}
-          onEndReachedThreshold={2}
-          onStartReachedThreshold={1}
-          onScrollOffsetChange={handleScrollOffsetChange}
-          onItemSeen={(item: ReaderItem) => {
-            // Track post:view for parent posts and replies (non-anchor posts)
-            if (item.type === 'threadPost' && item.depth !== 0) {
-              trackThreadItemView(item.value.post)
-            } else if (item.type === 'readerSegment') {
-              trackThreadItemView(item.item.value.post)
-            }
-          }}
-          /**
-           * NATIVE ONLY
-           * {@link https://reactnative.dev/docs/scrollview#maintainvisiblecontentposition}
-           */
-          maintainVisibleContentPosition={
-            disableIosVisiblePositionMaintenance
-              ? undefined
-              : {minIndexForVisible: 0}
-          }
-          desktopFixedHeight
-          sideBorders={false}
-          ListFooterComponent={
-            <ThreadAlsoLiked
-              posts={visibleAlsoLikedPosts}
-              visible={alsoLikedVisible}
-              collapsed={alsoLikedCollapsed}
-              isLoading={alsoLiked.isLoading}
-              showLoadingState={
-                !alsoLikedCollapsed &&
-                !alsoLiked.error &&
-                visibleAlsoLikedPosts.length === 0 &&
-                (!alsoLiked.isFetched ||
-                  alsoLiked.isLoading ||
-                  (alsoLiked.hasNextPage && alsoLiked.isFetchingNextPage))
+        <PostVisibilityProvider store={postVisibilityStore}>
+          <List
+            ref={listRef}
+            data={deferredSlices}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            onContentSizeChange={platform({
+              web: onContentSizeChangeWebOnly,
+              default: onContentSizeChangeNativeOnly,
+            })}
+            onStartReached={onStartReached}
+            onEndReached={onEndReached}
+            onEndReachedThreshold={2}
+            onStartReachedThreshold={1}
+            onScrollOffsetChange={handleScrollOffsetChange}
+            onItemSeen={(item: ReaderItem) => {
+              // Track post:view for parent posts and replies (non-anchor posts)
+              if (item.type === 'threadPost' && item.depth !== 0) {
+                trackThreadItemView(item.value.post)
+                postVisibilityStore.markVisible([item.value.post.uri])
+              } else if (item.type === 'readerSegment') {
+                trackThreadItemView(item.item.value.post)
+                postVisibilityStore.markVisible([item.item.value.post.uri])
               }
-              isFetchingNextPage={alsoLiked.isFetchingNextPage}
-              error={alsoLiked.error}
-              onRetry={retryAlsoLiked}
-              headerRef={alsoLikedHeaderRef}
-              onToggleCollapsed={toggleAlsoLikedCollapsed}
-              spacerHeight={platform({
-                web: defaultListFooterHeight,
-                default: deferParents
-                  ? windowHeight * 2
-                  : defaultListFooterHeight,
-              })}
-              isTombstoneView={isTombstoneView}
-            />
-          }
-          initialNumToRender={initialNumToRender}
-          /**
-           * Default: 21
-           *
-           * Smaller for placeholder data so we don't waste time rendering skeletons
-           */
-          windowSize={thread.state.isPlaceholderData ? 1 : 7}
-          /**
-           * Default: 10
-           */
-          maxToRenderPerBatch={5}
-          /**
-           * Default: 50
-           */
-          updateCellsBatchingPeriod={100}
-        />
+            }}
+            /**
+             * NATIVE ONLY
+             * {@link https://reactnative.dev/docs/scrollview#maintainvisiblecontentposition}
+             */
+            maintainVisibleContentPosition={
+              disableIosVisiblePositionMaintenance
+                ? undefined
+                : {minIndexForVisible: 0}
+            }
+            desktopFixedHeight
+            sideBorders={false}
+            ListFooterComponent={
+              <ThreadAlsoLiked
+                posts={visibleAlsoLikedPosts}
+                visible={alsoLikedVisible}
+                collapsed={alsoLikedCollapsed}
+                isLoading={alsoLiked.isLoading}
+                showLoadingState={
+                  !alsoLikedCollapsed &&
+                  !alsoLiked.error &&
+                  visibleAlsoLikedPosts.length === 0 &&
+                  (!alsoLiked.isFetched ||
+                    alsoLiked.isLoading ||
+                    (alsoLiked.hasNextPage && alsoLiked.isFetchingNextPage))
+                }
+                isFetchingNextPage={alsoLiked.isFetchingNextPage}
+                error={alsoLiked.error}
+                onRetry={retryAlsoLiked}
+                headerRef={alsoLikedHeaderRef}
+                onToggleCollapsed={toggleAlsoLikedCollapsed}
+                spacerHeight={platform({
+                  web: defaultListFooterHeight,
+                  default: deferParents
+                    ? windowHeight * 2
+                    : defaultListFooterHeight,
+                })}
+                isTombstoneView={isTombstoneView}
+              />
+            }
+            initialNumToRender={initialNumToRender}
+            /**
+             * Default: 21
+             *
+             * Smaller for placeholder data so we don't waste time rendering skeletons
+             */
+            windowSize={thread.state.isPlaceholderData ? 1 : 7}
+            /**
+             * Default: 10
+             */
+            maxToRenderPerBatch={5}
+            /**
+             * Default: 50
+             */
+            updateCellsBatchingPeriod={100}
+          />
+        </PostVisibilityProvider>
       )}
 
       {!gtMobile &&

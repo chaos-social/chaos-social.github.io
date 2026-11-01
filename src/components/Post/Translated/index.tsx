@@ -1,8 +1,9 @@
-import {useCallback, useMemo} from 'react'
+import {useCallback, useEffect, useMemo, useRef} from 'react'
 import {Platform, type StyleProp, type TextStyle, View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {HITSLOP_30} from '#/lib/constants'
+import {getBridgedHtml} from '#/lib/strings/bridged-html'
 import {useTranslate} from '#/lib/translation'
 import {
   type TranslationFunction,
@@ -15,7 +16,8 @@ import {
   languageName,
 } from '#/locale/helpers'
 import {LANGUAGES} from '#/locale/languages'
-import {useLanguagePrefs} from '#/state/preferences'
+import {usePostVisible} from '#/state/post-visibility'
+import {useAutoTranslatePosts, useLanguagePrefs} from '#/state/preferences'
 import {atoms as a, flatten, native, useTheme, web} from '#/alf'
 import {Button} from '#/components/Button'
 import {ArrowRight_Stroke2_Corner0_Rounded as ArrowRightIcon} from '#/components/icons/Arrow'
@@ -42,6 +44,8 @@ export function TranslatedPost({
   postTextStyle?: StyleProp<TextStyle>
 }) {
   const langPrefs = useLanguagePrefs()
+  const autoTranslate = useAutoTranslatePosts()
+  const isVisible = usePostVisible(post.uri)
   const {clearTranslation, translate, translationState} = useTranslate({
     key: post.uri,
   })
@@ -59,9 +63,25 @@ export function TranslatedPost({
     }
   }, [post, record, langPrefs])
   const needsTranslation = useMemo(() => {
-    if (hideTranslateLink) return false
     return !isPostInLanguage(post, [langPrefs.primaryLanguage])
-  }, [hideTranslateLink, post, langPrefs.primaryLanguage])
+  }, [post, langPrefs.primaryLanguage])
+  const autoTranslateText = initialTranslationParams.text.trim()
+  const shouldAutoTranslate =
+    autoTranslate &&
+    isVisible &&
+    needsTranslation &&
+    autoTranslateText.length > 0 &&
+    // Bridged posts can be long fediverse essays; translating them would burn
+    // the whole daily quota on one post.
+    !getBridgedHtml(record) &&
+    translationState.status === 'idle'
+  const autoTranslateAttempted = useRef(false)
+
+  useEffect(() => {
+    if (!shouldAutoTranslate || autoTranslateAttempted.current) return
+    autoTranslateAttempted.current = true
+    void translate({...initialTranslationParams, isAuto: true})
+  }, [shouldAutoTranslate, initialTranslationParams, translate])
 
   switch (translationState.status) {
     case 'loading':
@@ -90,7 +110,8 @@ export function TranslatedPost({
       )
     default:
       return (
-        needsTranslation && (
+        needsTranslation &&
+        !hideTranslateLink && (
           <TranslationLink
             translate={translate}
             initialTranslationParams={initialTranslationParams}

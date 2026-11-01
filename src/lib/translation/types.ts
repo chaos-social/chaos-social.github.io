@@ -1,17 +1,21 @@
-import {type TranslationTaskResult} from '@bsky.app/expo-translate-text/build/ExpoTranslateText.types'
-
 export type TranslationState =
   | {status: 'idle'}
   | {status: 'loading'}
   | {
       status: 'success'
       translatedText: string
-      sourceLanguage: TranslationTaskResult['sourceLanguage']
-      targetLanguage: TranslationTaskResult['targetLanguage']
+      sourceLanguage: string | null
+      targetLanguage: string | null
     }
   | {
       status: 'error'
       message: string
+      /**
+       * Set when an automatic translation failed. The post renders as if it
+       * were still idle instead of showing an error, and we don't retry on the
+       * next scroll because the entry stays in this state.
+       */
+      silent?: boolean
     }
 
 export type TranslationFunctionParams = {
@@ -39,6 +43,11 @@ export type TranslationFunctionParams = {
    * Override the default behavior and always use Google Translate.
    */
   forceGoogleTranslate?: boolean
+  /**
+   * True when nobody tapped anything - the post translated itself because it
+   * scrolled into view. Failures are hidden and never retried automatically.
+   */
+  isAuto?: boolean
 }
 
 export type TranslationOptions = {
@@ -50,6 +59,12 @@ export type TranslationOptions = {
    * Override the default behavior and always use Google Translate.
    */
   forceGoogleTranslate?: boolean
+}
+
+export type TranslationResult = {
+  translatedText: string
+  sourceLanguage: string | null
+  targetLanguage: string | null
 }
 
 export type TranslationFunction = (

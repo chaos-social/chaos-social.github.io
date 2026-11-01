@@ -54,6 +54,33 @@ export function collectPdsProfileDidsForFeedRow(item: {
   return dids
 }
 
+/**
+ * Post URIs in a rendered row, for automatic translation. Deliberately stops at
+ * the row's own posts: quoted posts are not what the row is showing.
+ */
+export function collectPostUrisForFeedRow(item: {
+  type: string
+  slice?: FeedPostSlice
+  indexInSlice?: number
+  items?: FeedPostSlice[] | FeedPostSliceItem[]
+}) {
+  const uris: string[] = []
+  if (item.type === 'sliceItem' && item.slice) {
+    uris.push(item.slice.items[item.indexInSlice ?? 0].post.uri)
+  } else if (item.type === 'reposts') {
+    for (const slice of (item.items ?? []) as FeedPostSlice[]) {
+      for (const sliceItem of slice.items) {
+        uris.push(sliceItem.post.uri)
+      }
+    }
+  } else if (item.type === 'videoGridRow') {
+    for (const sliceItem of (item.items ?? []) as FeedPostSliceItem[]) {
+      uris.push(sliceItem.post.uri)
+    }
+  }
+  return uris
+}
+
 export type FeedPostSliceOrGroup =
   | (FeedPostSlice & {
       isRepostSlice?: false

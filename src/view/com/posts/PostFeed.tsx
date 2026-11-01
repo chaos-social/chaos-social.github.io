@@ -38,6 +38,7 @@ import {
   createPdsViewabilityStore,
   PdsViewabilityProvider,
 } from '#/state/pds-viewability'
+import {PostVisibilityProvider} from '#/state/post-visibility'
 import {useDisableComposerPrompt} from '#/state/preferences/disable-composer-prompt'
 import {useDisableInfiniteScroll} from '#/state/preferences/disable-infinite-scroll'
 import {useHideQuotesOfBlockedAccounts} from '#/state/preferences/hide-quotes-of-blocked-accounts'
@@ -73,6 +74,7 @@ import {Button, ButtonText} from '#/components/Button'
 import {ProgressGuide, SuggestedFollows} from '#/components/FeedInterstitials'
 import {
   collectPdsProfileDidsForFeedRow,
+  collectPostUrisForFeedRow,
   type FeedPostSliceOrGroup,
   filterFeedSlices,
   groupReposts,
@@ -354,6 +356,10 @@ let PostFeed = ({
     ? `${feed}:${pageNumber}`
     : undefined
   const pdsViewabilityStore = useMemo(
+    () => createPdsViewabilityStore(),
+    [pageIdentity],
+  )
+  const postVisibilityStore = useMemo(
     () => createPdsViewabilityStore(),
     [pageIdentity],
   )
@@ -1209,6 +1215,7 @@ let PostFeed = ({
   const onItemSeen = useCallback(
     (item: FeedRow) => {
       markPdsProfilesVisible(item)
+      postVisibilityStore.markVisible(collectPostUrisForFeedRow(item))
 
       feedFeedback.onItemSeen(item)
 
@@ -1340,56 +1347,61 @@ let PostFeed = ({
       getPostPosition,
       ax,
       markPdsProfilesVisible,
+      postVisibilityStore,
       seenPostsEnabled,
     ],
   )
 
   return (
     <PdsViewabilityProvider store={pdsViewabilityStore}>
-      <View testID={testID} style={[style, userStyle('wsky-feed')]}>
-        <List
-          testID={testID ? `${testID}-flatlist` : undefined}
-          ref={listRef}
-          key={disableInfiniteScroll ? pageNumber : 'infinite'}
-          data={feedItems}
-          keyExtractor={(item: FeedRow) => item.key}
-          renderItem={renderItem}
-          ListFooterComponent={FeedFooter}
-          ListHeaderComponent={
-            disableInfiniteScroll && pageNumber > 1 ? (
-              <>
-                {ListHeaderComponent && <ListHeaderComponent />}
-                {renderPaginationControls('top')}
-              </>
-            ) : (
-              ListHeaderComponent
-            )
-          }
-          refreshing={isPTRing}
-          onRefresh={() => void onRefresh()}
-          headerOffset={headerOffset}
-          progressViewOffset={progressViewOffset}
-          contentContainerStyle={{
-            minHeight: Dimensions.get('window').height * 1.5,
-          }}
-          onScrolledDownChange={handleScrolledDownChange}
-          onEndReached={
-            disableInfiniteScroll ? undefined : () => void onEndReached()
-          }
-          onEndReachedThreshold={2} // number of posts left to trigger load more
-          removeClippedSubviews={true}
-          extraData={extraData}
-          desktopFixedHeight={
-            desktopFixedHeightOffset ? desktopFixedHeightOffset : true
-          }
-          initialNumToRender={initialNumToRenderOverride ?? initialNumToRender}
-          windowSize={9}
-          maxToRenderPerBatch={IS_IOS ? 5 : 1}
-          updateCellsBatchingPeriod={40}
-          onItemNearViewport={markPdsProfilesNearViewport}
-          onItemSeen={onItemSeen}
-        />
-      </View>
+      <PostVisibilityProvider store={postVisibilityStore}>
+        <View testID={testID} style={[style, userStyle('wsky-feed')]}>
+          <List
+            testID={testID ? `${testID}-flatlist` : undefined}
+            ref={listRef}
+            key={disableInfiniteScroll ? pageNumber : 'infinite'}
+            data={feedItems}
+            keyExtractor={(item: FeedRow) => item.key}
+            renderItem={renderItem}
+            ListFooterComponent={FeedFooter}
+            ListHeaderComponent={
+              disableInfiniteScroll && pageNumber > 1 ? (
+                <>
+                  {ListHeaderComponent && <ListHeaderComponent />}
+                  {renderPaginationControls('top')}
+                </>
+              ) : (
+                ListHeaderComponent
+              )
+            }
+            refreshing={isPTRing}
+            onRefresh={() => void onRefresh()}
+            headerOffset={headerOffset}
+            progressViewOffset={progressViewOffset}
+            contentContainerStyle={{
+              minHeight: Dimensions.get('window').height * 1.5,
+            }}
+            onScrolledDownChange={handleScrolledDownChange}
+            onEndReached={
+              disableInfiniteScroll ? undefined : () => void onEndReached()
+            }
+            onEndReachedThreshold={2} // number of posts left to trigger load more
+            removeClippedSubviews={true}
+            extraData={extraData}
+            desktopFixedHeight={
+              desktopFixedHeightOffset ? desktopFixedHeightOffset : true
+            }
+            initialNumToRender={
+              initialNumToRenderOverride ?? initialNumToRender
+            }
+            windowSize={9}
+            maxToRenderPerBatch={IS_IOS ? 5 : 1}
+            updateCellsBatchingPeriod={40}
+            onItemNearViewport={markPdsProfilesNearViewport}
+            onItemSeen={onItemSeen}
+          />
+        </View>
+      </PostVisibilityProvider>
     </PdsViewabilityProvider>
   )
 }

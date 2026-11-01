@@ -36,6 +36,11 @@ import {
   useShowBiteButton,
 } from '#/state/preferences/show-bite-button'
 import {useSetTidSuffix, useTidSuffix} from '#/state/preferences/tid-suffix'
+import {
+  useAutoTranslatePosts,
+  useMymemoryEmail,
+  useSetAutoTranslatePosts,
+} from '#/state/preferences/translation-service-preference'
 import * as SettingsList from '#/screens/Settings/components/SettingsList'
 import {atoms as a} from '#/alf'
 import {Admonition} from '#/components/Admonition'
@@ -43,8 +48,10 @@ import {Button, ButtonText} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
 import * as Toggle from '#/components/forms/Toggle'
 import {BellRinging_Stroke2_Corner0_Rounded as BellRingingIcon} from '#/components/icons/BellRinging'
+import {BubbleQuestion_Stroke2_Corner0_Rounded as TranslateIcon} from '#/components/icons/Bubble'
 import {CodeBrackets_Stroke2_Corner2_Rounded as CodeBracketsIcon} from '#/components/icons/CodeBrackets'
 import {Bite as BiteIcon} from '#/components/icons/Cookie'
+import {Envelope_Stroke2_Corner2_Rounded as EnvelopeIcon} from '#/components/icons/Envelope'
 import {Explosion_Stroke2_Corner0_Rounded as ExplosionIcon} from '#/components/icons/Explosion'
 import {Eye_Stroke2_Corner0_Rounded as VisibilityIcon} from '#/components/icons/Eye'
 import {Fediverse as FediverseIcon} from '#/components/icons/Fediverse'
@@ -55,6 +62,7 @@ import {Text} from '#/components/Typography'
 import {IS_WEB} from '#/env'
 import {useDevMode} from '#/storage/hooks/dev-mode'
 import {RunesScreenLayout} from './components/RunesScreenLayout'
+import {MymemoryEmailDialog} from './MymemoryEmailDialog'
 
 export function RunesExtraSettingsScreen() {
   const {t: l} = useLingui()
@@ -82,6 +90,10 @@ export function RunesExtraSettingsScreen() {
   const setShowBiteButton = useSetShowBiteButton()
   const tidSuffix = useTidSuffix()
   const setTidSuffixControl = Dialog.useDialogControl()
+  const autoTranslate = useAutoTranslatePosts()
+  const setAutoTranslate = useSetAutoTranslatePosts()
+  const mymemoryEmail = useMymemoryEmail()
+  const mymemoryEmailControl = Dialog.useDialogControl()
   const [devMode, setDevMode] = useDevMode()
 
   return (
@@ -230,6 +242,50 @@ export function RunesExtraSettingsScreen() {
           <Toggle.Platform />
         </SettingsList.Item>
       </Toggle.Item>
+      <Toggle.Item
+        name="auto_translate_posts"
+        label={l`Automatically translate posts in other languages`}
+        value={autoTranslate}
+        onChange={value => setAutoTranslate(value)}>
+        <SettingsList.Item>
+          <SettingsList.ItemIcon icon={TranslateIcon} />
+          <SettingsList.ItemText>
+            <Trans>Automatically translate posts in other languages</Trans>
+          </SettingsList.ItemText>
+          <Toggle.Platform />
+        </SettingsList.Item>
+      </Toggle.Item>
+      <SettingsList.Item>
+        <Admonition type="info" style={[a.flex_1]}>
+          <Trans>
+            Posts translate in place a moment after they scroll into view, using
+            the free MyMemory service. Post text is sent to
+            mymemory.translated.net to be translated, and its daily limit means
+            only a few hundred posts a day. Without an email it is about a tenth
+            of that.
+          </Trans>
+        </Admonition>
+      </SettingsList.Item>
+      <SettingsList.Item>
+        <SettingsList.ItemIcon icon={EnvelopeIcon} />
+        <SettingsList.ItemText>
+          <Trans>MyMemory contact email</Trans>
+        </SettingsList.ItemText>
+        <SettingsList.BadgeButton
+          label={mymemoryEmail ? l`Change` : l`Set`}
+          onPress={() => mymemoryEmailControl.open()}
+        />
+      </SettingsList.Item>
+      <SettingsList.Item>
+        <Admonition type="info" style={[a.flex_1]}>
+          <Trans>
+            Sent to MyMemory to raise its daily translation limit from 5,000 to
+            50,000 characters. Optional, and stored only on this account.
+            Current:&nbsp;
+            <Text style={[a.font_bold]}>{mymemoryEmail || l`none`}</Text>
+          </Trans>
+        </Admonition>
+      </SettingsList.Item>
       <SettingsList.LinkItem
         to="/settings/runes/extra/feature-gates"
         label={l`Feature gates`}>
@@ -239,6 +295,7 @@ export function RunesExtraSettingsScreen() {
         </SettingsList.ItemText>
       </SettingsList.LinkItem>
       <TidSuffixDialog control={setTidSuffixControl} />
+      <MymemoryEmailDialog control={mymemoryEmailControl} />
     </RunesScreenLayout>
   )
 }
