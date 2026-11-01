@@ -1,6 +1,10 @@
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {
+  useDeckLayoutEnabled,
+  useSetDeckLayoutEnabled,
+} from '#/state/preferences/deck-layout'
+import {
   useDisableComposerPrompt,
   useSetDisableComposerPrompt,
 } from '#/state/preferences/disable-composer-prompt'
@@ -41,6 +45,7 @@ import {atoms as a} from '#/alf'
 import {Admonition} from '#/components/Admonition'
 import * as Toggle from '#/components/forms/Toggle'
 import {ArrowTopCircle_Stroke2_Corner0_Rounded as ArrowTopIcon} from '#/components/icons/ArrowTopCircle'
+import {BulletList_Stroke2_Corner0_Rounded as BulletListIcon} from '#/components/icons/BulletList'
 import {Eye_Stroke2_Corner2_Rounded as EyeIcon} from '#/components/icons/Eye'
 import {EyeSlash_Stroke2_Corner0_Rounded as EyeSlashIcon} from '#/components/icons/EyeSlash'
 import {PencilLine_Stroke2_Corner2_Rounded as PencilIcon} from '#/components/icons/Pencil'
@@ -48,6 +53,7 @@ import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/
 import {CloseQuote_Stroke2_Corner1_Rounded as QuoteIcon} from '#/components/icons/Quote'
 import {Reply_Stroke2_Corner0_Rounded as ReplyIcon} from '#/components/icons/Reply'
 import {TimesLarge_Stroke2_Corner0_Rounded as TimesIcon} from '#/components/icons/Times'
+import {IS_WEB} from '#/env'
 import {RunesScreenLayout} from './components/RunesScreenLayout'
 
 export function RunesUsabilityFeedSettingsScreen() {
@@ -76,6 +82,9 @@ export function RunesUsabilityFeedSettingsScreen() {
 
   const seenPostsEnabled = useSeenPostsSetting()
   const setSeenPostsEnabled = useSetSeenPostsEnabled()
+
+  const deckLayoutEnabled = useDeckLayoutEnabled()
+  const setDeckLayoutEnabled = useSetDeckLayoutEnabled()
 
   const hideQuotesOfBlockedAccounts = useHideQuotesOfBlockedAccounts()
   const setHideQuotesOfBlockedAccounts = useSetHideQuotesOfBlockedAccounts()
@@ -203,6 +212,22 @@ export function RunesUsabilityFeedSettingsScreen() {
           </Trans>
         </Admonition>
       </SettingsList.Item>
+      {IS_WEB && (
+        <Toggle.Item
+          testID="deckLayoutToggle"
+          name="deck_layout_enabled"
+          label={l`Show each feed in its own column`}
+          value={deckLayoutEnabled}
+          onChange={setDeckLayoutEnabled}>
+          <SettingsList.Item>
+            <SettingsList.ItemIcon icon={BulletListIcon} />
+            <SettingsList.ItemText>
+              <Trans>Show each feed in its own column</Trans>
+            </SettingsList.ItemText>
+            <Toggle.Platform />
+          </SettingsList.Item>
+        </Toggle.Item>
+      )}
       <Toggle.Item
         testID="hideQuotesOfBlockedAccountsToggle"
         name="hide_quotes_of_blocked_accounts"

@@ -126,7 +126,7 @@ export function ProfileSubpageHeader({
               href={href}
               style={[pal.text, {fontWeight: '600'}]}
               text={title || ''}
-              onPress={emitSoftReset}
+              onPress={() => emitSoftReset()}
               numberOfLines={4}
             />
           )}

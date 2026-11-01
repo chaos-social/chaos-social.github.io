@@ -13,6 +13,7 @@ import {Provider as CompactPostsProvider} from './compact-posts'
 import {Provider as ConfirmFollowProvider} from './confirm-follow'
 import {Provider as ConstellationProvider} from './constellation-enabled'
 import {Provider as ConstellationInstanceProvider} from './constellation-instance'
+import {Provider as DeckLayoutProvider} from './deck-layout'
 import {Provider as DeerVerificationProvider} from './deer-verification'
 import {Provider as DirectFetchRecordsProvider} from './direct-fetch-records'
 import {Provider as DisableComposerPromptProvider} from './disable-composer-prompt'
@@ -95,6 +96,10 @@ export {
 export {useAutoplayDisabled, useSetAutoplayDisabled} from './autoplay'
 export {useCompactPosts, useSetCompactPosts} from './compact-posts'
 export {useConfirmFollow, useSetConfirmFollow} from './confirm-follow'
+export {
+  useDeckLayoutEnabled,
+  useSetDeckLayoutEnabled,
+} from './deck-layout'
 export {
   useDisableComposerPrompt,
   useSetDisableComposerPrompt,
@@ -260,9 +265,11 @@ export function Provider({children}: PropsWithChildren<{}>) {
                                                                                                                                                         <EmojiFontProvider>
                                                                                                                                                           <PasteToLinkEnabledProvider>
                                                                                                                                                             <TagSearchInstanceProvider>
-                                                                                                                                                              {
-                                                                                                                                                                children
-                                                                                                                                                              }
+                                                                                                                                                              <DeckLayoutProvider>
+                                                                                                                                                                {
+                                                                                                                                                                  children
+                                                                                                                                                                }
+                                                                                                                                                              </DeckLayoutProvider>
                                                                                                                                                             </TagSearchInstanceProvider>
                                                                                                                                                           </PasteToLinkEnabledProvider>
                                                                                                                                                         </EmojiFontProvider>

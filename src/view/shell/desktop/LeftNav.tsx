@@ -32,6 +32,7 @@ import {userStyle} from '#/lib/userstyles'
 import {emitSoftReset} from '#/state/events'
 import {useHomeBadge} from '#/state/home-badge'
 import {badgeText, useBadgePreference} from '#/state/preferences/badge-text'
+import {useDeckLayoutEnabled} from '#/state/preferences/deck-layout'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {useHideDisplayNames} from '#/state/preferences/hide-display-names'
@@ -761,6 +762,7 @@ export function DesktopLeftNav({
   routeName: string
   onNavigateTab?: (tab: SidebarTab) => void
 }) {
+  const t = useTheme()
   const {hasSession, currentAccount} = useSession()
   const {t: l} = useLingui()
   const ax = useAnalytics()
@@ -777,6 +779,7 @@ export function DesktopLeftNav({
     aa.state.access === aa.Access.Full
   const {leftNavMinimal: leftNavMinimalBreakpoint, centerColumnOffset} =
     useLayoutBreakpoints()
+  const deckLayoutEnabled = useDeckLayoutEnabled()
   const numUnreadNotifications = useUnreadNotifications()
   const numUnreadMessages = useUnreadMessageCount()
   const [notificationsCustomText] = useBadgePreference('notificationsBadgeText')
@@ -964,7 +967,11 @@ export function DesktopLeftNav({
           'wsky-nav--desktop',
           leftNavMinimal && 'wsky-nav--compact',
         ),
-        styles.leftNav,
+        // The deck lays columns right of the rail, so pin it to the left edge
+        // instead of deriving its position from the centered column.
+        deckLayoutEnabled && IS_WEB
+          ? [a.left_0, t.atoms.bg, t.atoms.border_contrast_low, a.border_r]
+          : styles.leftNav,
         IS_NATIVE && {top: insets.top, bottom: insets.bottom},
         !hasSession && !leftNavMinimal && {width: LEFT_NAV_PWI_WIDTH},
         leftNavMinimal && [
@@ -974,7 +981,7 @@ export function DesktopLeftNav({
           web(a.overflow_x_hidden),
         ],
         web({maxHeight: '100vh', overflowY: 'auto', scrollbarWidth: 'thin'}),
-        {
+        !(deckLayoutEnabled && IS_WEB) && {
           transform: [
             {
               translateX:

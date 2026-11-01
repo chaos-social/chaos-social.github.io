@@ -23,6 +23,7 @@ import {
 import {getLocalizedFeedName} from '#/lib/strings/feed-names'
 import {userStyle} from '#/lib/userstyles'
 import {emitSoftReset} from '#/state/events'
+import {useDeckLayoutEnabled} from '#/state/preferences/deck-layout'
 import {
   type SavedFeedSourceInfo,
   usePinnedFeedsInfos,
@@ -46,10 +47,11 @@ import {
   useHomeHeaderMode,
 } from '#/view/com/util/MainScrollProvider'
 import {NoFeedsPinned} from '#/screens/Home/NoFeedsPinned'
-import {useTheme} from '#/alf'
+import {useBreakpoints, useTheme} from '#/alf'
 import * as Layout from '#/components/Layout'
 import {useAnalytics} from '#/analytics'
 import {IS_LIQUID_GLASS, IS_WEB} from '#/env'
+import {Deck} from '#/features/deck/Deck'
 import {useDemoMode} from '#/storage/hooks/demo-mode'
 import {FeedPage} from './FeedPage'
 import {type FeedDescriptor} from './queries/postFeed'
@@ -60,6 +62,8 @@ export function HomeScreen(props: Props) {
   const {data: preferences} = usePreferencesQuery()
   const {currentAccount} = useSession()
   const t = useTheme()
+  const {gtMobile} = useBreakpoints()
+  const deckLayoutEnabled = useDeckLayoutEnabled()
   const {data: pinnedFeedInfos, isLoading: isPinnedFeedsLoading} =
     usePinnedFeedsInfos()
 
@@ -98,6 +102,8 @@ export function HomeScreen(props: Props) {
       <Layout.Screen
         testID="HomeScreen"
         noInsetTop={IS_LIQUID_GLASS}
+        // The deck fills the viewport, so the centered column borders don't apply.
+        fullBleed={IS_WEB && deckLayoutEnabled && gtMobile}
         style={userStyle('wsky-screen--home')}>
         <HomeHeaderModeProvider>
           <HomeScreenReady
@@ -128,6 +134,9 @@ function HomeScreenReady({
 }) {
   const {i18n} = useLingui()
   const ax = useAnalytics()
+  const {gtMobile} = useBreakpoints()
+  const deckLayoutEnabled = useDeckLayoutEnabled()
+  const deckEnabled = IS_WEB && deckLayoutEnabled && gtMobile
   const allFeeds = useMemo(
     () => pinnedFeedInfos.map(f => f.feedDescriptor),
     [pinnedFeedInfos],
@@ -268,6 +277,41 @@ function HomeScreenReady({
     return <CustomFeedEmptyState />
   }, [])
 
+  // One column would just be the normal feed squeezed into 360px.
+  if (deckEnabled && hasSession && pinnedFeedInfos.length > 1) {
+    return (
+      <Deck
+        feeds={pinnedFeedInfos}
+        renderFeed={(feedInfo, enabled) => {
+          const feed = feedInfo.feedDescriptor
+          return feed === 'following' ? (
+            <FeedPage
+              testID="followingFeedPage"
+              isPageFocused={enabled}
+              isPageAdjacent={false}
+              feed={feed}
+              renderEmptyState={renderFollowingEmptyState}
+              renderEndOfFeed={FollowingEndOfFeed}
+              feedInfo={feedInfo}
+              style={styles.deckColumn}
+            />
+          ) : (
+            <FeedPage
+              testID="customFeedPage"
+              isPageFocused={enabled}
+              isPageAdjacent={false}
+              feed={feed}
+              renderEmptyState={renderCustomFeedEmptyState}
+              savedFeedConfig={feedInfo.savedFeed}
+              feedInfo={feedInfo}
+              style={styles.deckColumn}
+            />
+          )
+        }}
+      />
+    )
+  }
+
   if (demoMode) {
     return (
       <Pager
@@ -359,6 +403,9 @@ function HomeScreenReady({
 }
 
 const styles = StyleSheet.create({
+  deckColumn: {
+    flex: 1,
+  },
   loading: {
     height: '100%',
     alignContent: 'center',

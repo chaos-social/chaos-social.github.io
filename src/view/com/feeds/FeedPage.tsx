@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import {View} from 'react-native'
+import {type StyleProp, View, type ViewStyle} from 'react-native'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {type NavigationProp, useNavigation} from '@react-navigation/native'
@@ -38,6 +38,7 @@ import {useHeaderOffset} from '#/components/hooks/useHeaderOffset'
 import {EditBig_Stroke2_Corner2_Rounded as EditBigIcon} from '#/components/icons/EditBig'
 import {useAnalytics} from '#/analytics'
 import {IS_NATIVE} from '#/env'
+import {useIsInDeckColumn} from '#/features/deck/context'
 import {accentForeground} from '#/features/themes/accentForeground'
 import {app} from '#/lexicons'
 
@@ -53,6 +54,7 @@ export function FeedPage({
   renderEndOfFeed,
   savedFeedConfig,
   feedInfo,
+  style,
 }: {
   testID?: string
   feed: FeedDescriptor
@@ -63,6 +65,7 @@ export function FeedPage({
   renderEndOfFeed?: () => JSX.Element
   savedFeedConfig?: app.bsky.actor.defs.SavedFeed
   feedInfo: FeedSourceInfo
+  style?: StyleProp<ViewStyle>
 }) {
   const ax = useAnalytics()
   const {hasSession} = useSession()
@@ -84,6 +87,7 @@ export function FeedPage({
     return IS_NATIVE && _isVideoFeed
   }, [feedInfo])
   const t = useTheme()
+  const inDeck = useIsInDeckColumn()
 
   useEffect(() => {
     if (isPageFocused) {
@@ -98,21 +102,28 @@ export function FeedPage({
     })
   }, [headerOffset])
 
-  const onSoftReset = useCallback(() => {
-    const isScreenFocused =
-      getTabState(getRootNavigation(navigation).getState(), 'Home') ===
-      TabState.InsideAtRoot
-    if (isScreenFocused && isPageFocused) {
-      scrollToTop()
-      void refreshPostFeedQueries(queryClient, FEED_RQKEY(feed))
-      setHasNew(false)
-      ax.metric('feed:refresh', {
-        feedType: feed.split('|')[0],
-        feedUrl: feed,
-        reason: 'soft-reset',
-      })
-    }
-  }, [ax, navigation, isPageFocused, scrollToTop, queryClient, feed])
+  const onSoftReset = useCallback(
+    (resetFeed?: FeedDescriptor) => {
+      // A deck shows several feeds at once, so only the target one resets.
+      if (resetFeed && resetFeed !== feed) {
+        return
+      }
+      const isScreenFocused =
+        getTabState(getRootNavigation(navigation).getState(), 'Home') ===
+        TabState.InsideAtRoot
+      if (isScreenFocused && isPageFocused) {
+        scrollToTop()
+        void refreshPostFeedQueries(queryClient, FEED_RQKEY(feed))
+        setHasNew(false)
+        ax.metric('feed:refresh', {
+          feedType: feed.split('|')[0],
+          feedUrl: feed,
+          reason: 'soft-reset',
+        })
+      }
+    },
+    [ax, navigation, isPageFocused, scrollToTop, queryClient, feed],
+  )
 
   // fires when page within screen is activated/deactivated
   useEffect(() => {
@@ -139,10 +150,21 @@ export function FeedPage({
 
   const shouldPrefetch = IS_NATIVE && isPageAdjacent
   const isDiscoverFeed = feedInfo.uri === DISCOVER_FEED_URI
+
+  /*
+   * Columns have no load-latest button (it is fixed to the viewport), so a
+   * column that is already at the top refreshes itself when new posts arrive.
+   */
+  useEffect(() => {
+    if (inDeck && isPageFocused && !isScrolledDown && hasNew) {
+      onSoftReset(feed)
+    }
+  }, [inDeck, isPageFocused, isScrolledDown, hasNew, onSoftReset, feed])
+
   return (
     <View
       testID={testID}
-      style={userStyle('wsky-feed-page')}
+      style={[userStyle('wsky-feed-page'), style]}
       // @ts-expect-error web only -sfn
       dataSet={{nosnippet: isDiscoverFeed ? '' : undefined}}>
       <MainScrollProvider>
@@ -165,7 +187,7 @@ export function FeedPage({
           />
         </FeedFeedbackProvider>
       </MainScrollProvider>
-      {(isScrolledDown || hasNew) && (
+      {!inDeck && (isScrolledDown || hasNew) && (
         <LoadLatestBtn
           onPress={onPressLoadLatest}
           label={_(msg`Load new posts`)}

@@ -1,15 +1,22 @@
 import {EventEmitter} from 'eventemitter3'
 
+import {type FeedDescriptor} from '#/state/queries/post-feed'
+
 type UnlistenFn = () => void
 
 const emitter = new EventEmitter()
 
-// a "soft reset" typically means scrolling to top and loading latest
-// but it can depend on the screen
-export function emitSoftReset() {
-  emitter.emit('soft-reset')
+/**
+ * A "soft reset" typically means scrolling to top and loading latest, but it
+ * can depend on the screen. The feed is only passed when several feeds are on
+ * screen at once (the deck), so each one can tell whether it is the target.
+ */
+export function emitSoftReset(feed?: FeedDescriptor) {
+  emitter.emit('soft-reset', feed)
 }
-export function listenSoftReset(fn: () => void): UnlistenFn {
+export function listenSoftReset(
+  fn: (feed?: FeedDescriptor) => void,
+): UnlistenFn {
   emitter.on('soft-reset', fn)
   return () => emitter.off('soft-reset', fn)
 }
