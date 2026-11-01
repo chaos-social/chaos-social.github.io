@@ -1016,6 +1016,9 @@ function TabsNavigator({
       <Tab.Screen
         name="MyProfileTab"
         getComponent={() => MyProfileTabNavigator}
+        // Profiles opened from inside this tab would otherwise still be the
+        // top of its stack when the tab is re-entered.
+        options={{popToTopOnBlur: true}}
       />
       <Tab.Screen
         name="AtmosphereTab"
