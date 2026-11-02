@@ -7,9 +7,9 @@ import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {ExternalEmbedRemoveBtn} from '#/view/com/composer/ExternalEmbedRemoveBtn'
 import {type GameMedia} from '#/view/com/composer/state/composer'
 import {atoms as a, useTheme} from '#/alf'
+import {GameFrame} from '#/components/Post/Embed/GameEmbed/GameFrame'
 import {
   GAME_KIND_LABEL,
-  getGameAspect,
   getGamePlayerUrl,
 } from '#/components/Post/Embed/GameEmbed/utils'
 import {Text} from '#/components/Typography'
@@ -29,13 +29,19 @@ export function GamePreview({
   const {t: l} = useLingui()
   const t = useTheme()
   const shapePreference = useEnableSquareButtons()
-  const [objectUrl, setObjectUrl] = useState<string>()
-
+  /*
+   * Created during render so the frame never renders without a source, and
+   * re-created if the user picks a different file.
+   */
+  const [objectUrl, setObjectUrl] = useState(() => URL.createObjectURL(game.file))
+  const [lastFile, setLastFile] = useState(game.file)
+  if (lastFile !== game.file) {
+    setLastFile(game.file)
+    setObjectUrl(URL.createObjectURL(game.file))
+  }
   useEffect(() => {
-    const url = URL.createObjectURL(game.file)
-    setObjectUrl(url)
-    return () => URL.revokeObjectURL(url)
-  }, [game.file])
+    return () => URL.revokeObjectURL(objectUrl)
+  }, [objectUrl])
 
   return (
     <View
@@ -49,25 +55,15 @@ export function GamePreview({
         t.atoms.border_contrast_low,
         shapePreference === 'sharp' && SHARP_CORNERS,
       ]}>
-      <View
-        style={[
-          a.w_full,
-          a.align_center,
-          a.justify_center,
-          {aspectRatio: getGameAspect(game)},
-          t.atoms.bg_contrast_25,
-        ]}>
-        {objectUrl ? (
-          <GamePlayerFrame
-            /*
-             * The player resolves blobs through a PDS, and an unsaved file
-             * isn't on one yet, so hand it the object URL directly.
-             */
-            src={getGamePlayerUrl(window.location.origin, objectUrl, game)}
-            title={game.title}
-          />
-        ) : null}
-      </View>
+      <GameFrame
+        /*
+         * The player resolves blobs through a PDS, and an unsaved file isn't
+         * on one yet, so hand it the object URL directly.
+         */
+        src={getGamePlayerUrl(window.location.origin, objectUrl, game)}
+        title={game.title}
+        game={game}
+      />
       <View style={[a.p_md, a.gap_2xs, t.atoms.bg]}>
         <Text numberOfLines={2} style={[a.text_lg, a.font_semi_bold]} emoji>
           {game.title}
@@ -78,16 +74,6 @@ export function GamePreview({
       </View>
       <ExternalEmbedRemoveBtn onRemove={onRemove} />
     </View>
-  )
-}
-
-function GamePlayerFrame({src, title}: {src: string; title: string}) {
-  return (
-    <iframe
-      src={src}
-      title={title}
-      style={{border: 0, width: '100%', height: '100%', display: 'block'}}
-    />
   )
 }
 

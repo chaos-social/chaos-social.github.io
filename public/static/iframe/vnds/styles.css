@@ -193,7 +193,14 @@ noscript
 
 #config_menu
 {
-	width: 300px;
+	width: 96%;
+	/*
+	 * Local change. The settings panel is taller than the game's own 256x192
+	 * screen, so it scrolls inside it rather than running off both ends.
+	 */
+	max-height: 96%;
+	overflow-y: auto;
+	font-size: 0.75em;
 	text-align: center;
 	color: #FFF;
 }
@@ -533,9 +540,13 @@ input[type=radio]:hover + label:before
 {
 	display: block;
 	width: 100%;
-	margin: 7px 0;
-	padding: 7px 0;
-	font-size: 1.5em;
+	/*
+	 * Local change. 1.5em buttons make this menu 325px tall, which overflows
+	 * both ends of the game's own 256x192 screen.
+	 */
+	margin: 3px 0;
+	padding: 3px 0;
+	font-size: 0.85em;
 }
 #choice_menu button
 {
@@ -671,7 +682,8 @@ input[type=radio]:hover + label:before
 	float: right;
 	position: relative;
 	padding: 1px 10px 2px;
-	font-size: 0.9em;
+	/* Local change: 0.9em wraps to two rows at 256px wide. */
+	font-size: 0.7em;
 	border-bottom: 1px solid #FFF;
 	border-left: 1px solid #FFF;
 		-webkit-border-radius: 0 0 0 5px;
@@ -741,7 +753,12 @@ input[type=radio]:hover + label:before
 {
 	z-index: 68;
 	position: absolute;
-	padding: 30px 20px 0;
+	/*
+	 * Local change. The engine assumes a desktop-width window, where the menu
+	 * bar fits on one row; at the game's 256px the bar wraps to two and covers
+	 * the first line. Shrink the bar and start the text below it.
+	 */
+	padding: 36px 20px 0;
 	width: 100%;
 	height: 120px;
 		-webkit-box-sizing: border-box;

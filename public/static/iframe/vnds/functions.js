@@ -551,7 +551,8 @@ function apply_text_size()
 	let $message_box = $('#message_box');
 	if ($message_box.height() <= 170)
 		$message_box.css('height', (120 + config.text_size_factor * 25) + 'px');
-	$('#message_box_menu').css('font-size', (0.9 + config.text_size_factor / 10) + 'em');
+	/* Local change: 0.9em wraps the menu bar to two rows at the game's 256px width. */
+	$('#message_box_menu').css('font-size', (0.7 + config.text_size_factor / 10) + 'em');
 	let text_size;
 	if (vn === undefined)
 		text_size = 1;

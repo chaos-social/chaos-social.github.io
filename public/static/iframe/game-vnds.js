@@ -44,7 +44,13 @@ function buildGameList(files, dir, shortName, width = 256, height = 192) {
       thumb_s: null,
       thumb_b: null,
       font: files.has('default.ttf') ? `${dir}/default.ttf` : null,
-      text_size: info.text_size || null,
+      /*
+       * The engine's default (1em) overflows the fixed 120px message box on
+       * real scripts, which run to 250 characters a line. 0.6 is the largest
+       * size at which none of a whole game's longest lines clip; archives that
+       * ship their own text_size keep it.
+       */
+      text_size: info.text_size || '0.6',
       line_height: info.line_height || null,
       bg_color: bgColor || null,
       error: null,
@@ -175,9 +181,28 @@ export async function play({blobUrl, onStatus, width, height}) {
     JSON.stringify(buildGameList(files, dir, shortName, width, height)),
   )
 
-  /* Hand the iframe to the engine's shell, which picks the game up from the hash. */
+  /*
+   * The engine is only correct at the game's own resolution: its CSS, its
+   * 120px message box and its font scale math all assume it. So run it at
+   * native size and let the embed scale the whole iframe up to fit.
+   */
+  const native = readNativeSize(files, width, height)
   const shell = new URL('./vnds/shell.html', window.location.href)
+  shell.searchParams.set('w', String(native.width))
+  shell.searchParams.set('h', String(native.height))
   shell.hash = shortName
   window.location.replace(shell.toString())
 }
 
+/**
+ * The resolution the engine draws at. It prefers `img.ini`, which most archives
+ * omit, so fall back to the recorded dimensions and then to the DS's 256x192.
+ */
+function readNativeSize(files, width, height) {
+  const ini = files.get('img.ini')
+  if (ini) {
+    const match = /width=(\d+)\s*height=(\d+)/.exec(new TextDecoder().decode(ini))
+    if (match) return {width: Number(match[1]), height: Number(match[2])}
+  }
+  return {width: width || 256, height: height || 192}
+}

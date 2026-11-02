@@ -109,10 +109,22 @@ export function parseGamePath(pathname: string): {
   return {did: decodeURIComponent(match[1]), cid: decodeURIComponent(match[2])}
 }
 
+/**
+ * The game's own resolution, which is also the embed's aspect ratio. Only VNDS
+ * uses it as the iframe's intrinsic size; other kinds simply fill their frame.
+ * Defaults to the DS's 256x192 when the record carries no size.
+ */
+export function getGameNativeSize(game: Pick<GameEmbed, 'width' | 'height'>) {
+  const {width, height} = game
+  if (!width || !height || width <= 0 || height <= 0) {
+    return {width: 256, height: 192}
+  }
+  return {width, height}
+}
+
 /** Player aspect ratio, falling back to the 4:3 every emulator here targets. */
 export function getGameAspect(game: Pick<GameEmbed, 'width' | 'height'>) {
-  const {width, height} = game
-  if (!width || !height || width <= 0 || height <= 0) return 4 / 3
+  const {width, height} = getGameNativeSize(game)
   return width / height
 }
 

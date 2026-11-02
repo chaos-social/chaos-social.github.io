@@ -124,67 +124,35 @@
 		<section id="cache"></section>
 		<script>
 			/*
-			 * The engine clamps the canvas to the game's native resolution
-			 * unless it thinks it is fullscreen, where it fills the window
-			 * instead. Games here always fill the frame, so say so.
-			 */
-			try {
-				localStorage.setItem('is_fullscreen', '1')
-			} catch (e) {}
-
-			/*
-			 * Its default floor is 640x480, and anything smaller is rejected
-			 * outright - the canvas then falls back to the game's native size
-			 * and renders as a tiny box. This frame is usually narrower than
-			 * that, so drop the floor and let it fit whatever space it has.
-			 */
-			config.min_width = 100;
-			config.min_height = 100;
-
-			/*
-			 * Every element in the engine's markup is absolutely positioned, so
-			 * without this the body has zero height. `.centered` then resolves
-			 * `top: 50%` against nothing, the canvas pins to the top edge, and
-			 * its own translate(-50%) pulls half of it out of frame.
-			 */
-			document.documentElement.style.height = '100%';
-			document.body.style.height = '100%';
-
-			/*
-			 * The engine scales the message text with the canvas
-			 * (resolution.width / game width) but pins the box to a fixed 120px,
-			 * and gives the text `overflow: auto` so the extra lines scroll
-			 * silently out of view instead of showing. Let both size to their
-			 * content instead. !important because `text()` rewrites the inline
-			 * heights on every line.
+			 * Run the engine at the game's own resolution and let the embed scale
+			 * the whole iframe up to fit. Its CSS, its fixed 120px message box
+			 * and its font scale math all assume native size; rendering it at a
+			 * larger viewport is what made text overflow the box.
 			 */
 			(function () {
-				var style = document.createElement('style')
-				style.textContent =
-					/* In flow, so the box has the text's height to size itself from. */
-					'#message_box_text{position:relative !important;height:auto !important;overflow:visible !important}' +
-					'#message_box:not(.note){height:auto !important;padding-top:0 !important}'
-				document.head.appendChild(style)
-			})()
-
-			/*
-			 * The in-game menu is a fixed 325px tall and centered. On a narrow
-			 * card (the frame keeps the game's 4:3 aspect, so a 360px-wide card
-			 * is only 270px tall) it overflows and its buttons go out of reach.
-			 * Shrink just the menu when it doesn't fit.
-			 */
-			(function () {
-				var MENU_HEIGHT = 340
-				function fitMenu() {
-					var menu = document.getElementById('game_menu')
-					if (!menu) return
-					var scale = Math.min(1, (window.innerHeight - 8) / MENU_HEIGHT)
-					menu.style.transform =
-						scale < 1 ? 'translate(-50%, -50%) scale(' + scale + ')' : ''
+				var p = new URLSearchParams(location.search)
+				var w = Number(p.get('w'))
+				var h = Number(p.get('h'))
+				if (w > 0 && h > 0) {
+					document.documentElement.style.width = w + 'px'
+					document.documentElement.style.height = h + 'px'
+					document.body.style.width = w + 'px'
+					document.body.style.height = h + 'px'
 				}
-				window.addEventListener('resize', fitMenu)
-				document.addEventListener('DOMContentLoaded', fitMenu)
-				fitMenu()
+
+				/*
+				 * The engine's floor is 640x480 and it rejects anything smaller,
+				 * silently falling back to the game's native size. At native size
+				 * that is exactly what we want, so let it through.
+				 */
+				config.min_width = 100
+				config.min_height = 100
+
+				/*
+				 * Its fullscreen branch fills the window instead of the game
+				 * resolution, which is the behaviour we do NOT want here.
+				 */
+				config.is_fullscreen = false
 			})()
 		</script>
 	</body>
