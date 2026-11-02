@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>VNDS-online</title>
+		<title>VNDS player</title>
 		<meta charset="utf-8">
 		<meta name="author" content="VaYurik [aka DOOMer]">
-		<meta name="description" content="Интерпретатор VNDS">
+		<meta name="description" content="VNDS interpreter">
 		
 		<script src="jquery-3.3.1.min.js"></script>
 		<script src="jquery.smoke.effect.js"></script>
@@ -16,13 +16,13 @@
 
 	<body>
 		<noscript>
-			<p>Включите JavaScript!</p>
+			<p>Enable JavaScript!</p>
 		</noscript>
 		<audio id="music" preload="auto"></audio>
 		<audio id="sound" preload="auto"></audio>
 		<audio id="sfx" preload="auto"></audio>
 		<section id="main_screen">
-			<h2>Выберите игру</h2>
+			<h2>Choose a game</h2>
 			<section id="main_menu"></section>
 		</section>
 		<section id="game_screen" class="centered">
@@ -32,47 +32,47 @@
 			<div id="relay"></div>
 			<section id="sprites"></section>
 			<section id="game_menu" class="centered">
-				<button id="game_menu_start">Начать</button>
-				<button id="game_menu_cont">Продолжить</button>
-				<button id="game_menu_save">Сохранить</button>
-				<button id="game_menu_load">Загрузить</button>
-				<button id="game_menu_config">Настройки</button>
-				<button id="game_menu_exit">Выйти из игры</button>
+				<button id="game_menu_start">Start</button>
+				<button id="game_menu_cont">Continue</button>
+				<button id="game_menu_save">Save</button>
+				<button id="game_menu_load">Load</button>
+				<button id="game_menu_config">Settings</button>
+				<button id="game_menu_exit">Quit game</button>
 			</section>
 			<section id="choice_menu" class="centered"></section>
 			<section id="config_menu" class="centered">
-				<h2>Настройки</h2>
-				<label for="config_menu_text_size">Размер шрифта</label>
+				<h2>Settings</h2>
+				<label for="config_menu_text_size">Text size</label>
 				<input type="range" min="0" max="2" step="1" value="0" id="config_menu_text_size">
 				<div>
 					<input type="checkbox" id="config_menu_is_fullscreen">
-					<label for="config_menu_is_fullscreen">Полноэкранный режим</label>
+					<label for="config_menu_is_fullscreen">Fullscreen</label>
 				</div>
-				<label for="config_menu_text_speed">Скорость вывода текста</label>
+				<label for="config_menu_text_speed">Text speed</label>
 				<input type="range" min="0" max="20" step="1" value="5" id="config_menu_text_speed">
-				<label for="config_menu_auto_text_pause">Пауза при авточтении</label>
+				<label for="config_menu_auto_text_pause">Auto-read pause</label>
 				<input type="range" min="0" max="20" step="1" value="12" id="config_menu_auto_text_pause">
 				<div>
 					<input type="checkbox" id="config_menu_is_skip_unread" checked>
-					<label for="config_menu_is_skip_unread">Пропускать непрочитанное</label>
+					<label for="config_menu_is_skip_unread">Skip unread text</label>
 				</div>
-				<label for="config_menu_sound_volume">Громкость звука</label>
+				<label for="config_menu_sound_volume">Sound volume</label>
 				<input type="range" min="0" max="9" step="1" value="5" id="config_menu_sound_volume">
 				<fieldset>
 					<div>
 						<input type="radio" name="log" value="0" id="config_menu_log_0" checked>
-						<label for="config_menu_log_0">консоль отключена</label>
+						<label for="config_menu_log_0">console off</label>
 					</div>
 					<div>
 						<input type="radio" name="log" value="1" id="config_menu_log_1">
-						<label for="config_menu_log_1">команды VNDS</label>
+						<label for="config_menu_log_1">VNDS commands</label>
 					</div>
 					<div>
 						<input type="radio" name="log" value="2" id="config_menu_log_2">
-						<label for="config_menu_log_2">все команды</label>
+						<label for="config_menu_log_2">all commands</label>
 					</div>
 				</fieldset>
-				<button id="config_menu_exit">Закрыть</button>
+				<button id="config_menu_exit">Close</button>
 			</section>
 			<section id="save_load_menu">
 				<div id="save_load_menu_left"></div>
@@ -80,12 +80,12 @@
 			</section>
 			<section id="message_box">
 				<div id="message_box_menu">
-					<a href="#" id="message_box_menu_load">Загрузить</a>
-					<a href="#" id="message_box_menu_save">Сохранить</a>
-					<a href="#" id="message_box_menu_skip">Пропуск</a>
-					<a href="#" id="message_box_menu_auto">Авто</a>
-					<a href="#" id="message_box_menu_sound">Звук</a>
-					<a href="#" id="message_box_menu_menu">Меню</a>
+					<a href="#" id="message_box_menu_load">Load</a>
+					<a href="#" id="message_box_menu_save">Save</a>
+					<a href="#" id="message_box_menu_skip">Skip</a>
+					<a href="#" id="message_box_menu_auto">Auto</a>
+					<a href="#" id="message_box_menu_sound">Sound</a>
+					<a href="#" id="message_box_menu_menu">Menu</a>
 					<a href="#" id="message_box_menu_help">?</a>
 					<a href="#" id="message_box_menu_hide">X</a>
 				</div>
@@ -96,24 +96,24 @@
 		</section>
 		<section id="info">
 			<ul>
-				<li>Поддержка PHP: <span id="info_php_enabled"></span></li>
-				<li>Поддержка LUA: <span id="info_lua_enabled"></span></li>
-				<li>Экран: <span id="info_screen_resolution"></span></li>
+				<li>PHP: <span id="info_php_enabled"></span></li>
+				<li>LUA: <span id="info_lua_enabled"></span></li>
+				<li>Screen: <span id="info_screen_resolution"></span></li>
 				<li>&nbsp</li>
-				<li>Игра: <span id="info_game_name"></span></li>
-				<li>Разрешение: <span id="info_game_resolution"></span></li>
-				<li>Скрипт: <span id="info_script_name"></span></li>
-				<li>Строка: <span id="info_script_line_num"></span></li>
-				<li>Цвет фона: <span id="info_bg_color"></span></li>
-				<li>Фон: <span id="info_background"></span></li>
-				<li>Спрайт: <span id="info_sprites"></span></li>
-				<li>Анимация: <span id="info_animation"></span></li>
-				<li>Видео: <span id="info_video"></span></li>
-				<li>Музыка: <span id="info_music"></span></li>
-				<li>Звук: <span id="info_sound"></span></li>
-				<li>Звук.эффект: <span id="info_sfx"></span></li>
+				<li>Game: <span id="info_game_name"></span></li>
+				<li>Resolution: <span id="info_game_resolution"></span></li>
+				<li>Script: <span id="info_script_name"></span></li>
+				<li>Line: <span id="info_script_line_num"></span></li>
+				<li>Background colour: <span id="info_bg_color"></span></li>
+				<li>Background: <span id="info_background"></span></li>
+				<li>Sprite: <span id="info_sprites"></span></li>
+				<li>Animation: <span id="info_animation"></span></li>
+				<li>Video: <span id="info_video"></span></li>
+				<li>Music: <span id="info_music"></span></li>
+				<li>Sound: <span id="info_sound"></span></li>
+				<li>Sound effect: <span id="info_sfx"></span></li>
 			</ul>
-			<div id="info_show">Инфо</div>
+			<div id="info_show">Info</div>
 		</section>
 		<section id="modal_screen">
 			<div id="modal_box" class="centered">

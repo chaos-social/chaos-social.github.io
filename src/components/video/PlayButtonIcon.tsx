@@ -12,8 +12,21 @@ export function PlayButtonIcon({size = 32}: {size?: number}) {
 
   const enableSquareButtons = useEnableSquareButtons()
 
+  /*
+   * The glyph is absolutely positioned, so it needs a positioned box of its
+   * own to sit in. Without this wrapper it anchors to whatever happens to be
+   * positioned further up - or to the top of the nearest block - which puts it
+   * at the top edge of the circle instead of the middle.
+   */
   return (
-    <>
+    <View
+      style={[
+        a.relative,
+        {
+          width: size + size / 1.5,
+          height: size + size / 1.5,
+        },
+      ]}>
       <View
         style={[
           getShapeStyle(enableSquareButtons, a.rounded_sm, a.rounded_full),
@@ -23,13 +36,18 @@ export function PlayButtonIcon({size = 32}: {size?: number}) {
             shadowRadius: 32,
             shadowOpacity: 0.5,
             elevation: 24,
+            opacity: 0.7,
             width: size + size / 1.5,
             height: size + size / 1.5,
-            opacity: 0.7,
           },
         ]}
       />
-      <PlayIcon width={size} fill={fg} style={a.absolute} />
-    </>
+      {/* Centred explicitly: an absolute child with no insets sits at 0,0. */}
+      <PlayIcon
+        width={size}
+        fill={fg}
+        style={[a.absolute, {top: size / 3, left: size / 3}]}
+      />
+    </View>
   )
 }

@@ -1,4 +1,4 @@
-/* Определяем глобальные переменные */
+/* Global variables */
 const LOG_DISABLE = 0;
 const LOG_VNDS = 1;
 const LOG_ALL = 2;
@@ -8,57 +8,57 @@ const SAVE_MOD = 1;
 
 var config =
 {
-	sound_volume: 0.5,            // Громкость звука
-	is_sound: true,               // Включён или выключен звук
+	sound_volume: 0.5,            // sound volume
+	is_sound: true,               // whether sound is on
 
-	text_size_factor: 0,          // Коэффициент увеличения размера шрифта и некоторых других элементов интерфейса
+	text_size_factor: 0,          // scale factor for text and some UI elements
 
-	effect_speed: 250,            // Скорость эффектов (меньше - быстрее)
-	text_speed: 20,               // Скорость вывода текста (меньше - быстрее)
+	effect_speed: 250,            // effect speed (lower is faster)
+	text_speed: 20,               // text speed (lower is faster)
 
-	is_skip: false,               // Включён или выключен быстрый пропуск
-	is_skip_unread: false,        // Пропускать ли непрочитанное
-	skip_effect_speed: 100,       // Скорость эффектов при быстром пропуске (меньше - быстрее)
-	skip_text_speed: 0,           // Скорость вывода текста при быстром пропуске (меньше - быстрее)
-	skip_text_pause: 100,         // Задержка после вывода текста перед сменой экрана
+	is_skip: false,               // whether fast skip is on
+	is_skip_unread: false,        // whether to skip unread text
+	skip_effect_speed: 100,       // effect speed while skipping (lower is faster)
+	skip_text_speed: 0,           // text speed while skipping (lower is faster)
+	skip_text_pause: 100,         // delay after the text before the screen changes
 
-	is_auto: false,               // Включено или выключено авточтение
-	auto_text_pause: 2000,        // Задержка после вывода текста перед сменой экрана
+	is_auto: false,               // whether auto-read is on
+	auto_text_pause: 2000,        // delay after the text before the screen changes
 
-	notification_delay: 1200,     // Задержка вывода оповещения
+	notification_delay: 1200,     // how long notifications stay up
 	
-	log_level: LOG_DISABLE,       // Выводить ли в консоль информацию
+	log_level: LOG_DISABLE,       // whether to log to the console
 
-	is_error_log: true,           // Сохранять ли ошибки в log-файлы (только при is_php_enabled: true)
-	is_check: false,              // Режим проверки скрипта
+	is_error_log: true,           // whether to write errors to log files (only when is_php_enabled is true)
+	is_check: false,              // script checking mode
 
-	is_fullscreen: false,         // Включён ли полноэкранный режим
-	min_width: 640,               // Минимальное разрешение экрана: ширина
-	min_height: 480               // Минимальное разрешение экрана: высота
+	is_fullscreen: false,         // whether fullscreen is on
+	min_width: 640,               // minimum screen width
+	min_height: 480               // minimum screen height
 };
 
-var title;                      // Дефолтный заголовок страницы
-var favicon;                    // Дефолтный фавикон
-var old_effect_speed;           // Предыдущая скорость эффектов в окне сообщений
-var old_text_speed;             // Предыдущая скорость вывода текста в окне сообщений
-var music_volume;               // Текущая громкость музыки для эффекта затухания
-var is_message_box;             // Переменная, хранящая состояние блока вывода текста
-var type_interval;              // Переменная для хранения идентификатора интервала при печати печатающей машинки
-var effect_intervals = [];      // Переменная для хранения массива идентификаторов интервалов эффектов
-var effect_timeout;             // Переменная для хранения идентификатора таймаута эффектов
-var animation_interval;         // Переменная для хранения идентификатора интервала, использующегося для анимации
-var is_promo = true;            // Информация о том, был ли произведён клик на баннер или нет
-var vn;                         // Объект класса интерпретатора
-var is_php_enabled = false;     // Имеется ли поддержка php на сервере
-var is_lua_enabled = false;     // Имеется ли поддержка lua на сервере - если да, то значит запущено локально через CivetWeb
-var is_skip_enabled;            // Активна ли кнопка быстрого пропуска
-var resolution =                // Разрешение окна игры (равное или разрешению игры, или размеру окна экрана браузера)
+var title;                      // default page title
+var favicon;                    // default favicon
+var old_effect_speed;           // previous effect speed in the message box
+var old_text_speed;             // previous text speed in the message box
+var music_volume;               // current music volume for the fade effect
+var is_message_box;             // whether the message box is shown
+var type_interval;              // typewriter interval id
+var effect_intervals = [];      // effect interval ids
+var effect_timeout;             // effect timeout id
+var animation_interval;         // animation interval id
+var is_promo = true;            // whether the banner was clicked
+var vn;                         // the interpreter instance
+var is_php_enabled = false;     // whether the server supports php
+var is_lua_enabled = false;     // whether the server supports lua - true means it is running locally under CivetWeb
+var is_skip_enabled;            // whether the skip button is active
+var resolution =                // game window size (either the game's own or the browser window's)
 		{
-			width: null,              // ширина
-			height: null,             // высота
-			ratio: null               // коэффициент относительно разрешения игры
+			width: null,              // width
+			height: null,             // height
+			ratio: null               // ratio to the game's resolution
 		}
-var text_size_ratio;            // Коэффициент размера шрифта, в зависимости от размера окна
+var text_size_ratio;            // font scale factor, based on the window size
 
 $(document).ready(function()
 {
@@ -72,7 +72,7 @@ $(document).ready(function()
 	check_php_enabled(create_main_menu);
 });
 
-// Функция проверки поддержки php на сервере
+// Checks whether the server supports php
 function check_php_enabled(callback)
 {
 	$.get('php/check_php.php')
@@ -88,7 +88,7 @@ function check_php_enabled(callback)
 		});
 }
 
-// Функция проверки поддержки lua на сервере
+// Checks whether the server supports lua
 function check_lua_enabled(callback)
 {
 	$.get('lua/check_lua.lua')
@@ -105,14 +105,14 @@ function check_lua_enabled(callback)
 		});
 }
 
-// Функция, отвечающая за присвоение обработчика события изменения размера экрана браузера
+// Binds the browser resize handler
 function bind_window_resize_events()
 {
 	exec_window_resize_events();
 	$(window).on('resize', exec_window_resize_events);
 }
 
-// Функция, выполняемая при наступлении события изменения размера экрана браузера и некоторых других
+// Runs on browser resize and similar events
 function exec_window_resize_events()
 {
 	let win_width = (window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth) - 2;
@@ -187,7 +187,7 @@ function exec_window_resize_events()
 	}
 }
 
-// Функция подбора размера кнопок меню и шрифта в них
+// Sizes the menu buttons and their font
 function set_choice_button_size()
 {
 	let $choice_menu = $('#choice_menu');
@@ -223,7 +223,7 @@ function set_choice_button_size()
 	$choice_menu.find('button').width(max_width + 'px');
 }
 
-// Функция создания окна лога
+// Creates the log window
 function init_log()
 {
 	if (config.log_level == LOG_ALL) console.log('init_log');
@@ -255,14 +255,14 @@ function init_log()
 			$('#info_show').fadeOut(100);
 		}
 	});
-	$(document).on('keydown', function(e) // Вешаем на тильду открытие/скрытие консоли
+	$(document).on('keydown', function(e) // tilde toggles the console
 	{
 		if (e.which === 192)
 			$info.trigger('click');
 	});
 }
 
-// Функция создания окна копирайта
+// Creates the credits window
 function init_thanks()
 {
 	if (config.log_level == LOG_ALL) console.log('init_thanks');
@@ -293,7 +293,7 @@ function init_thanks()
 	});
 }
 
-// Функция, получающая список игр и их настройки
+// Fetches the game list and its settings
 function create_main_menu()
 {
 	if (config.log_level == LOG_ALL) console.log('create_main_menu');
@@ -452,11 +452,11 @@ function create_main_menu()
 		})
 		.fail(function(jqXHR, textStatus, errorThrown)
 		{
-			show_error('Неверный запрос: ' + errorThrown);
+			show_error('Bad request: ' + errorThrown);
 		});
 }
 
-// Функция проверки поддержки браузером локального хранилища
+// Checks that the browser supports local storage
 function supports_local_storage()
 {
   try
@@ -465,18 +465,18 @@ function supports_local_storage()
 			return true;
 		else
 		{
-			show_error('Браузер не поддерживает локальное хранилище');
+			show_error('This browser does not support local storage');
 			return false;
 		}
 	}
 	catch (e)
 	{
-		show_error('Браузер не поддерживает локальное хранилище');
+		show_error('This browser does not support local storage');
 		return false;
 	}
 }
 
-// Функция загрузки параметров сессии
+// Loads session settings
 function load_settings()
 {
 	if (config.log_level == LOG_ALL) console.log('load_settings');
@@ -512,14 +512,14 @@ function load_settings()
 		}
 		catch (e)
 		{
-			show_warning('Ошибка в локальном хранилище: ' + e.name);
+			show_warning('Local storage error: ' + e.name);
 			return false;
 		}
 	}
 	apply_text_size();
 }
 
-// Функция сохранения параметров сессии
+// Saves session settings
 function save_settings()
 {
 	if (config.log_level == LOG_ALL) console.log('save_settings');
@@ -538,14 +538,14 @@ function save_settings()
 		}
 		catch (e)
 		{
-			show_warning('Ошибка в локальном хранилище: ' + e.name);
+			show_warning('Local storage error: ' + e.name);
 			return false;
 		}
 	}
 	apply_text_size();
 }
 
-// Функция, изменяющая стили в зависимости от настройки размера шрифта в настройках
+// Applies styles for the configured text size
 function apply_text_size()
 {
 	let $message_box = $('#message_box');
@@ -562,7 +562,7 @@ function apply_text_size()
 	$('#message_box_text').css('font-size', text_size_ratio * (text_size + config.text_size_factor / 10) + 'em');
 }
 
-// Функция отображения блока сообщений
+// Shows the message box
 function show_message_box()
 {
 	let $message_box = $('#message_box');
@@ -578,7 +578,7 @@ function show_message_box()
 	});
 }
 
-// Функция скрытия блока сообщений
+// Hides the message box
 function hide_message_box(is_clear, callback)
 {
 	let $message_box = $('#message_box');
@@ -602,7 +602,7 @@ function hide_message_box(is_clear, callback)
 	});
 }
 
-// Очистка всех событий блока сообщений
+// Removes every message box handler
 function remove_message_box_events()
 {
 	if (config.log_level == LOG_ALL) console.log('remove_message_box_events');
@@ -610,7 +610,7 @@ function remove_message_box_events()
 	$(document).off('keydown.message_box');
 }
 
-// Присвоение событий элементам блока сообщений
+// Binds the message box handlers
 function bind_message_box_events()
 {
 	if (config.log_level == LOG_ALL) console.log('bind_message_box_events');
@@ -711,7 +711,7 @@ function bind_message_box_events()
 		if (is_skip_enabled)
 			set_skip(!config.is_skip);
 		else
-			show_notification('Пропуск непрочитанного отключен', config.notification_delay);
+			show_notification('Skipping unread text is off', config.notification_delay);
 		return false;
 	});
 	$message_box_menu_auto.on('click', function()
@@ -731,17 +731,17 @@ function bind_message_box_events()
 	});
 	$message_box_menu_help.on('click', function()
 	{
-		let info = 'Горячие клавиши\r\n';
+		let info = 'Keyboard shortcuts\r\n';
 		info += '<ul>\r\n';
-		info += '<li>F1 - справка</li>\r\n';
-		info += '<li>S - сохранить игру</li>\r\n';
-		info += '<li>L - загрузить игру</li>\r\n';
-		info += '<li>Ctrl - включить/выключить режим пропуска</li>\r\n';
-		info += '<li>A / Alt - включить/выключить режим авточтения</li>\r\n';
-		info += '<li>M - включить/выключить звук</li>\r\n';
-		info += '<li>Z - скрыть блок с текстом</li>\r\n';
-		info += '<li>Space, Enter - следующий фрагмент</li>\r\n';
-		info += '<li>Esc - отмена</li>\r\n';
+		info += '<li>F1 - help</li>\r\n';
+		info += '<li>S - save game</li>\r\n';
+		info += '<li>L - load game</li>\r\n';
+		info += '<li>Ctrl - toggle skip mode</li>\r\n';
+		info += '<li>A / Alt - toggle auto-read</li>\r\n';
+		info += '<li>M - toggle sound</li>\r\n';
+		info += '<li>Z - hide the text box</li>\r\n';
+		info += '<li>Space, Enter - next passage</li>\r\n';
+		info += '<li>Esc - cancel</li>\r\n';
 		info += '</ul>\r\n';
 		show_info(info);
 		return false;
@@ -785,7 +785,7 @@ function bind_message_box_events()
 	});
 }
 
-// Функция переключения состояние кнопки быстрого пропуска
+// Toggles the skip button
 function set_skip_enabled(state)
 {
 	if (is_skip_enabled === state) return;
@@ -800,7 +800,7 @@ function set_skip_enabled(state)
 	}
 }
 
-// Функция быстрого пропуска
+// Fast skip
 function set_skip(state)
 {
 	if (config.is_skip === state) return;
@@ -830,7 +830,7 @@ function set_skip(state)
 	}
 }
 
-// Функция переключения авточтения
+// Toggles auto-read
 function set_auto(state)
 {
 	if (config.is_auto === state) return;
@@ -853,7 +853,7 @@ function set_auto(state)
 	}
 }
 
-// Функция переключения проигрывания звуков
+// Toggles sound playback
 function set_sound(state)
 {
 	if (config.log_level == LOG_ALL) console.log('set_sound: ' + state);
@@ -868,7 +868,7 @@ function set_sound(state)
 	save_settings();
 }
 
-// Вывод модального оповещения
+// Shows a modal notification
 function show_notification(str, delay = 0)
 {
 	if (config.log_level == LOG_ALL) console.log('show_notification');
@@ -883,7 +883,7 @@ function show_notification(str, delay = 0)
 	return false;
 }
 
-// Закрытие модального оповещения
+// Closes the modal notification
 function close_notification(callback)
 {
 	if (config.log_level == LOG_ALL) console.log('close_notification');
@@ -896,7 +896,7 @@ function close_notification(callback)
 	});
 }
 
-// Вывод модального оповещения
+// Shows a modal notification
 function show_dialog(str, callback)
 {
 	if (config.log_level == LOG_ALL) console.log('show_dialog');
@@ -924,7 +924,7 @@ function show_dialog(str, callback)
 	return false;
 }
 
-// Функция, отображающая главное меню
+// Shows the main menu
 function create_game_menu()
 {
 	if (config.log_level == LOG_ALL) console.log('create_game_menu');
@@ -1101,9 +1101,9 @@ function create_game_menu()
 
 }
 
-// Создание списка сохранений
-// mod: режим (SAVE_MOD иди LOAD_MOD)
-// callback: функция, вызываемая по нажатию кнопки "Вернуться"
+// Builds the save list
+// mod: mode (SAVE_MOD or LOAD_MOD)
+// callback: run when the back button is pressed
 function create_save_load_menu(mod, callback)
 {
 	if (config.log_level == LOG_ALL) console.log('create_save_load_menu');
@@ -1116,9 +1116,9 @@ function create_save_load_menu(mod, callback)
 	if (config.is_skip) set_skip(false);
 	if (config.is_auto) set_auto(false);
 	if (mod)
-		$save_load_menu.prepend('<h2>Сохранение</h2>');
+		$save_load_menu.prepend('<h2>Save</h2>');
 	else
-		$save_load_menu.prepend('<h2>Загрузка</h2>');
+		$save_load_menu.prepend('<h2>Load</h2>');
 	for (let i = 1; i <= 20; i++)
 	{
 		let $save_load_menu_div;
@@ -1139,7 +1139,7 @@ function create_save_load_menu(mod, callback)
 			let bg = '#333';
 			if (!$.isEmptyObject(load_game.bg))
 			{
-				if (load_game.bg.file === undefined) // Костыль для совместимости со старыми сохранениями
+				if (load_game.bg.file === undefined) // workaround for saves made by older versions
 					bg = load_game.bg;
 				else
 					bg = load_game.bg.file;
@@ -1163,7 +1163,7 @@ function create_save_load_menu(mod, callback)
 		}
 		else
 		{
-			$id.append('<div>Свободный слот</div>');
+			$id.append('<div>Empty slot</div>');
 			$id.find('div').css('text-align', 'center');
 		}
 
@@ -1188,7 +1188,7 @@ function create_save_load_menu(mod, callback)
 	}
 	$('<button>')
 		.attr('id', 'save_load_menu_cancel')
-		.append('Отмена')
+		.append('Cancel')
 		.css(
 			{
 				'width': '230px',
@@ -1220,7 +1220,7 @@ function create_save_load_menu(mod, callback)
 	$save_load_menu.stop().fadeTo(config.effect_speed, 1);
 }
 
-// Изменение размеров кнопок меню загрузки и сохранения
+// Sizes the save/load menu buttons
 function resize_save_load_menu()
 {
 	let $save_load_menu = $('#save_load_menu');
@@ -1244,7 +1244,7 @@ function resize_save_load_menu()
 	$save_load_menu.find('button').find('img').css('width', (button_height - 5) * (resolution.width / resolution.height) + 'px');
 }
 
-// Создание меню настроек
+// Builds the settings menu
 function create_config_menu(callback)
 {
 	if (config.log_level == LOG_ALL) console.log('create_config_menu');
@@ -1296,10 +1296,10 @@ function create_config_menu(callback)
 }
 
 /*
- * Служебные сервисные функции
+ * Service functions
  */
 
-// Функция, возвращающая название функции, из которой вызвана
+// Returns the name of the calling function
 /*function get_function_name(fn)
 {
 	return fn.toString().match(/function ([^(]*)\(/)[1] + '()';
@@ -1313,7 +1313,7 @@ function get_function_name(fn)
   return str;
 }
 
-// Функция, проверяющая, является ли переданная строка шестнадцатеричным числом
+// Checks whether a string is a hex number
 function is_hex_color(str)
 {
 	if ((str === '') || (str.indexOf('#') === -1))
@@ -1328,7 +1328,7 @@ function is_hex_color(str)
 	return (hex.toString(16) === str.toLowerCase());
 }
 
-// Функция, проверяющая, является ли имя файла файлом изображения
+// Checks whether a file name is an image
 function is_image_file(filename)
 {
 	if (filename === '')
@@ -1338,7 +1338,7 @@ function is_image_file(filename)
 	return (extentions_list.indexOf(ext) !== -1);
 }
 
-// Функция, проверяющая, является ли имя файла аудиофайлом
+// Checks whether a file name is audio
 function is_audio_file(filename)
 {
 	if (filename === '')
@@ -1348,13 +1348,13 @@ function is_audio_file(filename)
 	return (extentions_list.indexOf(ext) !== -1);
 }
 
-// Сообщение об ошибке
+// Error message
 function show_error(message, delay = 0)
 {
 	let post_array;
 	if (vn)
 	{
-		message = 'Критическая ошибка в скрипте ' + vn.game.script_name + ' в строке ' + vn.game.script_line_num + '!<br><br>' + message;
+		message = 'Script error in ' + vn.game.script_name + ' at line ' + vn.game.script_line_num + '!<br><br>' + message;
 		post_array = 
 		{
 			message: message,
@@ -1377,13 +1377,13 @@ function show_error(message, delay = 0)
 	show_notification(message, delay);
 }
 
-// Сообщение о предупреждении
+// Warning message
 function show_warning(message, callback)
 {
 	let post_array;
 	if (vn)
 	{
-		message = 'Ошибка в скрипте ' + vn.game.script_name + ' в строке ' + vn.game.script_line_num + '!<br><br>' + message;
+		message = 'Error in ' + vn.game.script_name + ' at line ' + vn.game.script_line_num + '!<br><br>' + message;
 		post_array = 
 		{
 			message: message,
@@ -1409,14 +1409,14 @@ function show_warning(message, callback)
 		show_dialog(message);
 }
 
-// Информационное сообщение
+// Informational message
 function show_info(message)
 {
 	show_dialog(message);
 }
 
 
-// Посмотреть список всех глобальных переменных
+// Show every global variable
 function show_vars()
 {
 	let str = '';
@@ -1429,7 +1429,7 @@ function show_vars()
 	}
 }
 
-// Вывод содержимого объекта
+// Print an object's contents
 function obj_to_str(obj)
 {
 	if (typeof(obj) !== 'object')
@@ -1440,7 +1440,7 @@ function obj_to_str(obj)
 	return str;
 }
 
-// "Печатающая машинка"
+// Typewriter
 function type_writer(str, text_speed = 0, prev_text = '')
 {
 	let $message_box_name = $('#message_box_name');
@@ -1492,7 +1492,7 @@ function type_writer(str, text_speed = 0, prev_text = '')
 		message_box_width = $message_box_text.width();
 		if (i < str.length)
 		{
-			while (str[i] === '&') // Обработка сущностей
+			while (str[i] === '&') // handle entities
 			{
 				let lt_pos = i;
 				let gt_pos = str.indexOf(';', lt_pos) + 1;
@@ -1507,14 +1507,14 @@ function type_writer(str, text_speed = 0, prev_text = '')
 			{
 				let lt_pos;
 				let gt_pos;
-				while (str[i] === '<') // Обработка тэгов
+				while (str[i] === '<') // handle tags
 				{
 					lt_pos = i;
 					gt_pos = str.indexOf('>', lt_pos) + 1;
 					if (gt_pos > 1)
 					{
 						sub_str = str.substring(lt_pos, gt_pos);
-						sub_str = sub_str.replace('&#8209;', '-'); // внутри тэгов меняем неразрывный минус на обычный минус
+						sub_str = sub_str.replace('&#8209;', '-'); // inside tags, swap the non-breaking minus for a normal one
 						type_str += sub_str;
 						i = gt_pos;
 					}
@@ -1540,9 +1540,9 @@ function type_writer(str, text_speed = 0, prev_text = '')
 						sub_str = str.substr(i, next_space);
 						if (get_text_width_dom(line_str + sub_str, message_box_font) >= message_box_width)
 						{
-							type_str = type_str.replace('<br />', ' '); // Заменяем сделанный ранее принудительный перенос на пробел, чтобы резиновость работала нормально
+							type_str = type_str.replace('<br />', ' '); // turn an earlier forced break back into a space so wrapping works properly
 							type_str = type_str.slice(0, -1);
-							type_str += '<br />'; // Делаем принудительный перенос, если следующее слово не влезает
+							type_str += '<br />'; // force a break when the next word does not fit
 							line_str = '';
 						}
 					}
@@ -1552,7 +1552,7 @@ function type_writer(str, text_speed = 0, prev_text = '')
 		}
 		else
 		{
-			type_str = type_str.replace('<br />', ' '); // Тут тоже нужно добавленные переносы поменять
+			type_str = type_str.replace('<br />', ' '); // swap the added breaks back too
 			$message_box_text.html(type_str);
 			clearInterval(type_interval);
 			type_interval = undefined;
@@ -1561,7 +1561,7 @@ function type_writer(str, text_speed = 0, prev_text = '')
 	return char_name + prev_text + str;
 }
 
-function get_text_width(str, font) // Выдаёт приблизительное значение
+function get_text_width(str, font) // returns an approximation
 {
 	let canvas = get_text_width.canvas || (get_text_width.canvas = document.createElement('canvas'));
 	let context = canvas.getContext('2d');
@@ -1570,7 +1570,7 @@ function get_text_width(str, font) // Выдаёт приблизительно�
 	return metrics.width;
 }
 
-function get_text_width_dom(str, font) // Выдаёт точное значение
+function get_text_width_dom(str, font) // returns the exact value
 {
   let obj = $('<span>' + str + '</span>')
 							.css({'font': font, 'float': 'left', 'white-space': 'nowrap'})
@@ -1581,7 +1581,7 @@ function get_text_width_dom(str, font) // Выдаёт точное значен
   return width;
 }
 
-function get_text_height_dom(str, font) // Выдаёт точное значение
+function get_text_height_dom(str, font) // returns the exact value
 {
   let obj = $('<span>' + str + '</span>')
 							.css({'font': font, 'float': 'left', 'white-space': 'nowrap'})
@@ -1592,7 +1592,7 @@ function get_text_height_dom(str, font) // Выдаёт точное значе�
   return height;
 }
 
-// Кэширование картинок
+// Cache images
 function preload_images(images_list)
 {
 	if (config.log_level == LOG_ALL) console.log('preload_images');
@@ -1623,7 +1623,7 @@ function preload_images(images_list)
 	});
 }
 
-// Удаление первых и последних кавычек из строки
+// Strip surrounding quotes from a string
 function remove_quotes(str)
 {
 	let last_char = str.length - 1;
@@ -1634,13 +1634,13 @@ function remove_quotes(str)
 		return str;
 }
 
-// Выполнить javascript-код, содержащийся в строке
+// Run the JavaScript in a string
 function perform_code(code)
 {
 	return (window.execScript ? execScript(code) : window.eval(code));
 }
 
-// Получение имени файла без расширения
+// File name without its extension
 function get_file_name(filename)
 {
 	let delimiter_pos = filename.lastIndexOf('.');
@@ -1651,7 +1651,7 @@ function get_file_name(filename)
 		return str;
 }
 
-// Получение расширения имени файла
+// File extension
 function get_file_ext(filename)
 {
 	let delimiter_pos = filename.lastIndexOf('.') + 1;
@@ -1659,25 +1659,25 @@ function get_file_ext(filename)
 	return str;
 }
 
-// Получение времени в миллисекундах
+// Current time in milliseconds
 function get_duration(effect_duration)
 {
 	if (effect_duration === undefined)
 		return false;
 	effect_duration = effect_duration.toString().toLowerCase();
 	if (effect_duration.indexOf('ms') !== -1)
-		effect_duration = effect_duration.slice(0, -2); // уже миллисекунды, приводить не надо
+		effect_duration = effect_duration.slice(0, -2); // already milliseconds, no conversion needed
 	else if (effect_duration.indexOf('s') !== -1)
-		effect_duration = effect_duration.slice(0, -1) * 1000; // приводим к миллисекундам
+		effect_duration = effect_duration.slice(0, -1) * 1000; // convert to milliseconds
 	else
-		effect_duration = effect_duration / 0.12; // приводим к 60 fps
+		effect_duration = effect_duration / 0.12; // convert to 60 fps
 	if (!$.isNumeric(effect_duration))
 		return false;
 	else
 		return effect_duration;
 }
 
-// Вывод верхнего баннера
+// Show the top banner
 function show_promo()
 {
 	if (is_promo) return;
@@ -1743,7 +1743,7 @@ function show_promo()
 	}
 }
 
-// Начать выполнение эффекта
+// Start an effect
 function start_effect($images, effect_prop, effect_strength, effect_ease, effect_speed_mult, transform_css, duration)
 {
 	reset_effects_intervals();
@@ -1798,7 +1798,7 @@ function start_effect($images, effect_prop, effect_strength, effect_ease, effect
 	});
 }
 
-// Сброс всех интервалов эффектов
+// Clear every effect interval
 function reset_effects_intervals()
 {
 	effect_intervals.forEach(function(effect_interval)
@@ -1813,7 +1813,7 @@ function reset_effects_intervals()
 	clearTimeout(effect_timeout);
 }
 
-// Завершение всех эффектов для спрайта
+// End every effect on a sprite
 function stop_all_img_effects($images)
 {
 	reset_effects_intervals();
@@ -1823,7 +1823,7 @@ function stop_all_img_effects($images)
 	});
 }
 
-// Завершение эффекта для конкретного объекта
+// End an effect on one element
 function stop_one_img_effects($image)
 {
 	$image.css(
@@ -1835,7 +1835,7 @@ function stop_one_img_effects($image)
 	});
 }
 
-// Завершение фильтра для конкретного объекта
+// End a filter on one element
 function stop_one_img_filters($image, effect_speed = 0)
 {
 	let filter_str;
@@ -1855,7 +1855,7 @@ function stop_one_img_filters($image, effect_speed = 0)
 	});
 }
 
-// Завершение всех эффектов для спрайта и для фона
+// End every effect on the sprite and the background
 function stop_all_effects()
 {
 	reset_effects_intervals();
@@ -1873,7 +1873,7 @@ function stop_all_effects()
 	});
 }
 
-// Завершение всех эффектов и фильтров для всех спрайтов
+// End every effect and filter on all sprites
 function stop_all_effects_filters()
 {
 	reset_effects_intervals();
@@ -1893,13 +1893,13 @@ function stop_all_effects_filters()
 	});
 }
 
-// Анимации - snow
-function animation_snow(strength = 100) // В эффекте использован код плагина Ивана Лазаревича (http://workshop.rs)
+// Animations - snow
+function animation_snow(strength = 100) // the effect uses Ivan Lazarevic's plugin code (http://workshop.rs)
 {
-	let flake_char = '&#149;'; // символ снежинки
-	let min_size = 7;          // минимальный размер снежинки
-	let max_size = 15;         // максимальный размер снежинки
-	let delay = (101 - strength) * 10; // задержка между снежинками в миллисекундах
+	let flake_char = '&#149;'; // snowflake character
+	let min_size = 7;          // smallest snowflake
+	let max_size = 15;         // largest snowflake
+	let delay = (101 - strength) * 10; // delay between snowflakes in milliseconds
 	let $flake = $('<div class="flake" />');
 	$flake.html(flake_char);
 
@@ -1935,7 +1935,7 @@ function animation_snow(strength = 100) // В эффекте использов�
 	}, delay);
 }
 
-// Анимации - fog
+// Animations - fog
 function animation_fog(strength = 100)
 {
 	strength = strength / 20;
@@ -1947,7 +1947,7 @@ function animation_fog(strength = 100)
 			.fadeIn(config.effect_speed * 5);
 }
 
-// Завершение анимации
+// End the animation
 function stop_animation()
 {
 	clearInterval(animation_interval);
@@ -1956,7 +1956,7 @@ function stop_animation()
 	$('.fog').remove();
 }
 
-// Сброс всех таймаутов
+// Clear every timeout
 function reset_all_timeouts()
 {
 	var max_timeout_id = setTimeout(';');
@@ -1964,7 +1964,7 @@ function reset_all_timeouts()
 		clearTimeout(i);
 }
 
-// Сброс всех интервалов
+// Clear every interval
 function reset_all_intervals()
 {
 	var max_interval_id = setInterval(';');
@@ -1972,7 +1972,7 @@ function reset_all_intervals()
 		clearInterval(i);
 }
 
-// Метод для поиска вхождения регулярки в строку
+// Searches a string for a regex match
 String.prototype.reIndexOf = function(regexp, start_pos)
 {
 	var found_pos = this.substring(start_pos || 0).search(regexp);

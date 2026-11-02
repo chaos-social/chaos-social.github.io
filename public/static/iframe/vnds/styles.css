@@ -877,7 +877,7 @@ input[type=radio]:hover + label:before
 	box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
 }
 
-#info /* одна строчка - 15 пикселей в высоту; см.также в init_log() */
+#info /* one line is 15px tall; see also init_log() */
 {
 	z-index: 99;
 	position: fixed;
@@ -1094,7 +1094,7 @@ input[type=radio]:hover + label:before
 	text-align: center;
 }
 
-/* Убираем странные отступы внутри некоторых элементов (например, button) в FF */
+/* Remove the odd spacing inside some elements (e.g. button) in Firefox */
 *::-moz-focus-inner
 {
   border: 0;
@@ -1420,7 +1420,7 @@ input[type=radio]:hover + label:before
 	}
 }
 
-/* Стили для анимаций */
+/* Animation styles */
 
 .flake
 {

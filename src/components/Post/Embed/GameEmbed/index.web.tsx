@@ -111,21 +111,30 @@ export function GameEmbed({
             accessibilityRole="button"
             accessibilityLabel={l`Play ${view.title}`}
             accessibilityHint={l`Loads the game into this post`}
+            /*
+             * flex_1 is what makes this fill the aspect-ratio box; inset_0
+             * alone leaves it content-height, so the centred play button sits
+             * above the middle of the frame.
+             */
             style={[
               a.absolute,
               a.inset_0,
+              a.flex_1,
               a.align_center,
               a.justify_center,
+              a.gap_sm,
               t.atoms.bg_contrast_25,
             ]}>
-            <PlayButtonIcon />
+            {/*
+             * The glyph inside the icon is absolutely positioned, so it would
+             * anchor above the label rather than in the circle. Give it its
+             * own full-width row to centre against.
+             */}
+            <View style={[a.w_full, a.align_center]}>
+              <PlayButtonIcon />
+            </View>
             <Text
-              style={[
-                a.mt_sm,
-                a.text_sm,
-                a.font_bold,
-                t.atoms.text_contrast_medium,
-              ]}>
+              style={[a.text_sm, a.font_bold, t.atoms.text_contrast_medium]}>
               {GAME_KIND_LABEL[game.kind]}
             </Text>
           </Pressable>
