@@ -87,7 +87,7 @@ import {ChevronTop_Stroke2_Corner0_Rounded as ChevronTopIcon} from '#/components
 import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
-import {IS_IOS, IS_NATIVE} from '#/env'
+import {IS_IOS, IS_NATIVE, IS_WEB} from '#/env'
 
 const PARENT_CHUNK_SIZE = IS_NATIVE ? 5 : 20
 const CHILDREN_CHUNK_SIZE = 50
@@ -939,6 +939,12 @@ export function PostThread({
                 ? undefined
                 : {minIndexForVisible: 0}
             }
+            /*
+             * The web anchor positioning in onContentSizeChangeWebOnly reads
+             * the parents' layout as they're prepended, so the thread renders
+             * every row on web.
+             */
+            disableVirtualization={IS_WEB}
             desktopFixedHeight
             sideBorders={false}
             ListFooterComponent={
