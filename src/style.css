@@ -236,6 +236,17 @@ input:focus {
   width: 12px;
 }
 
+/*
+ * #/features/deck
+ * The feed wrapper is `flex: 0 0 auto` by default, so in a deck column (whose
+ * height is the viewport) it would grow to its whole feed instead of scrolling
+ * inside the column.
+ */
+.wsky-deck .wsky-feed {
+  flex: 1 1 0%;
+  min-height: 0;
+}
+
 /* Spinner component */
 @keyframes rotate {
   0% {

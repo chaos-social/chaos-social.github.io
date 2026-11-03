@@ -118,7 +118,6 @@ function ListImpl<ItemT>(
   const contextScrollHandlers = useScrollHandlers()
   const {isWithinSplitView} = useIsWithinSplitView()
   const t = useTheme()
-  const ax = useAnalytics()
 
   // automatically disable full window scroll when within split view
   const disableFullWindowScroll =
@@ -203,9 +202,8 @@ function ListImpl<ItemT>(
     observeRow,
     getScrollOffsetForIndex,
   } = useListVirtualizer({
-    enabled:
-      !disableVirtualization &&
-      ax.features.enabled(ax.features.WebListVirtualizationEnable),
+    // GrowthBook is inert in this fork, so the gate would never turn on.
+    enabled: !disableVirtualization,
     keys,
     initialNumToRender,
     scrollRootRef: disableFullWindowScroll ? nativeRef : null,

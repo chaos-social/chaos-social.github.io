@@ -64,7 +64,12 @@ export function Deck({
       scrollEventThrottle={100}
       style={[
         userStyle('wsky-deck'),
-        a.flex_1,
+        /*
+         * No `a.flex_1` here: `flex: 1 1 0%` beats the height in a parent with
+         * no height of its own, which would let the deck grow to its tallest
+         * column. As a non-flexing box its height is the viewport, so the
+         * columns' `height: 100%` resolves and each list scrolls itself.
+         */
         a.h_full_vh,
         // The left rail is fixed and overlays the screen, so start past it.
         {marginLeft: LEFT_NAV_MINIMAL_WIDTH},
