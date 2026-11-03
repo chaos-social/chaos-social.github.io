@@ -4,6 +4,7 @@ import {
   collectPdsProfileDidsForFeedRow,
   collectPostUrisForFeedRow,
   filterFeedSlices,
+  filterSeenSlices,
   groupReposts,
 } from '#/components/feeds/postFeedUtils'
 
@@ -75,18 +76,11 @@ it('hides posts seen before the page was fetched', () => {
   jest.spyOn(Date, 'now').mockReturnValue(fetchedAt + 1)
   markSeen(after.feedPostUri)
   jest.restoreAllMocks()
-  const filters = {
-    hideUnreplyablePosts: false,
-    hideQuotesOfBlockedAccounts: false,
-    blockedOrMutedAuthors: [],
-  }
-  expect(
-    filterFeedSlices([before, after, never], {
-      ...filters,
-      seenBefore: fetchedAt,
-    }),
-  ).toEqual([after, never])
-  expect(filterFeedSlices([before, after, never], filters)).toEqual([
+  expect(filterSeenSlices([before, after, never], fetchedAt)).toEqual([
+    after,
+    never,
+  ])
+  expect(filterSeenSlices([before, after, never], fetchedAt - 2)).toEqual([
     before,
     after,
     never,

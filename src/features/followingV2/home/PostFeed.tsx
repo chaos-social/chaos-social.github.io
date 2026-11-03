@@ -669,7 +669,6 @@ let PostFeed = ({
         hideUnreplyablePosts: isFeed && !!hideUnreplyablePosts,
         hideQuotesOfBlockedAccounts: isFeed && !!hideQuotesOfBlockedAccounts,
         blockedOrMutedAuthors,
-        seenBefore: isFeed && seenPostsEnabled ? page.fetchedAt : undefined,
       })
     // wraps a slice item, and replaces it with a showLessFollowup item
     // if the user has pressed show less on it
@@ -1107,23 +1106,6 @@ let PostFeed = ({
   }
 
   useImperativeHandle(ref, () => ({refresh: refreshToTop}))
-
-  /*
-   * Seen posts can empty a whole page, which leaves the list with nothing to
-   * scroll, so the end-of-list handler never fires. Keep fetching until a page
-   * leaves something to show.
-   */
-  useEffect(() => {
-    if (
-      !isFetching &&
-      hasNextPage &&
-      !isError &&
-      data?.pages.length &&
-      !feedItems.some(row => row.type !== 'error' && row.type !== 'empty')
-    ) {
-      void fetchNextPage()
-    }
-  }, [data, feedItems, fetchNextPage, hasNextPage, isFetching, isError])
 
   const onEndReached = useCallback(async () => {
     if (isFetching || !hasNextPage || isError) return

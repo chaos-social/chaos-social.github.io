@@ -38,12 +38,14 @@ import {DISCOVER_FEED_URI} from '#/lib/constants'
 import {logger} from '#/logger'
 import {useNoDiscoverFallback} from '#/state/preferences/no-discover-fallback'
 import {useSeeThroughBlocks} from '#/state/preferences/see-through-blocks'
+import {useSeenPostsEnabled} from '#/state/preferences/seen-posts'
 import {STALE} from '#/state/queries'
 import {DEFAULT_LOGGED_OUT_PREFERENCES} from '#/state/queries/preferences/const'
 import {hasBlockCause} from '#/state/queries/see-through-blocks'
 import {useAppviewClient, useSession} from '#/state/session'
 import * as userActionHistory from '#/state/userActionHistory'
 import {KnownError} from '#/view/com/posts/PostFeedErrorMessage'
+import {filterSeenSlices} from '#/components/feeds/postFeedUtils'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {useFeedTuners} from '../preferences/feed-tuners'
@@ -154,6 +156,7 @@ export function usePostFeedQuery(
   const moderationOpts = useModerationOpts()
   const noDiscoverFallback = useNoDiscoverFallback()
   const seeThroughBlocks = useSeeThroughBlocks()
+  const seenPostsEnabled = useSeenPostsEnabled()
   /*
    * The feed API outlives a rune change (rebuilding it would drop the
    * paginated cache), so it reads the rune through this ref instead of
@@ -203,6 +206,7 @@ export function usePostFeedQuery(
       ignoreFilterFor: opts?.ignoreFilterFor,
       isDiscover,
       seeThroughBlocks,
+      filterSeenPosts: seenPostsEnabled,
     }),
     [
       feedTuners,
@@ -210,6 +214,7 @@ export function usePostFeedQuery(
       opts?.ignoreFilterFor,
       isDiscover,
       seeThroughBlocks,
+      seenPostsEnabled,
     ],
   )
 
@@ -295,6 +300,7 @@ export function usePostFeedQuery(
           ignoreFilterFor,
           isDiscover,
           seeThroughBlocks,
+          filterSeenPosts,
         } = selectArgs
 
         const tuner = new FeedTuner(feedTuners)
@@ -342,9 +348,10 @@ export function usePostFeedQuery(
               cursor: page.cursor,
               fetchedAt: page.fetchedAt,
               page: page.page,
-              slices: tuner
-                .tune(page.feed)
-                .map(slice => {
+              slices: filterSeenSlices(
+                tuner
+                  .tune(page.feed)
+                  .map(slice => {
                   const moderations = slice.items.map(item =>
                     moderatePost(item.post, moderationOpts!),
                   )
@@ -420,6 +427,8 @@ export function usePostFeedQuery(
                   return feedPostSlice
                 })
                 .filter(n => !!n),
+                filterSeenPosts ? page.fetchedAt : undefined,
+              ),
             })),
           ],
         }

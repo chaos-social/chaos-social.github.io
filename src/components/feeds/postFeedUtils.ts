@@ -135,6 +135,20 @@ export function groupReposts(values: FeedPostSlice[]) {
   return values as FeedPostSliceOrGroup[]
 }
 
+/**
+ * Drop posts last seen before the page was fetched. This runs in the feed
+ * queries, before pagination counts items, so filtered pages keep fetching.
+ */
+export function filterSeenSlices(
+  slices: FeedPostSlice[],
+  fetchedAt: number | undefined,
+) {
+  if (fetchedAt === undefined) return slices
+  return slices.filter(
+    slice => (getSeenAt(slice.feedPostUri) ?? Infinity) >= fetchedAt,
+  )
+}
+
 /** Filter before grouping, so a carousel cannot bypass feed preferences. */
 export function filterFeedSlices(
   slices: FeedPostSlice[],
@@ -142,24 +156,14 @@ export function filterFeedSlices(
     hideUnreplyablePosts,
     hideQuotesOfBlockedAccounts,
     blockedOrMutedAuthors,
-    seenBefore,
   }: {
     hideUnreplyablePosts: boolean
     hideQuotesOfBlockedAccounts: boolean
     blockedOrMutedAuthors: string[]
-    /**
-     * Drop posts last seen before this time, usually the page's `fetchedAt`,
-     * so posts seen while scrolling stay put until the next refresh.
-     */
-    seenBefore?: number
   },
 ) {
   return slices.filter(
     slice =>
-      !(
-        seenBefore !== undefined &&
-        (getSeenAt(slice.feedPostUri) ?? Infinity) < seenBefore
-      ) &&
       !slice.items.some(
         item =>
           (hideUnreplyablePosts && item.post.viewer?.replyDisabled === true) ||

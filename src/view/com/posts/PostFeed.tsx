@@ -618,8 +618,6 @@ let PostFeed = ({
               hideUnreplyablePosts: !!filterUnreplyablePosts,
               hideQuotesOfBlockedAccounts: !!filterQuotesOfBlockedAccounts,
               blockedOrMutedAuthors,
-              seenBefore:
-                isFeed && seenPostsEnabled ? page.fetchedAt : undefined,
             })
             const slices = useRepostCarousel
               ? groupReposts(visibleSlices)
@@ -887,23 +885,6 @@ let PostFeed = ({
   useImperativeHandle(ref, () => ({
     refreshFeed,
   }))
-
-  /*
-   * Seen posts can empty a whole page, which leaves the list with nothing to
-   * scroll, so the end-of-list handler never fires. Keep fetching until a page
-   * leaves something to show.
-   */
-  useEffect(() => {
-    if (
-      !isFetching &&
-      hasNextPage &&
-      !isError &&
-      data?.pages.length &&
-      !feedItems.some(row => row.type !== 'error' && row.type !== 'empty')
-    ) {
-      void fetchNextPage()
-    }
-  }, [data, feedItems, fetchNextPage, hasNextPage, isFetching, isError])
 
   const onEndReached = useCallback(async () => {
     if (isFetching || !hasNextPage || isError) return

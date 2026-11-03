@@ -8,8 +8,6 @@ let mockHideUnreplyablePosts = false
 let mockHideQuotesOfBlockedAccounts = false
 let mockRepostCarousel = false
 let mockAnchored = false
-let mockSeenUris: string[] = []
-const mockFetchNextPage = jest.fn()
 
 jest.mock('@lingui/react', () => ({useLingui: () => ({_: () => ''})}))
 jest.mock('@tanstack/react-query', () => ({
@@ -44,13 +42,9 @@ jest.mock('#/state/preferences/hide-quotes-of-blocked-accounts', () => ({
   useHideQuotesOfBlockedAccounts: () => mockHideQuotesOfBlockedAccounts,
 }))
 jest.mock('#/state/preferences/seen-posts', () => ({
-  useSeenPostsEnabled: () => mockSeenUris.length > 0,
+  useSeenPostsEnabled: () => false,
 }))
-jest.mock('#/state/seen-posts', () => ({
-  markSeen: () => {},
-  getSeenAt: (uri: string) =>
-    mockSeenUris.includes(uri) ? 0 : undefined,
-}))
+jest.mock('#/state/seen-posts', () => ({markSeen: () => {}}))
 jest.mock('#/state/preferences/repost-carousel-enabled', () => ({
   useRepostCarouselEnabled: () => mockRepostCarousel,
 }))
@@ -110,12 +104,8 @@ jest.mock('./queries/savedFeedSamples', () => ({
 jest.mock('./queries/postFeed', () => ({
   usePostFeedParams: (_: unknown, params: unknown) => params,
   usePostFeedQuery: () => ({
-    data: {
-      pages: [{slices: mockSeenUris.length ? [] : mockSlices, fetchedAt: 1}],
-    },
+    data: {pages: [{slices: mockSlices, fetchedAt: 1}]},
     isFetched: true,
-    hasNextPage: mockSeenUris.length > 0,
-    fetchNextPage: mockFetchNextPage,
   }),
   usePostFeedFetcher: () => ({}),
   usePostFeedRefresh: () => ({}),
@@ -180,20 +170,6 @@ beforeEach(() => {
   mockHideQuotesOfBlockedAccounts = false
   mockRepostCarousel = false
   mockAnchored = false
-  mockSeenUris = []
-  mockFetchNextPage.mockClear()
-})
-
-it('loads the next page when filtering leaves nothing to scroll', () => {
-  mockSeenUris = ['at://did:plc:author/app.bsky.feed.post/0']
-  render(
-    <PostFeed
-      feed="following"
-      enabled={false}
-      renderEmptyState={() => <></>}
-    />,
-  )
-  expect(mockFetchNextPage).toHaveBeenCalled()
 })
 
 it.each(['following', `feedgen|${DISCOVER_FEED_URI}`] as const)(

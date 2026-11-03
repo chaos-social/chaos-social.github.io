@@ -71,11 +71,26 @@ describe('useAutoPagination', () => {
     expect(second.fetchNextPage).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps fetching past the attempt limit while nothing has loaded', () => {
+    const fetchNextPage = jest.fn().mockResolvedValue(undefined)
+    const data = {pageParams: [undefined]}
+    let value = query({fetchNextPage, data})
+    const {rerender} = renderHook(() => useAutoPagination(value, 0, 10))
+
+    for (let i = 1; i < 10; i++) {
+      value = query({fetchNextPage, data})
+      rerender(undefined)
+    }
+
+    expect(fetchNextPage).toHaveBeenCalledTimes(10)
+  })
+
   it('resets the attempt limit after switching to cached data with the same item count', () => {
     const fetchNextPage = jest.fn().mockResolvedValue(undefined)
     const data = {pageParams: [undefined]}
     let value = query({fetchNextPage, data})
-    const itemCount = 0
+    // Non-zero so the attempt limit, not the "nothing loaded" rule, applies.
+    const itemCount = 1
     const {rerender} = renderHook(() => useAutoPagination(value, itemCount, 10))
 
     for (let i = 1; i < 5; i++) {

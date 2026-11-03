@@ -82,8 +82,13 @@ export function useAutoPagination(
           ?.slice(0, -1)
           .some(param => Object.is(cursorOf(param), currentCursor))
         if (repeatedCursor) return
-        attemptCount.current++
-        if (attemptCount.current < MAX_ATTEMPTS) {
+        /*
+         * Nothing loaded yet means the list has nothing to scroll, so only the
+         * repeated-cursor guard can stop us: feed filters (seen posts, hidden
+         * posts) can empty many pages in a row. Short of that, the attempt
+         * limit applies.
+         */
+        if (itemCount === 0 || ++attemptCount.current < MAX_ATTEMPTS) {
           void query.fetchNextPage()
         }
       } else {

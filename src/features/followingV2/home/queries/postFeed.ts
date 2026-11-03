@@ -33,6 +33,7 @@ import {logger} from '#/logger'
 import {useFeedTuners} from '#/state/preferences/feed-tuners'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {useNoDiscoverFallback} from '#/state/preferences/no-discover-fallback'
+import {useSeenPostsEnabled} from '#/state/preferences/seen-posts'
 import {STALE} from '#/state/queries'
 import {RQKEY_ROOT} from '#/state/queries/post-feed'
 import {usePreferencesQuery} from '#/state/queries/preferences'
@@ -41,6 +42,7 @@ import {useAutoPagination} from '#/state/queries/util'
 import {useAppviewClient, useSession} from '#/state/session'
 import * as userActionHistory from '#/state/userActionHistory'
 import {KnownError} from '#/view/com/posts/PostFeedErrorMessage'
+import {filterSeenSlices} from '#/components/feeds/postFeedUtils'
 import {CustomFeedAPI} from '#/features/followingV2/home/api/custom'
 import {FollowingFeedAPI} from '#/features/followingV2/home/api/following'
 import {HomeFeedAPI} from '#/features/followingV2/home/api/home'
@@ -182,6 +184,7 @@ export function usePostFeedQuery(
   const feedTuners = useFeedTuners(feedDesc)
   const moderationOpts = useModerationOpts()
   const {data: preferences} = usePreferencesQuery()
+  const seenPostsEnabled = useSeenPostsEnabled()
   /**
    * Load bearing: we need to await AA state or risk FOUC. This marginally
    * delays feeds, but AA state is fetched immediately on load and is then
@@ -205,8 +208,15 @@ export function usePostFeedQuery(
       moderationOpts,
       ignoreFilterFor: opts?.ignoreFilterFor,
       isDiscover,
+      filterSeenPosts: seenPostsEnabled,
     }),
-    [feedTuners, moderationOpts, opts?.ignoreFilterFor, isDiscover],
+    [
+      feedTuners,
+      moderationOpts,
+      opts?.ignoreFilterFor,
+      isDiscover,
+      seenPostsEnabled,
+    ],
   )
 
   const query = useInfiniteQuery<
@@ -235,8 +245,13 @@ export function usePostFeedQuery(
       (data: InfiniteData<FeedPageUnselected, RQPageParam>) => {
         // If the selection depends on some data, that data should
         // be included in the selectArgs object and read here.
-        const {feedTuners, moderationOpts, ignoreFilterFor, isDiscover} =
-          selectArgs
+        const {
+          feedTuners,
+          moderationOpts,
+          ignoreFilterFor,
+          isDiscover,
+          filterSeenPosts,
+        } = selectArgs
         /*
          * Data restored from disk is here before the query is enabled, so it
          * can be here before what moderates it is. Until that's ready there's
@@ -298,16 +313,19 @@ export function usePostFeedQuery(
             since: page.since,
             source: page.source,
             fetchedAt: page.fetchedAt,
-            slices: tuner
-              .tune(page.feed)
-              .map(slice =>
-                toFeedPostSlice(slice, {
-                  moderationOpts,
-                  ignoreFilterFor,
-                  isDiscover,
-                }),
-              )
-              .filter(n => !!n),
+            slices: filterSeenSlices(
+              tuner
+                .tune(page.feed)
+                .map(slice =>
+                  toFeedPostSlice(slice, {
+                    moderationOpts,
+                    ignoreFilterFor,
+                    isDiscover,
+                  }),
+                )
+                .filter(n => !!n),
+              filterSeenPosts ? page.fetchedAt : undefined,
+            ),
           }
         }
 
