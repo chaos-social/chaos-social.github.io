@@ -227,6 +227,7 @@ const schema = z.object({
       streamplace: z.enum(externalEmbedOptions).optional(),
       plyr: z.enum(externalEmbedOptions).optional(),
       freemix: z.enum(externalEmbedOptions).optional(),
+      assembly: z.enum(externalEmbedOptions).optional(),
     })
     .optional(),
   invites: z.object({

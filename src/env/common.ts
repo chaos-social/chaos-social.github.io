@@ -157,3 +157,9 @@ export const ENV_PUBLIC_BSKY_SERVICE: string | undefined =
 export const ENV_APPVIEW_DID_PROXY:
   `did:${string}:${string}#bsky_appview` | undefined =
   process.env.EXPO_PUBLIC_APPVIEW_DID_PROXY
+
+export const ASSEMBLY_URL: string =
+  process.env.EXPO_PUBLIC_ASSEMBLY_URL || 'https://assembly.blacksky.community'
+export const ASSEMBLY_SERVICE_DID: string =
+  process.env.EXPO_PUBLIC_ASSEMBLY_SERVICE_DID ||
+  'did:web:assembly.blacksky.community'

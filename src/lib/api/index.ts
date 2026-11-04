@@ -9,10 +9,21 @@ import {RichText} from '@bsky/sdk/richtext'
 import {t} from '@lingui/core/macro'
 import {type QueryClient} from '@tanstack/react-query'
 
-import {type LinkResolvers} from '#/lib/api/resolve'
+import {
+  assemblyThumbUrl,
+  buildAssemblyExternal,
+  ensureAssembly,
+} from '#/lib/api/assembly'
+import {
+  type AssemblyRef,
+  type PollDraft,
+  pollStatementsForPublish,
+  pollTopicFromText,
+} from '#/lib/api/poll'
+import {imageToThumb, type LinkResolvers} from '#/lib/api/resolve'
 import {withCreator} from '#/lib/at-card'
-import {IMAGE_SIZE_CONFIG_POSTS} from '#/lib/constants'
-import {MAX_TAGS} from '#/lib/constants'
+import {IMAGE_SIZE_CONFIG_POSTS, MAX_TAGS} from '#/lib/constants'
+import {} from '#/lib/constants'
 import {isNetworkError} from '#/lib/strings/errors'
 import {
   applyFacetSyntax,
@@ -46,10 +57,35 @@ import {uploadBlob} from './upload-blob'
 
 export {uploadBlob}
 
+const ASSEMBLY_THUMB_TIMEOUT_MS = 5e3
+
+function refusePollWithAttachments(draft: PostDraft) {
+  if (
+    draft.embed.poll &&
+    (draft.embed.media || draft.embed.link || draft.embed.quote)
+  ) {
+    throw new Error(
+      t`A poll cannot be combined with media, a link card or a quote.`,
+    )
+  }
+}
+
+function findPollPost(thread: ThreadDraft): PostDraft | undefined {
+  const [pollPost, ...others] = thread.posts.filter(p => p.embed.poll)
+  if (others.length) {
+    throw new Error(t`A thread can only have one poll.`)
+  }
+  if (pollPost) {
+    refusePollWithAttachments(pollPost)
+  }
+  return pollPost
+}
+
 interface PostOpts {
   thread: ThreadDraft
   replyTo?: string
   onStateChange?: (state: string) => void
+  onAssembly?: (postId: string, ref: AssemblyRef) => void
   langs?: string[]
   /*
    * Facet/mention resolution and reply-root lookup are appview jobs - they
@@ -72,6 +108,15 @@ interface PostOpts {
   tidSuffix?: string
 }
 
+export type PostResult = {
+  uris: string[]
+  assembly?: {
+    conversationId: string
+    statementCount: number
+    isReplay: boolean
+  }
+}
+
 const MAX_TID_SUFFIX_LEN = 6
 
 function nextPostTid(prev: TID | undefined, tidSuffix?: string): TID {
@@ -84,8 +129,10 @@ function nextPostTid(prev: TID | undefined, tidSuffix?: string): TID {
 }
 
 export async function post(queryClient: QueryClient, opts: PostOpts) {
-  const thread = opts.thread
+  let thread = opts.thread
   opts.onStateChange?.(t`Processing...`)
+
+  const pollPost = findPollPost(thread)
 
   let replyPromise:
     | Promise<app.bsky.feed.post.Main['reply']>
@@ -94,6 +141,35 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
   if (opts.replyTo) {
     // Not awaited to avoid waterfalls.
     replyPromise = resolveReply(opts.appviewClient, opts.replyTo)
+  }
+
+  let assembly: PostResult['assembly']
+  const poll = pollPost?.embed.poll
+  if (pollPost && poll) {
+    // An assembly is public and cannot be withdrawn, so a reply whose parent
+    // is gone has to fail before one is started.
+    await replyPromise
+    opts.onStateChange?.(t`Starting poll...`)
+    const statements = pollStatementsForPublish(poll)
+    const {ref, isReplay} = await ensureAssembly(opts.pdsClient, {
+      topic: pollTopicFromText(pollPost.richtext.text),
+      statements,
+      ref: poll.assembly,
+      onRef: next => opts.onAssembly?.(pollPost.id, next),
+    })
+    assembly = {
+      conversationId: ref.conversationId,
+      statementCount: statements.length,
+      isReplay,
+    }
+    thread = {
+      ...thread,
+      posts: thread.posts.map(p =>
+        p === pollPost
+          ? {...p, embed: {...p.embed, poll: {...poll, assembly: ref}}}
+          : p,
+      ),
+    }
   }
 
   // add top 3 languages from user preferences if langs is provided
@@ -231,7 +307,7 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
     }
   }
 
-  return {uris}
+  return {uris, assembly}
 }
 
 async function resolveRT(appviewClient: Client, richtext: RichText) {
@@ -309,7 +385,7 @@ async function resolveReply(appviewClient: Client, replyTo: string) {
   }
 }
 
-async function resolveEmbed(
+export async function resolveEmbed(
   appviewClient: Client,
   chatClient: Client,
   pdsClient: Client,
@@ -317,6 +393,9 @@ async function resolveEmbed(
   draft: PostDraft,
   onStateChange: ((state: string) => void) | undefined,
 ): Promise<app.bsky.feed.post.Main['embed']> {
+  if (draft.embed.poll) {
+    return resolveAssembly(pdsClient, draft, draft.embed.poll, onStateChange)
+  }
   if (draft.embed.quote) {
     const [resolvedMedia, resolvedQuote] = await Promise.all([
       resolveMedia(
@@ -373,6 +452,62 @@ async function resolveEmbed(
     }
   }
   return undefined
+}
+
+async function resolveAssembly(
+  pdsClient: Client,
+  draft: PostDraft,
+  poll: PollDraft,
+  onStateChange: ((state: string) => void) | undefined,
+): Promise<$Typed<app.bsky.embed.external.Main>> {
+  refusePollWithAttachments(draft)
+  const conversationId = poll.assembly?.conversationId
+  if (!conversationId) {
+    throw new Error('A poll cannot be posted before its assembly exists')
+  }
+  return {
+    $type: 'app.bsky.embed.external',
+    external: {
+      ...buildAssemblyExternal({
+        conversationId,
+        topic: pollTopicFromText(draft.richtext.text),
+        statements: pollStatementsForPublish(poll),
+      }),
+      thumb: await uploadAssemblyThumb(
+        pdsClient,
+        conversationId,
+        onStateChange,
+      ),
+    },
+  }
+}
+
+async function uploadAssemblyThumb(
+  pdsClient: Client,
+  conversationId: string,
+  onStateChange: ((state: string) => void) | undefined,
+): Promise<app.bsky.embed.external.External['thumb']> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    const thumb = await Promise.race([
+      imageToThumb(assemblyThumbUrl(conversationId)),
+      new Promise<undefined>(resolve => {
+        timer = setTimeout(() => resolve(undefined), ASSEMBLY_THUMB_TIMEOUT_MS)
+      }),
+    ])
+    if (!thumb) throw new Error('The image could not be read in time')
+    onStateChange?.(t`Uploading link thumbnail...`)
+    const {path, mime} = thumb.source
+    const response = await uploadBlob(pdsClient, path, mime)
+    return response.blob
+  } catch (e) {
+    logger.warn(`Failed to attach the poll thumbnail`, {
+      safeMessage: e instanceof Error ? e.message : String(e),
+    })
+    return undefined
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 async function resolveMedia(

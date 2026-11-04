@@ -11,25 +11,44 @@ export enum Features {
 
   // feature flags
   ImportContactsOnboardingDisable = 'import_contacts:onboarding:disable',
+
   ImportContactsSettingsDisable = 'import_contacts:settings:disable',
+
   LiveNowBetaDisable = 'live_now_beta:disable',
+
   GroupChatsDisable = 'group_chats:disable',
+
   ComposerLanguageDetectionEnable = 'composer:language_detection:enable',
+
   PostGalleryEmbedEnable = 'post_gallery_embed:enable',
+
   PostFeedKnownLikersEnable = 'post_feed:known_likers:enable',
+
   PostThreadKnownLikersEnable = 'post_thread:known_likers:enable',
+
   FollowSortEnable = 'follow_sort:enable',
+
   FollowingV2Enable = 'following_v2:enable',
+
   OnboardingInterestsRequiredEnable = 'onboarding:interests:required:enable',
+
   ModerationInboxEnable = 'moderation_inbox:enable',
+
   AtmosphereScreenEnable = 'atmosphere_screen:enable',
+
   NotificationsV2Enable = 'notifications_v2:enable',
+
   ProfileLinksEnable = 'profile_links:enable',
 
   // values
   StarterPacksConfig = 'starter_packs:config',
+
   TrendingDiscoverValues = 'trending_discover:values',
+
   TrendingExploreTopicsCountValue = 'trending_explore_topics_count:value',
 
   AATest = 'aa-test',
+
+  PollsEnable = 'polls:enable',
+
 }

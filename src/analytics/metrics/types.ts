@@ -415,6 +415,9 @@ export type Events = {
 
   'composer:gif:open': {}
   'composer:gif:select': {}
+  'composer:poll:open': {}
+  'composer:poll:remove': {}
+  'composer:poll:statementAdd': {count: number}
   'composer:image:edit': {
     platform: Platform['OS']
   }
@@ -487,6 +490,8 @@ export type Events = {
     isPartOfThread: boolean
     hasLink: boolean
     hasQuote: boolean
+    hasPoll: boolean
+    pollStatementCount: number
     langs: string
     logContext: 'Composer'
   }
@@ -1334,9 +1339,25 @@ export type Events = {
     target?: string
   }
   'share:press:openDmSearch': {}
-  'share:press:dmSelected': {uri: string}
-  'share:press:recentDm': {uri: string}
-  'share:press:embed': {uri: string}
+  'share:press:dmSelected': {uri: string};
+  'share:press:recentDm': {uri: string};
+  'share:press:embed': {uri: string};
+  'assembly:create': {
+    conversationId: string
+    statementCount: number
+    isReplay: boolean
+  };
+  'assembly:create:error': {
+    stage: 'record' | 'token' | 'create'
+    code: string
+  };
+  'assembly:vote': {
+    conversationId: string
+    tid: number
+    value: 'agree' | 'disagree' | 'pass'
+    remaining: number
+  };
+  'assembly:complete': {conversationId: string}
 
   'embed:standardSite:view': {url: string}
   'embed:standardSite:article:press': {url: string}

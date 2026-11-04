@@ -2,7 +2,7 @@ import {Dimensions} from 'react-native'
 import {isDid} from '@atproto/api'
 
 import {isValidHandle} from '#/lib/strings/handles'
-import {IS_WEB} from '#/env'
+import {ASSEMBLY_URL, IS_WEB} from '#/env'
 
 const IFRAME_HOST = IS_WEB
   ? window.location.host === 'localhost:8100'
@@ -28,6 +28,7 @@ export const embedPlayerSources = [
   'streamplace',
   'plyr',
   'freemix',
+  'assembly',
 ] as const
 
 export type EmbedPlayerSource = (typeof embedPlayerSources)[number]
@@ -54,6 +55,7 @@ export type EmbedPlayerType =
   | 'streamplace_stream'
   | 'plyr_track'
   | 'freemix_track'
+  | 'assembly_conversation'
 
 export function getEmbedPlayerMediaType(
   type: EmbedPlayerType,
@@ -95,6 +97,7 @@ export const externalEmbedLabels: Record<EmbedPlayerSource, string> = {
   streamplace: 'Streamplace',
   plyr: 'plyr.fm',
   freemix: 'FreeMix',
+  assembly: "People's Assembly",
 }
 
 /**
@@ -128,6 +131,27 @@ export interface EmbedPlayerParams {
 
 const giphyRegex = /media(?:[0-4]\.giphy\.com|\.giphy\.com)/i
 const gifFilenameRegex = /^(\S+)\.(webp|gif|mp4)$/i
+
+const ASSEMBLY_HOSTNAME = 'assembly.blacksky.community'
+const ASSEMBLY_HOST = parseHost(ASSEMBLY_URL)
+
+function parseHost(url: string): string | undefined {
+  try {
+    return new URL(url).host || undefined
+  } catch {
+    return undefined
+  }
+}
+
+function getAssemblyOrigin(urlp: URL): string | undefined {
+  if (urlp.hostname === ASSEMBLY_HOSTNAME) {
+    return `https://${ASSEMBLY_HOSTNAME}`
+  }
+  if (ASSEMBLY_HOST && urlp.host === ASSEMBLY_HOST) {
+    return ASSEMBLY_URL.replace(/\/+$/, '')
+  }
+  return undefined
+}
 
 /** AT Protocol TID, i.e. the rkey of a `fm.freemix.track` record */
 const freemixRkeyRegex = /^[2-7a-z]{13}$/
@@ -552,6 +576,20 @@ export function parseEmbedPlayerFromUrl(
       default:
         // we don't know what this is so we can't embed it
         return undefined
+    }
+  }
+
+  // Assembly conversations
+  const assemblyOrigin = getAssemblyOrigin(urlp)
+  if (assemblyOrigin) {
+    const match = urlp.pathname.match(/^\/([0-9A-Za-z]{5,})$/)
+    if (match) {
+      return {
+        type: 'assembly_conversation' as EmbedPlayerType,
+        source: 'assembly' as EmbedPlayerSource,
+        playerUri: `${assemblyOrigin}/${match[1]}`,
+        hideDetails: false,
+      }
     }
   }
 
