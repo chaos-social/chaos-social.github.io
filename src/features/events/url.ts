@@ -28,7 +28,10 @@ export function parseEventUrl(url: string): EventRef | undefined {
     return
   }
   let ref: EventRef | undefined
-  if (isOwn && parts.length === 3 && parts[0] === 'event') {
+  if (isOwn && parts.length === 4 && parts[0] === 'profile' && parts[2] === 'event') {
+    ref = {actor: parts[1], rkey: parts[3]}
+  } else if (isOwn && parts.length === 3 && parts[0] === 'event') {
+    // Pre-standard links, still shared by Blacksky.
     ref = {actor: parts[1], rkey: parts[2]}
   } else if (
     host === 'atmo.rsvp' &&
@@ -57,7 +60,7 @@ export function makeEventLink(
     creator.handle && creator.handle !== 'handle.invalid'
       ? creator.handle
       : creator.did
-  return `/event/${actor}/${rkey}`
+  return `/profile/${actor}/event/${rkey}`
 }
 
 /** Absolute counterpart of {@link makeEventLink}, for the post's link card. */

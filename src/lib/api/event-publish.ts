@@ -30,19 +30,32 @@ function eventRecord(draft: EventDraft, extra?: Record<string, unknown>) {
 }
 
 /**
- * Writes the event record, unless a previous attempt already did (the draft
- * keeps the ref). Returns the record's current `{uri, cid}`.
+ * Writes the event record, reusing a record a previous attempt already wrote
+ * (the draft keeps the ref). Reusing means overwriting it in place, so edits
+ * made between a failed attempt and the retry still land: the event page reads
+ * the record while the post's link card is built from the draft, and the two
+ * must agree.
  */
 export async function ensureEvent(
   client: Client,
   draft: EventDraft,
 ): Promise<EventRecordRef> {
-  if (draft.record) return draft.record
   const repo = client.assertDid
   const body = eventRecord(draft) as unknown as Record<string, unknown> & {
     $type: Nsid
   }
   body.$type = EVENT_COLLECTION
+  if (draft.record) {
+    /* If the record is gone (deleted elsewhere), start over rather than fail. */
+    try {
+      const res = await client.putRecord(
+        body as never,
+        new AtUri(draft.record.uri).rkey,
+        {repo, service: null},
+      )
+      return {uri: res.body.uri, cid: res.body.cid}
+    } catch {}
+  }
   const res = await client.createRecord(body as never, undefined, {
     repo,
     service: null,
@@ -73,8 +86,8 @@ export async function finalizeEvent(
       service: null,
     })
     return {uri: res.body.uri, cid: res.body.cid}
-  } catch {
-    logger.warn('Could not attach the post to the event')
+  } catch (err) {
+    logger.warn('Could not attach the post to the event', {safeMessage: err})
     return ref
   }
 }
@@ -99,8 +112,10 @@ export async function rsvpSelfGoing(
       undefined,
       {repo, service: null},
     )
-  } catch {
-    logger.warn('Could not RSVP the author to the new event')
+  } catch (err) {
+    logger.warn('Could not RSVP the author to the new event', {
+      safeMessage: err,
+    })
   }
 }
 
@@ -114,7 +129,7 @@ export async function deleteEvent(
       repo: client.assertDid,
       service: null,
     })
-  } catch {
-    logger.warn('Could not clean up an unsent event')
+  } catch (err) {
+    logger.warn('Could not clean up an unsent event', {safeMessage: err})
   }
 }

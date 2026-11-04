@@ -225,6 +225,7 @@ import {
   type PostAction,
   type PostDraft,
   postHasAttachment,
+  postHasContent,
   type ThreadDraft,
   threadHasEvent,
   threadHasPoll,
@@ -1124,19 +1125,7 @@ export const ComposePost = ({
   const isComposerEmpty = useMemo(() => {
     // Has multiple posts means it's not empty
     if (thread.posts.length > 1) return false
-
-    const firstPost = thread.posts[0]
-    // Has text
-    if (firstPost.richtext.text.trim().length > 0) return false
-    // Has media
-    if (firstPost.embed.media) return false
-    // Has quote
-    if (firstPost.embed.quote) return false
-    // Has link
-    if (firstPost.embed.link) return false
-    if (firstPost.embed.poll) return false
-
-    return true
+    return !postHasContent(thread.posts[0])
   }, [thread.posts])
 
   // Clear the composer (discard current content)
@@ -3023,7 +3012,10 @@ function ComposerFooter({
                 disabled={!!media || hasPoll || hasEvent}
               />
               {IS_WEB && (
-                <SelectGameBtn onSelectGame={onSelectGame} disabled={!!media} />
+                <SelectGameBtn
+                  onSelectGame={onSelectGame}
+                  disabled={!!media || hasEvent}
+                />
               )}
               <SelectPollBtn
                 onPress={() => dispatch({type: 'embed_add_poll'})}

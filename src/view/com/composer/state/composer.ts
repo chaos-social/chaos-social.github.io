@@ -940,7 +940,7 @@ function postReducer(state: PostDraft, action: PostAction): PostDraft {
     }
     case 'embed_add_game': {
       // One game per post, and it displaces any other media like video does.
-      if (state.embed.media) return state
+      if (state.embed.media || state.embed.event) return state
       return {
         ...state,
         embed: {
