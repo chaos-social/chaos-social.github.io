@@ -63,15 +63,19 @@ export function EventMeta({
   )
 }
 
-/** Going and interested each get their own avatar row so the two never mix. */
+/**
+ * Going and interested in one row, with each status's own avatars stacked
+ * separately so the two groups never mix.
+ */
 function RsvpCounts({event}: {event: EventView}) {
+  const t = useTheme()
   const going = useRsvpsQuery(event.uri, RSVP_GOING)
   const interested = useRsvpsQuery(event.uri, RSVP_INTERESTED)
   const goingAvatars = profilesOf(going.data?.rsvps)
   const interestedAvatars = profilesOf(interested.data?.rsvps)
 
   return (
-    <View style={[a.gap_xs, a.pt_2xs]}>
+    <View style={[a.flex_row, a.align_center, a.gap_sm, a.pt_2xs]}>
       <CountRow
         label={plural(event.goingCount, {
           one: '# going',
@@ -80,13 +84,16 @@ function RsvpCounts({event}: {event: EventView}) {
         avatars={goingAvatars}
       />
       {event.interestedCount > 0 && (
-        <CountRow
-          label={plural(event.interestedCount, {
-            one: '# interested',
-            other: '# interested',
-          })}
-          avatars={interestedAvatars}
-        />
+        <>
+          <Text style={[a.text_sm, t.atoms.text_contrast_low]}>·</Text>
+          <CountRow
+            label={plural(event.interestedCount, {
+              one: '# interested',
+              other: '# interested',
+            })}
+            avatars={interestedAvatars}
+          />
+        </>
       )}
     </View>
   )

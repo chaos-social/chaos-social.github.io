@@ -12,6 +12,7 @@ import {useResolveDidQuery} from '#/state/queries/resolve-uri'
 import {List} from '#/view/com/util/List'
 import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
+import * as SegmentedControl from '#/components/forms/SegmentedControl'
 import * as Layout from '#/components/Layout'
 import {ListFooter, ListMaybePlaceholder} from '#/components/Lists'
 import {Text} from '#/components/Typography'
@@ -21,6 +22,7 @@ import {
   type EventView,
   RSVP_GOING,
   RSVP_INTERESTED,
+  type RsvpStatus,
   type RsvpView,
 } from '#/features/events/types'
 import {eventAtUri} from '#/features/events/url'
@@ -72,8 +74,26 @@ export function EventScreen({route}: Props) {
   )
 }
 
+/*
+ * The appview has no "all" status filter: leaving `status` off returns exactly
+ * going + interested (not-going respondents are excluded on purpose), which is
+ * what the "Either" tab wants. `undefined` here means "leave the param off".
+ */
+type GuestTab = 'going' | 'interested' | 'either'
+const GUEST_TABS: {
+  value: GuestTab
+  status: RsvpStatus | undefined
+}[] = [
+  {value: 'going', status: RSVP_GOING},
+  {value: 'interested', status: RSVP_INTERESTED},
+  {value: 'either', status: undefined},
+]
+
 function EventBody({event, parsed}: {event: EventView; parsed: ParsedEvent}) {
   const {t: l} = useLingui()
+  const [tab, setTab] = useState<GuestTab>('going')
+  const active = GUEST_TABS.find(t => t.value === tab) ?? GUEST_TABS[0]
+
   const {
     data,
     refetch,
@@ -82,20 +102,25 @@ function EventBody({event, parsed}: {event: EventView; parsed: ParsedEvent}) {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useEventRsvpsQuery(event.uri, undefined)
+  } = useEventRsvpsQuery(event.uri, active.status)
   const rsvps = useMemo(
     () => data?.pages.flatMap(page => page.rsvps) ?? [],
     [data],
   )
-  const going = rsvps
+  const mutedOrBlockedCount = data?.pages[0]?.mutedOrBlockedCount ?? 0
+
+  // The header avatars come from the unfiltered query, so they do not shift
+  // when the guest list tab changes.
+  const {data: everyone} = useEventRsvpsQuery(event.uri, undefined)
+  const everyoneRsvps = everyone?.pages.flatMap(page => page.rsvps) ?? []
+  const going = everyoneRsvps
     .filter(rsvp => rsvp.status === RSVP_GOING)
     .slice(0, 5)
     .map(rsvp => rsvp.actor)
-  const interested = rsvps
+  const interested = everyoneRsvps
     .filter(rsvp => rsvp.status === RSVP_INTERESTED)
     .slice(0, 5)
     .map(rsvp => rsvp.actor)
-  const mutedOrBlockedCount = data?.pages[0]?.mutedOrBlockedCount ?? 0
 
   const renderItem = ({item, index}: ListRenderItemInfo<RsvpView>) => (
     <GuestRow rsvp={item} noBorder={index === 0} />
@@ -114,9 +139,37 @@ function EventBody({event, parsed}: {event: EventView; parsed: ParsedEvent}) {
             going={going}
             interested={interested}
           />
-          {!isLoading && !error && rsvps.length > 0 && (
-            <Text style={[a.px_lg, a.pt_lg, a.pb_xs, a.text_lg, a.font_bold]}>
-              <Trans>Guest list</Trans>
+          <View style={[a.px_lg, a.pt_lg]}>
+            <SegmentedControl.Root
+              type="tabs"
+              size="small"
+              label={l`Guest list filter`}
+              value={tab}
+              onChange={setTab}>
+              <SegmentedControl.Item label={l`Going`} value="going">
+                <SegmentedControl.ItemText>
+                  <Trans>Going</Trans>
+                </SegmentedControl.ItemText>
+              </SegmentedControl.Item>
+              <SegmentedControl.Item label={l`Interested`} value="interested">
+                <SegmentedControl.ItemText>
+                  <Trans>Interested</Trans>
+                </SegmentedControl.ItemText>
+              </SegmentedControl.Item>
+              <SegmentedControl.Item label={l`Either`} value="either">
+                <SegmentedControl.ItemText>
+                  <Trans>Either</Trans>
+                </SegmentedControl.ItemText>
+              </SegmentedControl.Item>
+            </SegmentedControl.Root>
+          </View>
+          {!isLoading && !error && rsvps.length === 0 && (
+            <Text style={[a.px_lg, a.py_md, a.text_sm]}>
+              {tab === 'interested' ? (
+                <Trans>No one has marked themselves interested yet.</Trans>
+              ) : (
+                <Trans>No one has RSVP'd yet.</Trans>
+              )}
             </Text>
           )}
         </View>
