@@ -30,6 +30,7 @@ import {Text} from '#/components/Typography'
 import {IS_NATIVE} from '#/env'
 import {IS_ANDROID} from '#/env'
 import {type app} from '#/lexicons'
+import {AssemblyEmbed} from './AssemblyEmbed'
 import {ExternalGif} from './ExternalGif'
 import {ExternalPlayer} from './ExternalPlayer'
 import {GifEmbed} from './Gif'
@@ -42,6 +43,8 @@ export const ExternalEmbed = ({
   hideAlt,
   preview,
   viewContext,
+  postText,
+  postFacets,
 }: {
   link: app.bsky.embed.external.ViewExternal
   onOpen?: () => void
@@ -50,6 +53,8 @@ export const ExternalEmbed = ({
   hideAlt?: boolean
   preview?: boolean
   viewContext?: PostEmbedViewContext
+  postText?: string
+  postFacets?: app.bsky.richtext.facet.Main[]
 }) => {
   const shapePreference = useEnableSquareButtons()
 
@@ -108,6 +113,19 @@ export const ExternalEmbed = ({
           altText={parsedAlt.alt}
           isPreferredAltText={parsedAlt.isPreferred}
           hideAlt={hideAlt}
+        />
+      </View>
+    )
+  }
+
+  if (embedPlayerParams?.type === 'assembly_conversation') {
+    return (
+      <View style={style}>
+        <AssemblyEmbed
+          link={link}
+          params={embedPlayerParams}
+          postText={postText}
+          postFacets={postFacets}
         />
       </View>
     )

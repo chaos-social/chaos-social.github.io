@@ -222,6 +222,9 @@ function MediaEmbed({
           </ContentHider>
         )
       }
+      const record = rest.post?.record
+      const postRecord =
+        record && bsky.isType(app.bsky.feed.post, record) ? record : undefined
       return (
         <ContentHider
           modui={rest.moderation?.ui('contentMedia')}
@@ -232,6 +235,8 @@ function MediaEmbed({
             viewContext={rest.viewContext}
             post={rest.post}
             style={[a.mt_sm, rest.style]}
+            postText={postRecord?.text}
+            postFacets={postRecord?.facets}
           />
         </ContentHider>
       )

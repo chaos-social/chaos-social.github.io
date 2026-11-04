@@ -19,6 +19,7 @@ export enum Nux {
   GroupChatsAnnouncement = 'GroupChatsAnnouncement',
   InviteFriendsAnnouncement = 'InviteFriendsAnnouncement',
   IPadBetaAnnouncement = 'IPadBetaAnnouncement',
+  ComposerPoll = 'ComposerPoll',
 
   /*
    * Blocking announcements. New IDs are required for each new announcement.
@@ -97,6 +98,10 @@ export type AppNux = BaseNux<
       id: Nux.IPadBetaAnnouncement
       data: undefined
     }
+  | {
+      id: Nux.ComposerPoll
+      data: undefined
+    }
 >
 
 export const NuxSchemas: Record<Nux, zod.ZodObject<any> | undefined> = {
@@ -117,4 +122,5 @@ export const NuxSchemas: Record<Nux, zod.ZodObject<any> | undefined> = {
   [Nux.GroupChatsAnnouncement]: undefined,
   [Nux.InviteFriendsAnnouncement]: undefined,
   [Nux.IPadBetaAnnouncement]: undefined,
+  [Nux.ComposerPoll]: undefined,
 }
