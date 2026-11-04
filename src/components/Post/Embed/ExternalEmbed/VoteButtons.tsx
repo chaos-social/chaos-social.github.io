@@ -2,6 +2,8 @@ import {View} from 'react-native'
 import {useLingui} from '@lingui/react/macro'
 
 import {type PollVoteValue} from '#/lib/api/poll'
+import {getShapeStyle} from '#/lib/shapes'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {atoms as a, useTheme} from '#/alf'
 import {Pressable} from '#/components/Pressable'
 import {Text} from '#/components/Typography'
@@ -19,6 +21,9 @@ export function VoteButtons({
 }) {
   const t = useTheme()
   const {t: l} = useLingui()
+  const shapePreference = useEnableSquareButtons()
+  // Same corners as the event RSVP buttons, which are house `Button`s.
+  const shape = getShapeStyle(shapePreference, a.rounded_sm, a.rounded_full)
 
   const options: {
     value: PollVoteValue
@@ -64,8 +69,8 @@ export function VoteButtons({
             a.flex_1,
             a.align_center,
             a.py_sm,
-            a.rounded_md,
             a.border,
+            shape,
             {
               borderColor: option.border,
               backgroundColor: hovered
