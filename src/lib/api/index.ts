@@ -364,9 +364,12 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
     logger.error(`Failed to create post`, {
       safeMessage: e.message,
     })
-    // Only remove an event created by this attempt; a retry or draft that
-    // already points at a record must leave it in place.
-    if (createdEvent && eventRef) {
+    /*
+     * Only remove an event created by this attempt, and never after an
+     * ambiguous failure: a network error may mean the write committed, and
+     * deleting here would strip the event from a live post with no way back.
+     */
+    if (createdEvent && eventRef && !isNetworkError(e)) {
       await deleteEvent(opts.pdsClient, eventRef)
     }
     if (isNetworkError(e)) {

@@ -155,7 +155,8 @@ describe('creating an event with a post', () => {
         r.$type === 'community.lexicon.calendar.event',
     )
     expect(eventCreates).toHaveLength(0)
-    expect(ctx.calls.put).toHaveLength(1)
+    // Reuse overwrites in place, then finalize adds the post ref.
+    expect(ctx.calls.put).toHaveLength(2)
   })
 
   it('deletes the event only when this attempt created it and the post fails', async () => {
@@ -172,6 +173,22 @@ describe('creating an event with a post', () => {
     ).rejects.toThrow()
 
     expect(ctx.calls.delete).toEqual(['3kevent'])
+  })
+
+  it('leaves the event in place when the failure may have committed', async () => {
+    const ctx = setup()
+    ctx.applyWrites.mockImplementationOnce(() =>
+      Promise.reject(new Error('Network request failed')),
+    )
+
+    await expect(
+      post(queryClient, {
+        ...clientsOf(ctx),
+        thread: thread([draft({event: {...EVENT}})]),
+      }),
+    ).rejects.toThrow()
+
+    expect(ctx.calls.delete).toEqual([])
   })
 
   it('leaves a reused event in place when the post fails', async () => {
@@ -225,7 +242,7 @@ describe('the event card', () => {
     expect(embed).toMatchObject({
       $type: 'app.bsky.embed.external',
       external: {
-        uri: 'https://witchsky.app/event/did:plc:alice/3kevent',
+        uri: 'https://witchsky.app/profile/did:plc:alice/event/3kevent',
         title: 'Garden party',
       },
     })

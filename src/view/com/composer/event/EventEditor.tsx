@@ -2,7 +2,6 @@ import {View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {
-  EVENT_NAME_MAX_BYTES,
   type EventDraft,
   type EventMode,
   getEventNameIssue,
@@ -83,14 +82,13 @@ export function EventEditor({
         <TextField.LabelText>
           <Trans>Event name</Trans>
         </TextField.LabelText>
-        <TextField.Root isInvalid={nameIssue === 'invalid'}>
+        <TextField.Root isInvalid={nameIssue !== null}>
           <TextField.Input
             testID="eventNameInput"
             label={l`Event name`}
             placeholder={l`Community meetup`}
             value={event.name}
             onChangeText={name => update({name})}
-            maxLength={EVENT_NAME_MAX_BYTES}
           />
         </TextField.Root>
         {nameIssue && (
@@ -98,9 +96,9 @@ export function EventEditor({
             testID="eventNameHint"
             style={[
               a.text_xs,
-              nameIssue === 'invalid'
-                ? {color: t.palette.negative_500}
-                : t.atoms.text_contrast_medium,
+              nameIssue === 'empty'
+                ? t.atoms.text_contrast_medium
+                : {color: t.palette.negative_500},
             ]}>
             {nameIssue === 'invalid' ? (
               <Trans>This name contains characters that cannot be saved.</Trans>

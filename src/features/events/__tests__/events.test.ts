@@ -139,6 +139,10 @@ describe('parseEventRecord', () => {
 describe('parseEventUrl', () => {
   it('recognises witchsky, Blacksky, atmo.rsvp and Smoke Signal event links', () => {
     expect(
+      parseEventUrl('https://witchsky.app/profile/alice.test/event/3kabc'),
+    ).toEqual({actor: 'alice.test', rkey: '3kabc'})
+    // The old path is still in the wild.
+    expect(
       parseEventUrl('https://witchsky.app/event/alice.test/3kabc'),
     ).toEqual({actor: 'alice.test', rkey: '3kabc'})
     expect(
@@ -156,13 +160,14 @@ describe('parseEventUrl', () => {
   it('ignores other links', () => {
     for (const url of [
       'https://witchsky.app/profile/alice.test',
+      'https://witchsky.app/profile/alice.test/event',
       'https://witchsky.app/event/alice/3kabc',
       'https://example.com/event/alice.test/3kabc',
       'https://smokesignal.events/about',
       'not a url',
       'https://example.com/sale-50%-off',
       'https://example.com/a%E0%A4%A',
-      'https://witchsky.app/event/alice.test/%E0%A4%A',
+      'https://witchsky.app/profile/alice.test/event/%E0%A4%A',
     ]) {
       expect(parseEventUrl(url)).toBe(undefined)
     }
@@ -171,15 +176,15 @@ describe('parseEventUrl', () => {
   it('builds links the parser reads back', () => {
     expect(
       makeEventLink({did: 'did:plc:x', handle: 'handle.invalid'}, 'k'),
-    ).toBe('/event/did:plc:x/k')
+    ).toBe('/profile/did:plc:x/event/k')
     expect(makeEventLink({did: 'did:plc:x', handle: ''}, 'k')).toBe(
-      '/event/did:plc:x/k',
+      '/profile/did:plc:x/event/k',
     )
     const link = makeEventLink(
       {did: 'did:plc:x', handle: 'alice.test'},
       '3kabc',
     )
-    expect(link).toBe('/event/alice.test/3kabc')
+    expect(link).toBe('/profile/alice.test/event/3kabc')
     expect(parseEventUrl(`https://witchsky.app${link}`)).toEqual({
       actor: 'alice.test',
       rkey: '3kabc',

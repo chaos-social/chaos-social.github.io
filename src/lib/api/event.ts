@@ -1,9 +1,6 @@
 import {inspectText} from '#/lib/api/poll'
 
-export const EVENT_NAME_MAX_GRAPHEMES = 200
 export const EVENT_NAME_MAX_BYTES = 1000
-export const EVENT_DESCRIPTION_MAX_GRAPHEMES = 2000
-export const EVENT_DESCRIPTION_MAX_BYTES = 10000
 
 export type EventMode = 'inperson' | 'virtual' | 'hybrid'
 

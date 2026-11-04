@@ -32,12 +32,26 @@ function fakeClient(overrides: Partial<Record<string, unknown>> = {}) {
 }
 
 describe('ensureEvent', () => {
-  it('reuses a saved record instead of writing a new one', async () => {
+  it('overwrites a saved record in place instead of creating a new one', async () => {
     const client = fakeClient()
     const saved = {uri: URI, cid: 'saved'}
     const result = await ensureEvent(client, draft({record: saved}))
-    expect(result).toEqual(saved)
+    expect(result).toEqual({uri: URI, cid: 'cid-2'})
     expect(client.createRecord).not.toHaveBeenCalled()
+    expect(client.putRecord).toHaveBeenCalledWith(
+      expect.objectContaining({name: 'Meetup'}),
+      '3kevent',
+      expect.objectContaining({repo: 'did:plc:alice', service: null}),
+    )
+  })
+
+  it('falls back to a create when the saved record is gone', async () => {
+    const client = fakeClient({
+      putRecord: jest.fn(() => Promise.reject(new Error('gone'))),
+    })
+    const result = await ensureEvent(client, draft({record: {uri: URI, cid: 's'}}))
+    expect(result).toEqual({uri: URI, cid: 'cid-1'})
+    expect(client.createRecord).toHaveBeenCalled()
   })
 
   it('creates the event record in the account repo', async () => {

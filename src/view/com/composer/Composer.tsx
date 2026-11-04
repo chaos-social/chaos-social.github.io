@@ -145,8 +145,6 @@ import {
   ExternalEmbedLink,
 } from '#/view/com/composer/ExternalEmbed'
 import {ExternalEmbedRemoveBtn} from '#/view/com/composer/ExternalEmbedRemoveBtn'
-import {GamePreview} from '#/view/com/composer/games/GamePreview'
-import {SelectGameBtn} from '#/view/com/composer/games/SelectGameBtn'
 import {GifAltTextDialog} from '#/view/com/composer/GifAltText'
 import {LabelsBtn} from '#/view/com/composer/labels/LabelsBtn'
 import {Gallery} from '#/view/com/composer/photos/Gallery'
@@ -155,7 +153,6 @@ import {SelectGifBtn} from '#/view/com/composer/photos/SelectGifBtn'
 import {PollEditor} from '#/view/com/composer/poll/PollEditor'
 import {SelectPollBtn} from '#/view/com/composer/poll/SelectPollBtn'
 import {SuggestedLanguage} from '#/view/com/composer/select-language/SuggestedLanguage'
-import {type GameMedia} from '#/view/com/composer/state/composer'
 import {TagsBtn} from '#/view/com/composer/tags/TagsBtn'
 // TODO: Prevent naming components that coincide with RN primitives
 // due to linting false positives
@@ -229,6 +226,7 @@ import {
   type PostAction,
   type PostDraft,
   postHasAttachment,
+  postHasContent,
   type ThreadDraft,
   threadHasEvent,
   threadHasPoll,
@@ -1132,19 +1130,7 @@ export const ComposePost = ({
   const isComposerEmpty = useMemo(() => {
     // Has multiple posts means it's not empty
     if (thread.posts.length > 1) return false
-
-    const firstPost = thread.posts[0]
-    // Has text
-    if (firstPost.richtext.text.trim().length > 0) return false
-    // Has media
-    if (firstPost.embed.media) return false
-    // Has quote
-    if (firstPost.embed.quote) return false
-    // Has link
-    if (firstPost.embed.link) return false
-    if (firstPost.embed.poll) return false
-
-    return true
+    return !postHasContent(thread.posts[0])
   }, [thread.posts])
 
   // Clear the composer (discard current content)
