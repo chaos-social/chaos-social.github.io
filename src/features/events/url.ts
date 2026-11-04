@@ -59,3 +59,11 @@ export function makeEventLink(
       : creator.did
   return `/event/${actor}/${rkey}`
 }
+
+/** Absolute counterpart of {@link makeEventLink}, for the post's link card. */
+export function makeEventUrl(
+  creator: {did: string; handle?: string},
+  rkey: string,
+) {
+  return `https://witchsky.app${makeEventLink(creator, rkey)}`
+}

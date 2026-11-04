@@ -59,6 +59,7 @@ import {useNavigation} from '@react-navigation/native'
 import {useQueries, useQueryClient} from '@tanstack/react-query'
 
 import {generateAltText} from '#/lib/ai/generateAltText'
+import {AssemblyError, type AssemblyErrorCode} from '#/lib/api/assembly'
 import * as apilib from '#/lib/api/index'
 import {type AssemblyRef} from '#/lib/api/poll'
 import {EmbeddingDisabledError} from '#/lib/api/resolve'
@@ -137,20 +138,24 @@ import {saveRecovery} from '#/state/shell/composer/recovery'
 import {CharProgress} from '#/view/com/composer/char-progress/CharProgress'
 import {ComposerReplyTo} from '#/view/com/composer/ComposerReplyTo'
 import {DraftsButton} from '#/view/com/composer/drafts/DraftsButton'
+import {EventEditor} from '#/view/com/composer/event/EventEditor'
+import {SelectEventBtn} from '#/view/com/composer/event/SelectEventBtn'
 import {
   ExternalEmbedGif,
   ExternalEmbedLink,
 } from '#/view/com/composer/ExternalEmbed'
 import {ExternalEmbedRemoveBtn} from '#/view/com/composer/ExternalEmbedRemoveBtn'
+import {GamePreview} from '#/view/com/composer/games/GamePreview'
+import {SelectGameBtn} from '#/view/com/composer/games/SelectGameBtn'
 import {GifAltTextDialog} from '#/view/com/composer/GifAltText'
 import {LabelsBtn} from '#/view/com/composer/labels/LabelsBtn'
 import {Gallery} from '#/view/com/composer/photos/Gallery'
 import {OpenCameraBtn} from '#/view/com/composer/photos/OpenCameraBtn'
 import {SelectGifBtn} from '#/view/com/composer/photos/SelectGifBtn'
-import {AssemblyError, type AssemblyErrorCode} from '#/lib/api/assembly'
 import {PollEditor} from '#/view/com/composer/poll/PollEditor'
 import {SelectPollBtn} from '#/view/com/composer/poll/SelectPollBtn'
 import {SuggestedLanguage} from '#/view/com/composer/select-language/SuggestedLanguage'
+import {type GameMedia} from '#/view/com/composer/state/composer'
 import {TagsBtn} from '#/view/com/composer/tags/TagsBtn'
 // TODO: Prevent naming components that coincide with RN primitives
 // due to linting false positives
@@ -218,12 +223,14 @@ import {
   composerReducer,
   createComposerState,
   type EmbedDraft,
+  isEventPostable,
   isPollPostable,
   MAX_GALLERY_IMAGES,
   type PostAction,
   type PostDraft,
   postHasAttachment,
   type ThreadDraft,
+  threadHasEvent,
   threadHasPoll,
 } from './state/composer'
 import {prepareVideoForAccount} from './state/prepareVideoForAccount'
@@ -1110,7 +1117,8 @@ export const ComposePost = ({
         post.richtext.text.trim().length > 0 ||
         post.embed.media ||
         post.embed.link ||
-        post.embed.poll,
+        post.embed.poll ||
+        post.embed.event,
     )
     ax.metric('draft:discard', {
       logContext: 'ComposerClose',
@@ -1303,6 +1311,7 @@ export const ComposePost = ({
   )
 
   const canAddPoll = !threadHasPoll(thread)
+  const canAddEvent = !threadHasEvent(thread)
 
   const getAssemblyErrorMessage = useCallback(
     (code: AssemblyErrorCode): string => {
@@ -1340,7 +1349,8 @@ export const ComposePost = ({
             post.embed.media?.type === 'video' &&
             post.embed.media.video.status === 'error'
           ) &&
-          isPollPostable(post)),
+          isPollPostable(post) &&
+          isEventPostable(post)),
     )
 
   const getFilteredThread = useCallback((): {
@@ -1492,6 +1502,13 @@ export const ComposePost = ({
             postAction: {type: 'embed_set_poll_assembly', assembly},
           })
         },
+        onEvent: (postId: string, record: {uri: string; cid: string}) => {
+          composerDispatch({
+            type: 'update_post',
+            postId,
+            postAction: {type: 'embed_set_event_record', record},
+          })
+        },
         langs: currentLanguages,
         appviewClient: postingAgent ? buildAppviewClient(postingAgent) : client,
         chatClient: postingAgent ? buildChatClient(postingAgent) : chatClient,
@@ -1619,6 +1636,7 @@ export const ComposePost = ({
             hasQuote: !!post.embed.quote,
             hasPoll: !!post.embed.poll,
             pollStatementCount: post.embed.poll?.statements.length ?? 0,
+            hasEvent: !!post.embed.event,
             langs: fromPostLanguages(currentLanguages),
             logContext: 'Composer',
           })
@@ -1872,6 +1890,7 @@ export const ComposePost = ({
         post={activePost}
         dispatch={dispatch}
         canAddPoll={canAddPoll}
+        canAddEvent={canAddEvent}
         showAddButton={canAddPost}
         onError={setError}
         onSelectVideo={selectVideo}
@@ -2134,11 +2153,17 @@ let ComposerPost = memo(function ComposerPost({
   )
 
   const hasPoll = !!post.embed.poll
+  const hasEvent = !!post.embed.event
   const onPhotoPasted = useCallback(
     async (uri: string) => {
-      if (hasPoll) {
+      if (hasPoll || hasEvent) {
         if (IS_WEB) {
-          Toast.show(l`Remove the poll to add media`, {type: 'warning'})
+          Toast.show(
+            hasPoll
+              ? l`Remove the poll to add media`
+              : l`Remove the event to add media`,
+            {type: 'warning'},
+          )
         }
         return
       }
@@ -2164,7 +2189,7 @@ let ComposerPost = memo(function ComposerPost({
         onImageAdd([res])
       }
     },
-    [post.id, hasPoll, onSelectVideo, onImageAdd, l],
+    [post.id, hasPoll, hasEvent, onSelectVideo, onImageAdd, l],
   )
 
   useHideKeyboardOnBackground()
@@ -2650,6 +2675,7 @@ function ComposerEmbeds({
       {embed.poll && (
         <PollEditor poll={embed.poll} text={text} dispatch={dispatch} />
       )}
+      {embed.event && <EventEditor event={embed.event} dispatch={dispatch} />}
 
       {!embed.media && embed.link && (
         <View style={[a.relative, a.mt_lg]} key={embed.link.uri}>
@@ -2828,6 +2854,7 @@ function ComposerFooter({
   post,
   dispatch,
   canAddPoll,
+  canAddEvent,
   showAddButton,
   onSelectVideo,
   onAddPost,
@@ -2840,6 +2867,7 @@ function ComposerFooter({
   post: PostDraft
   dispatch: (action: PostAction) => void
   canAddPoll: boolean
+  canAddEvent: boolean
   showAddButton: boolean
   onError: (error: string) => void
   onSelectVideo: (
@@ -2857,6 +2885,7 @@ function ComposerFooter({
   const {t: l} = useLingui()
   const {gtPhone} = useBreakpoints()
   const hasPoll = !!post.embed.poll
+  const hasEvent = !!post.embed.event
   /*
    * Once we've allowed a certain type of asset to be selected, we don't allow
    * other types of media to be selected.
@@ -2885,7 +2914,7 @@ function ComposerFooter({
   } else {
     isMediaSelectionDisabled = !!media
   }
-  if (hasPoll) {
+  if (hasPoll || hasEvent) {
     isMediaSelectionDisabled = true
   }
 
@@ -2974,6 +3003,7 @@ function ComposerFooter({
               <OpenCameraBtn
                 disabled={
                   hasPoll ||
+                  hasEvent ||
                   (media?.type === 'images' || media?.type === 'gallery'
                     ? isMaxImages
                     : !!media)
@@ -2982,11 +3012,15 @@ function ComposerFooter({
               />
               <SelectGifBtn
                 onSelectGif={onSelectGif}
-                disabled={!!media || hasPoll}
+                disabled={!!media || hasPoll || hasEvent}
               />
               <SelectPollBtn
                 onPress={() => dispatch({type: 'embed_add_poll'})}
                 disabled={!canAddPoll || postHasAttachment(post)}
+              />
+              <SelectEventBtn
+                onPress={() => dispatch({type: 'embed_add_event'})}
+                disabled={!canAddEvent || postHasAttachment(post)}
               />
               {IS_WEB && gtPhone ? (
                 <EmojiPicker.Root nextFocusRef={textInputRef}>

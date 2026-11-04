@@ -418,6 +418,8 @@ export type Events = {
   'composer:poll:open': {}
   'composer:poll:remove': {}
   'composer:poll:statementAdd': {count: number}
+  'composer:event:open': {}
+  'composer:event:remove': {}
   'composer:image:edit': {
     platform: Platform['OS']
   }
@@ -492,6 +494,7 @@ export type Events = {
     hasQuote: boolean
     hasPoll: boolean
     pollStatementCount: number
+    hasEvent: boolean
     langs: string
     logContext: 'Composer'
   }

@@ -11,6 +11,7 @@ import {logger} from '#/view/com/composer/drafts/state/logger'
 import {TimeElapsed} from '#/view/com/util/TimeElapsed'
 import {atoms as a, select, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
+import {CalendarDays_Stroke2_Corner0_Rounded as CalendarIcon} from '#/components/icons/CalendarDays'
 import {CirclePlus_Stroke2_Corner0_Rounded as CirclePlusIcon} from '#/components/icons/CirclePlus'
 import {type Props as SVGIconProps} from '#/components/icons/common'
 import {DotGrid3x1_Stroke2_Corner0_Rounded as DotsIcon} from '#/components/icons/DotGrid'
@@ -131,6 +132,7 @@ export function DraftItem({
             {!mediaExistsOnOtherDevice && <DraftMediaPreview post={post} />}
 
             {post.poll && <DraftPollPreview poll={post.poll} />}
+            {post.event && <DraftEventPreview event={post.event} />}
 
             {hasMetadata && (
               <View
@@ -349,6 +351,47 @@ function DraftPollPreview({poll}: {poll: {statements: string[]}}) {
           {statement}
         </Text>
       ))}
+    </View>
+  )
+}
+
+function DraftEventPreview({
+  event,
+}: {
+  event: {name: string; date: string; time: string}
+}) {
+  const t = useTheme()
+  const {t: l, i18n} = useLingui()
+  const when = event.date && event.time ? `${event.date}T${event.time}` : ''
+  return (
+    <View
+      style={[
+        a.p_sm,
+        a.gap_xs,
+        a.rounded_sm,
+        a.border,
+        t.atoms.border_contrast_low,
+      ]}>
+      <View style={[a.flex_row, a.align_center, a.gap_xs]}>
+        <CalendarIcon size="xs" fill={t.palette.primary_500} />
+        <Text style={[a.text_xs, a.font_bold, {color: t.palette.primary_500}]}>
+          {l({
+            message: 'Event',
+            comment: 'Label on a draft preview showing the draft has an event',
+          })}
+        </Text>
+      </View>
+      <Text
+        emoji
+        style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_high]}
+        numberOfLines={2}>
+        {event.name}
+      </Text>
+      {when ? (
+        <Text style={[a.text_xs, t.atoms.text_contrast_medium]}>
+          {i18n.date(when, {dateStyle: 'medium', timeStyle: 'short'})}
+        </Text>
+      ) : null}
     </View>
   )
 }
