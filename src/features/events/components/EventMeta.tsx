@@ -37,7 +37,9 @@ export function EventMeta({
       {time && (
         <View style={[a.flex_row, a.align_center, a.gap_xs]}>
           <ClockIcon size="sm" style={[t.atoms.text_contrast_medium]} />
-          <Text style={[a.text_sm, t.atoms.text_contrast_medium, a.flex_1]}>
+          <Text
+            numberOfLines={2}
+            style={[a.text_sm, t.atoms.text_contrast_medium, a.flex_1]}>
             {time.primary}
             {time.local ? ` · ${_(msg`${time.local} your time`)}` : ''}
           </Text>

@@ -158,7 +158,7 @@ function EventBody({event, parsed}: {event: EventView; parsed: ParsedEvent}) {
               </SegmentedControl.Item>
               <SegmentedControl.Item label={l`Either`} value="either">
                 <SegmentedControl.ItemText>
-                  <Trans>Either</Trans>
+                  <Trans>All</Trans>
                 </SegmentedControl.ItemText>
               </SegmentedControl.Item>
             </SegmentedControl.Root>
