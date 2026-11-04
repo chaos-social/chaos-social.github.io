@@ -49,6 +49,8 @@ import {SubtleHover} from '#/components/SubtleHover'
 import {IS_ANDROID, IS_WEB} from '#/env'
 import {TokimekiPollEmbed} from '#/features/tokimeki/components/TokimekiPollEmbed'
 import {parseTokimekiPollUrl} from '#/features/tokimeki/parse'
+import {EventEmbed} from '#/features/events/components/EventEmbed'
+import {parseEventUrl} from '#/features/events/url'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 export {PostPoll} from '#/features/pollblue/components/PostPoll'
@@ -198,6 +200,21 @@ function MediaEmbed({
             Card={atProvider ? AtCard : StandardSiteEmbed}
             {...rest}
           />
+        )
+      }
+      const eventRef = parseEventUrl(embed.view.external.uri)
+      if (eventRef) {
+        return (
+          <ContentHider
+            modui={rest.moderation?.ui('contentMedia')}
+            activeStyle={[a.mt_sm]}>
+            <EventEmbed
+              eventRef={eventRef}
+              link={embed.view.external}
+              onOpen={rest.onOpen}
+              style={[a.mt_sm, rest.style]}
+            />
+          </ContentHider>
         )
       }
       const chatInviteCode = getChatInviteCodeFromUrl(embed.view.external.uri)

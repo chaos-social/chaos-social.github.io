@@ -26,6 +26,7 @@ export type CommonNavigatorParams = {
   AuthCallback: undefined
   Atmosphere: undefined
   Lists: undefined
+  Event: {name: string; rkey: string}
   Moderation: undefined
   ModerationInbox: {tab?: ModerationInboxTab}
   ModerationInboxSettings: undefined

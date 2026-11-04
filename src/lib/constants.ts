@@ -298,6 +298,14 @@ export const MOD_PROXY_SERVICE: Service = `${MOD_PROXY_DID || api.moderation.did
  */
 export const NOTIF_SERVICE: Service = `${BLUESKY_PROXY_DID}#bsky_notif`
 
+/**
+ * The Blacksky AppView's proxy target. The `community.blacksky.calendar.*`
+ * endpoints exist only there (Bluesky's AppView answers 501), so event reads
+ * and writes are sent through this per-call `service`.
+ */
+export const BLACKSKY_APPVIEW: Service =
+  'did:web:api.blacksky.community#bsky_appview'
+
 export const webLinks = {
   tos: `https://bsky.social/about/support/tos`,
   privacy: `https://bsky.social/about/support/privacy-policy`,
