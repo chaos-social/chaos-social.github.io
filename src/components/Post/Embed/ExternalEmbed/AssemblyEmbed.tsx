@@ -8,12 +8,13 @@ import {pollTopicFromText, type PollVoteValue} from '#/lib/api/poll'
 import {useOpenLink} from '#/lib/hooks/useOpenLink'
 import {type EmbedPlayerParams} from '#/lib/strings/embed-player'
 import {expandLinks} from '#/lib/strings/rich-text-manip'
-import {useAgent, useSession} from '#/state/session'
+import {usePdsClient, useSession} from '#/state/session'
 import {Logo as BlackskyLogo} from '#/view/icons/Logo'
 import {atoms as a, useTheme} from '#/alf'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {ASSEMBLY_URL} from '#/env'
+import {com} from '#/lexicons'
 import {type app} from '#/lexicons'
 import {VoteButtons} from './VoteButtons'
 
@@ -101,9 +102,9 @@ export function AssemblyEmbed({
   const t = useTheme()
   const {t: l} = useLingui()
   const ax = useAnalytics()
-  const agent = useAgent()
+  const pdsClient = usePdsClient()
   const openLink = useOpenLink()
-  const {currentAccount} = useSession()
+  const {currentAccount, hasSession} = useSession()
   const conversationId = extractConversationId(link.uri)
   const hasCompleted = useRef(false)
 
@@ -119,7 +120,7 @@ export function AssemblyEmbed({
   } | null>(null)
 
   const viewerDid = currentAccount?.did
-  const isAuthenticated = !!viewerDid
+  const isAuthenticated = hasSession
   const participationToken =
     participation && participation.did === viewerDid
       ? participation.token
@@ -152,7 +153,7 @@ export function AssemblyEmbed({
         return
       }
 
-      if (viewerDid) {
+      if (hasSession && viewerDid) {
         try {
           const xidParams = new URLSearchParams({
             conversation_id: conversationId,
@@ -188,7 +189,7 @@ export function AssemblyEmbed({
     return () => {
       cancelled = true
     }
-  }, [conversationId, viewerDid])
+  }, [conversationId, hasSession, viewerDid])
 
   const handleVote = useCallback(
     async (value: PollVoteValue) => {
@@ -200,21 +201,30 @@ export function AssemblyEmbed({
         const vote = VOTE_NUMBERS[value]
         let voteAtUri: string | undefined
 
-        if (agent.session && statement.at_uri && statement.at_cid) {
-          const createResult = await agent.com.atproto.repo.createRecord({
-            repo: agent.assertDid,
-            collection: 'community.blacksky.assembly.vote',
-            record: {
-              $type: 'community.blacksky.assembly.vote',
-              subject: {
-                uri: statement.at_uri,
-                cid: statement.at_cid,
+        /*
+         * The signed record is the proof of identity: the assembly fetches it
+         * from the account's PDS and checks it before counting the vote. An
+         * OAuth session has no `agent.session`, so this must go through the
+         * pds client rather than the legacy agent.
+         */
+        if (hasSession && statement.at_uri && statement.at_cid) {
+          const createResult = await pdsClient.call(
+            com.atproto.repo.createRecord,
+            {
+              repo: pdsClient.assertDid,
+              collection: 'community.blacksky.assembly.vote',
+              record: {
+                $type: 'community.blacksky.assembly.vote',
+                subject: {
+                  uri: statement.at_uri,
+                  cid: statement.at_cid,
+                },
+                value: vote,
+                createdAt: new Date().toISOString(),
               },
-              value: vote,
-              createdAt: new Date().toISOString(),
             },
-          })
-          voteAtUri = createResult.data.uri
+          )
+          voteAtUri = createResult.uri
         }
 
         const voteHeaders: Record<string, string> = {
@@ -269,7 +279,7 @@ export function AssemblyEmbed({
         setVoting(false)
       }
     },
-    [agent, ax, statement, conversationId, voting, participationToken],
+    [hasSession, pdsClient, ax, statement, conversationId, voting, participationToken],
   )
 
   const onVote = useCallback(
