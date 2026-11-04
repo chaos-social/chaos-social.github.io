@@ -15,14 +15,17 @@ jest.mock('#/env', () => ({
   ...jest.requireActual<Record<string, unknown>>('#/env'),
   ASSEMBLY_URL: 'http://localhost:5000/',
 }))
-jest.mock('#/alf', () => {
-  const blank = new Proxy({}, {get: () => ({})})
-  return {atoms: blank, useTheme: () => ({atoms: blank})}
-})
+
 jest.mock('#/components/Typography', () => {
   const {Text} = require('react-native')
   return {Text}
 })
+jest.mock('#/components/icons/Poll', () => ({
+  Poll_Stroke2_Corner0_Rounded: () => null,
+}))
+jest.mock('#/state/preferences/enable-square-buttons', () => ({
+  useEnableSquareButtons: () => false,
+}))
 jest.mock('#/view/icons/Logo', () => ({Logo: () => null}))
 
 type Viewer = {did: string} | undefined
@@ -54,6 +57,9 @@ jest.mock('#/analytics', () => ({
 }))
 
 jest.mock('#/lib/haptics', () => ({useHaptics: () => jest.fn()}))
+jest.mock('#/state/shell', () => ({
+  useThemePrefs: () => ({colorMode: 'light'}),
+}))
 jest.mock('#/lib/sharing', () => ({shareUrl: jest.fn()}))
 jest.mock('#/state/preferences', () => ({
   useExternalEmbedsPrefs: () => undefined,

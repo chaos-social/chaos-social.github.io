@@ -15,6 +15,10 @@ jest.mock('@lingui/react', () => {
 jest.mock('#/alf', () => ({
   atoms: new Proxy({}, {get: () => ({})}),
   useTheme: () => ({
+    palette: {
+      positive_500: '#61C554',
+      negative_500: '#F40B42',
+    },
     atoms: {
       bg_contrast_25: {backgroundColor: '#F1F3F5'},
       bg_contrast_50: {backgroundColor: '#E2E7EC'},

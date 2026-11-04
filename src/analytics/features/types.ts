@@ -48,7 +48,4 @@ export enum Features {
   TrendingExploreTopicsCountValue = 'trending_explore_topics_count:value',
 
   AATest = 'aa-test',
-
-  PollsEnable = 'polls:enable',
-
 }

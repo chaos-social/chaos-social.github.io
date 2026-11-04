@@ -1,16 +1,19 @@
 import {useCallback, useEffect, useRef, useState} from 'react'
-import {Image, Pressable, StyleSheet, View} from 'react-native'
+import {Image, View} from 'react-native'
 import {RichText} from '@bsky/sdk/richtext'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {assemblyReportUrl, assemblyUrl} from '#/lib/api/assembly'
 import {pollTopicFromText, type PollVoteValue} from '#/lib/api/poll'
 import {useOpenLink} from '#/lib/hooks/useOpenLink'
+import {SHARP_CORNERS} from '#/lib/shapes'
 import {type EmbedPlayerParams} from '#/lib/strings/embed-player'
 import {expandLinks} from '#/lib/strings/rich-text-manip'
+import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
 import {usePdsClient, useSession} from '#/state/session'
-import {Logo as BlackskyLogo} from '#/view/icons/Logo'
 import {atoms as a, useTheme} from '#/alf'
+import {Button, ButtonText} from '#/components/Button'
+import {Poll_Stroke2_Corner0_Rounded as PollIcon} from '#/components/icons/Poll'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {ASSEMBLY_URL} from '#/env'
@@ -104,6 +107,7 @@ export function AssemblyEmbed({
   const ax = useAnalytics()
   const pdsClient = usePdsClient()
   const openLink = useOpenLink()
+  const shapePreference = useEnableSquareButtons()
   const {currentAccount, hasSession} = useSession()
   const conversationId = extractConversationId(link.uri)
   const hasCompleted = useRef(false)
@@ -279,7 +283,15 @@ export function AssemblyEmbed({
         setVoting(false)
       }
     },
-    [hasSession, pdsClient, ax, statement, conversationId, voting, participationToken],
+    [
+      hasSession,
+      pdsClient,
+      ax,
+      statement,
+      conversationId,
+      voting,
+      participationToken,
+    ],
   )
 
   const onVote = useCallback(
@@ -298,15 +310,22 @@ export function AssemblyEmbed({
     if (reportId) openLink(assemblyReportUrl(reportId))
   }, [openLink, reportId])
 
+  const cardStyle = [
+    a.mt_sm,
+    a.p_md,
+    a.rounded_md,
+    a.border,
+    a.overflow_hidden,
+    t.atoms.bg_contrast_25,
+    t.atoms.border_contrast_low,
+    shapePreference === 'sharp' && SHARP_CORNERS,
+  ]
+
   if (notFound) {
     return (
-      <View
-        style={[
-          styles.card,
-          {backgroundColor: t.atoms.bg_contrast_25.backgroundColor},
-        ]}>
-        <Text style={[a.text_sm, {color: t.atoms.text_contrast_medium.color}]}>
-          This conversation is no longer available.
+      <View style={cardStyle}>
+        <Text style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
+          <Trans>This conversation is no longer available.</Trans>
         </Text>
       </View>
     )
@@ -314,12 +333,8 @@ export function AssemblyEmbed({
 
   if (error && !data) {
     return (
-      <View
-        style={[
-          styles.card,
-          {backgroundColor: t.atoms.bg_contrast_25.backgroundColor},
-        ]}>
-        <Text style={[a.text_sm, {color: t.atoms.text_contrast_medium.color}]}>
+      <View style={cardStyle}>
+        <Text style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
           {error}
         </Text>
       </View>
@@ -328,23 +343,10 @@ export function AssemblyEmbed({
 
   if (!data) {
     return (
-      <View
-        style={[
-          styles.card,
-          {backgroundColor: t.atoms.bg_contrast_25.backgroundColor},
-        ]}>
-        <View style={styles.logoContainer}>
-          <BlackskyLogo width={20} fill={t.atoms.text.color} />
-          <Text style={{fontSize: 11, fontWeight: '600', color: '#8B8BFF'}}>
-            People's Assembly
-          </Text>
-        </View>
-        <Text
-          style={[
-            a.text_sm,
-            {color: t.atoms.text_contrast_medium.color, marginTop: 8},
-          ]}>
-          Loading...
+      <View style={[cardStyle, a.gap_sm]}>
+        <AssemblyLabel />
+        <Text style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
+          <Trans>Loading...</Trans>
         </Text>
       </View>
     )
@@ -362,11 +364,7 @@ export function AssemblyEmbed({
 
   if (!data.conversation.is_active) {
     return (
-      <View
-        style={[
-          styles.card,
-          {backgroundColor: t.atoms.bg_contrast_25.backgroundColor},
-        ]}>
+      <View style={cardStyle}>
         <AssemblyHeader
           topic={topic}
           description={data.conversation.description}
@@ -374,9 +372,11 @@ export function AssemblyEmbed({
         <Text
           style={[
             a.text_sm,
-            {color: t.atoms.text_contrast_medium.color, marginTop: 8},
+            a.leading_snug,
+            a.mt_sm,
+            t.atoms.text_contrast_medium,
           ]}>
-          This conversation is closed.
+          <Trans>This conversation is closed.</Trans>
         </Text>
         {footer}
       </View>
@@ -385,152 +385,111 @@ export function AssemblyEmbed({
 
   if (data.conversation.auth_needed_to_vote && !isAuthenticated) {
     return (
-      <View
-        style={[
-          styles.card,
-          {backgroundColor: t.atoms.bg_contrast_25.backgroundColor},
-        ]}>
+      <View style={cardStyle}>
         <AssemblyHeader
           topic={topic}
           description={data.conversation.description}
         />
-        <Pressable
-          style={styles.signInButton}
+        <Button
+          testID="assemblySignInBtn"
+          label={l`Sign in to vote`}
+          accessibilityHint={l`Opens the assembly page to sign in and vote`}
           onPress={openAssembly}
-          accessibilityRole="link"
-          accessibilityLabel={l`Sign in to vote`}
-          accessibilityHint={l`Opens the assembly page to sign in and vote`}>
-          <Text style={[a.text_sm, a.font_semi_bold, {color: '#fff'}]}>
+          size="small"
+          color="primary"
+          style={[a.mt_md]}>
+          <ButtonText>
             <Trans>Sign in to vote</Trans>
-          </Text>
-        </Pressable>
+          </ButtonText>
+        </Button>
         {footer}
       </View>
     )
   }
 
   return (
-    <View
-      style={[
-        styles.card,
-        {backgroundColor: t.atoms.bg_contrast_25.backgroundColor},
-      ]}>
+    <View style={cardStyle}>
       <AssemblyHeader
         topic={topic}
         description={data.conversation.description}
       />
 
       {allVoted ? (
-        <View style={{marginTop: 12}}>
-          <Text
-            style={[a.text_sm, {color: t.atoms.text_contrast_medium.color}]}>
-            You've voted on all statements.
-          </Text>
-        </View>
+        <Text
+          style={[
+            a.text_sm,
+            a.leading_snug,
+            a.mt_sm,
+            t.atoms.text_contrast_medium,
+          ]}>
+          <Trans>You've voted on all statements.</Trans>
+        </Text>
       ) : statement ? (
         <>
-          <View style={styles.statementCardStack}>
-            <View style={styles.statementCard}>
+          <View style={[a.mt_sm, a.gap_xs]}>
+            <View
+              style={[
+                a.p_md,
+                a.rounded_md,
+                a.border,
+                t.atoms.bg,
+                t.atoms.border_contrast_low,
+              ]}>
               {!statement.is_seed && (
-                <View style={styles.statementAuthorRow}>
+                <View style={[a.flex_row, a.align_center, a.gap_xs, a.mb_xs]}>
                   {statement.author_avatar ? (
                     <Image
                       source={{uri: statement.author_avatar}}
-                      style={styles.authorAvatar}
+                      style={[
+                        {width: 20, height: 20, borderRadius: 10},
+                        t.atoms.bg_contrast_50,
+                      ]}
                       accessibilityIgnoresInvertColors
                     />
                   ) : (
                     <View
-                      style={[styles.authorAvatar, {backgroundColor: '#ddd'}]}
+                      style={[
+                        {width: 20, height: 20, borderRadius: 10},
+                        t.atoms.bg_contrast_50,
+                      ]}
                     />
                   )}
-                  <View style={{flex: 1}}>
-                    <Text style={[a.text_xs, {color: '#666'}]}>
-                      {statement.author_name || 'Anonymous'} wrote:
+                  <View style={[a.flex_1, a.gap_2xs]}>
+                    <Text
+                      style={[
+                        a.text_xs,
+                        a.leading_snug,
+                        t.atoms.text_contrast_medium,
+                      ]}>
+                      <Trans>
+                        {statement.author_name || 'Anonymous'} wrote:
+                      </Trans>
                     </Text>
-                    {(statement.author_is_team ||
-                      statement.author_is_blacksky_member ||
-                      statement.author_is_funder ||
-                      statement.author_is_oss_supporter) && (
-                      <View style={styles.badgeRow}>
-                        {statement.author_is_team && (
-                          <View
-                            style={[styles.badge, {backgroundColor: '#000'}]}>
-                            <Text style={[styles.badgeText, {color: '#fff'}]}>
-                              Admin
-                            </Text>
-                          </View>
-                        )}
-                        {statement.author_is_blacksky_member && (
-                          <View
-                            style={[
-                              styles.badge,
-                              {backgroundColor: '#8B8BFF'},
-                            ]}>
-                            <Text style={[styles.badgeText, {color: '#fff'}]}>
-                              Member
-                            </Text>
-                          </View>
-                        )}
-                        {statement.author_is_funder && (
-                          <View
-                            style={[
-                              styles.badge,
-                              {backgroundColor: '#D2FC51'},
-                            ]}>
-                            <Text style={[styles.badgeText, {color: '#000'}]}>
-                              Funder
-                            </Text>
-                          </View>
-                        )}
-                        {statement.author_is_oss_supporter && (
-                          <View
-                            style={[
-                              styles.badge,
-                              {backgroundColor: '#FF6B35'},
-                            ]}>
-                            <Text style={[styles.badgeText, {color: '#fff'}]}>
-                              OSS
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    )}
+                    <AuthorBadges statement={statement} />
                   </View>
                 </View>
               )}
-              <Text
-                style={[
-                  a.text_md,
-                  a.font_bold,
-                  {lineHeight: 22, color: '#000'},
-                ]}>
+              <Text emoji style={[a.text_md, a.font_semi_bold, a.leading_snug]}>
                 {statement.txt}
               </Text>
               {statement.remaining != null && statement.remaining > 0 && (
                 <Text
                   style={[
                     a.text_xs,
-                    {
-                      color: '#999',
-                      marginTop: 6,
-                      textAlign: 'right',
-                    },
+                    a.mt_xs,
+                    a.text_right,
+                    t.atoms.text_contrast_low,
                   ]}>
-                  {statement.remaining > 100 ? '100+' : statement.remaining}{' '}
-                  remaining
+                  <Trans>
+                    {statement.remaining > 100 ? '100+' : statement.remaining}{' '}
+                    remaining
+                  </Trans>
                 </Text>
               )}
             </View>
-            {(statement.remaining ?? 0) > 1 && (
-              <View style={styles.stackLayer1} />
-            )}
-            {(statement.remaining ?? 0) > 2 && (
-              <View style={styles.stackLayer2} />
-            )}
           </View>
 
-          <View style={styles.voteButtons}>
+          <View style={[a.mt_sm]}>
             <VoteButtons
               pending={voting}
               disabled={voting}
@@ -540,7 +499,7 @@ export function AssemblyEmbed({
           </View>
 
           {error ? (
-            <Text style={[a.text_xs, {color: '#F40B42', marginTop: 6}]}>
+            <Text style={[a.text_xs, a.mt_xs, {color: t.palette.negative_500}]}>
               {error}
             </Text>
           ) : null}
@@ -548,6 +507,73 @@ export function AssemblyEmbed({
       ) : null}
 
       {footer}
+    </View>
+  )
+}
+
+function AuthorBadges({statement}: {statement: Statement}) {
+  const t = useTheme()
+  const badges = [
+    statement.author_is_team && {
+      label: 'Admin',
+      color: t.atoms.text_contrast_high.color,
+      background: t.palette.primary_100,
+    },
+    statement.author_is_blacksky_member && {
+      label: 'Member',
+      color: t.atoms.text_contrast_high.color,
+      background: t.palette.primary_100,
+    },
+    statement.author_is_funder && {
+      label: 'Funder',
+      color: t.atoms.text_contrast_high.color,
+      background: t.palette.primary_100,
+    },
+    statement.author_is_oss_supporter && {
+      label: 'OSS',
+      color: t.atoms.text_contrast_high.color,
+      background: t.palette.primary_100,
+    },
+  ].filter(Boolean) as {label: string; color: string; background: string}[]
+
+  if (!badges.length) return null
+
+  return (
+    <View style={[a.flex_row, a.gap_2xs]}>
+      {badges.map(badge => (
+        <Text
+          key={badge.label}
+          style={[
+            a.text_2xs,
+            a.font_medium,
+            a.rounded_xs,
+            a.px_2xs,
+            a.py_2xs,
+            {color: badge.color, backgroundColor: badge.background},
+          ]}>
+          {badge.label}
+        </Text>
+      ))}
+    </View>
+  )
+}
+
+function AssemblyLabel() {
+  const t = useTheme()
+  return (
+    <View style={[a.flex_row, a.align_center, a.gap_2xs]}>
+      <PollIcon size="sm" fill={t.atoms.text_contrast_medium.color} />
+      <Text
+        style={[
+          a.text_xs,
+          a.font_medium,
+          a.leading_snug,
+          t.atoms.text_contrast_medium,
+        ]}>
+        <Trans comment="Name of the People's Assembly poll shown in a post">
+          People's Assembly
+        </Trans>
+      </Text>
     </View>
   )
 }
@@ -561,27 +587,20 @@ function AssemblyHeader({
 }) {
   const t = useTheme()
   return (
-    <View style={styles.header}>
-      <View style={styles.logoContainer}>
-        <BlackskyLogo width={20} fill={t.atoms.text.color} />
-        <Text
-          style={{fontSize: 11, fontWeight: '600', color: t.atoms.text.color}}>
-          People's Assembly
-        </Text>
-      </View>
+    <View style={[a.gap_2xs]}>
+      <AssemblyLabel />
       {topic ? (
         <Text
-          style={[{fontSize: 15, fontWeight: '700', marginTop: 6}]}
+          emoji
+          style={[a.text_md, a.font_semi_bold, a.leading_snug, a.mt_2xs]}
           numberOfLines={2}>
           {topic}
         </Text>
       ) : null}
       {description ? (
         <Text
-          style={[
-            a.text_xs,
-            {color: t.atoms.text_contrast_medium.color, marginTop: 4},
-          ]}
+          emoji
+          style={[a.text_xs, a.leading_snug, t.atoms.text_contrast_medium]}
           numberOfLines={2}>
           {description}
         </Text>
@@ -598,125 +617,43 @@ function AssemblyFooter({
   onPressResults?: () => void
 }) {
   const {t: l} = useLingui()
+  const t = useTheme()
   return (
-    <View style={styles.footer}>
+    <View
+      style={[
+        a.mt_md,
+        a.pt_sm,
+        a.flex_row,
+        a.flex_wrap,
+        a.justify_end,
+        a.gap_md,
+        a.border_t,
+        t.atoms.border_contrast_low,
+      ]}>
       {onPressResults ? (
-        <Pressable
+        <Button
+          testID="assemblyResultsBtn"
+          label={l`See results`}
+          accessibilityHint={l`Opens the assembly results page`}
           onPress={onPressResults}
-          accessibilityRole="link"
-          accessibilityLabel={l`See results`}
-          accessibilityHint={l`Opens the assembly results page`}>
-          <Text style={{fontSize: 12, color: '#8B8BFF'}}>
+          size="tiny"
+          color="primary_subtle">
+          <ButtonText>
             <Trans>See results</Trans>
-          </Text>
-        </Pressable>
+          </ButtonText>
+        </Button>
       ) : null}
-      <Pressable
+      <Button
+        testID="assemblyOpenBtn"
+        label={l`Submit a statement`}
+        accessibilityHint={l`Opens the assembly conversation page`}
         onPress={onPress}
-        accessibilityRole="link"
-        accessibilityLabel={l`Submit a statement`}
-        accessibilityHint={l`Opens the assembly conversation page`}>
-        <Text style={{fontSize: 12, color: '#8B8BFF'}}>
+        size="tiny"
+        color="primary_subtle">
+        <ButtonText>
           <Trans>Submit a statement →</Trans>
-        </Text>
-      </Pressable>
+        </ButtonText>
+      </Button>
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 8,
-    padding: 14,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-    overflow: 'hidden',
-  },
-  header: {
-    marginBottom: 10,
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  statementCardStack: {
-    marginTop: 8,
-    marginBottom: 6,
-  },
-  statementCard: {
-    padding: 12,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderLeftWidth: 3,
-    borderColor: 'lightgray',
-    backgroundColor: '#fff',
-    position: 'relative',
-    zIndex: 3,
-  },
-  stackLayer1: {
-    height: 16,
-    marginTop: -12,
-    marginHorizontal: '0.5%',
-    borderWidth: 1,
-    borderTopWidth: 0,
-    borderColor: 'lightgray',
-    borderRadius: 5,
-    backgroundColor: '#fff',
-    zIndex: 2,
-  },
-  stackLayer2: {
-    height: 16,
-    marginTop: -12,
-    marginHorizontal: '1%',
-    borderWidth: 1,
-    borderTopWidth: 0,
-    borderColor: '#eee',
-    borderRadius: 5,
-    backgroundColor: '#fafafa',
-    zIndex: 1,
-  },
-  voteButtons: {
-    marginTop: 10,
-  },
-  statementAuthorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  authorAvatar: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    gap: 3,
-    marginTop: 2,
-  },
-  badge: {
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 3,
-  },
-  badgeText: {
-    fontSize: 9,
-    fontWeight: '600',
-  },
-  signInButton: {
-    backgroundColor: '#8B8BFF',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  footer: {
-    marginTop: 10,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'flex-end',
-    gap: 12,
-  },
-})
