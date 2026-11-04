@@ -99,6 +99,7 @@ import {getNativeTabBarVisibility} from '#/view/shell/nativeTabBarVisibility'
 import {AtmosphereScreen} from '#/screens/Atmosphere'
 import {CustomFeedScreen} from '#/screens/CustomFeed'
 import {CustomFeedLikedByScreen} from '#/screens/CustomFeed/CustomFeedLikedBy'
+import {EventScreen} from '#/screens/Event/EventScreen'
 import HashtagScreen from '#/screens/Hashtag'
 import {AuthCallback} from '#/screens/Login/AuthCallback'
 import {MessagesScreen} from '#/screens/Messages/ChatList'
@@ -419,6 +420,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="Lists"
         component={ListsScreen}
         options={{title: title(msg`Lists`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="Event"
+        component={EventScreen}
+        options={{title: title(msg`Event`)}}
       />
       <Stack.Screen
         name="Moderation"
