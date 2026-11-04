@@ -28,18 +28,18 @@ jest.mock('#/view/icons/Logo', () => ({Logo: () => null}))
 type Viewer = {did: string} | undefined
 let mockViewer: Viewer
 const mockCreateRecord = jest.fn()
-const mockAgent = {
-  get session() {
-    return mockViewer
-  },
+const mockPdsClient = {
   get assertDid() {
     return mockViewer?.did
   },
-  com: {atproto: {repo: {createRecord: mockCreateRecord}}},
+  call: (def: {$nsid?: string}, input: unknown) =>
+    def?.$nsid === 'com.atproto.repo.createRecord'
+      ? mockCreateRecord(input)
+      : Promise.reject(new Error('unexpected pds call')),
 }
 jest.mock('#/state/session', () => ({
-  useAgent: () => mockAgent,
-  useSession: () => ({currentAccount: mockViewer}),
+  usePdsClient: () => mockPdsClient,
+  useSession: () => ({currentAccount: mockViewer, hasSession: !!mockViewer}),
 }))
 
 const mockOpenLink = jest.fn()
@@ -505,6 +505,29 @@ describe('AssemblyEmbed', () => {
       ])
     })
 
+    it('signs the vote of an OAuth session, which has no agent.session', async () => {
+      mockViewer = {did: VIEWER}
+      const statement = {
+        ...PARTICIPANT,
+        at_uri: 'at://did:plc:ada/community.blacksky.assembly.statement/3kada',
+        at_cid: 'bafyreistatement',
+      }
+      const voteUri = `at://${VIEWER}/community.blacksky.assembly.vote/3kvote`
+      mockCreateRecord.mockResolvedValue({uri: voteUri})
+      serve({
+        participation: reply({nextComment: statement}),
+        votes: [reply({nextComment: SECOND_SEED})],
+      })
+      renderCard()
+
+      await screen.findByText(statement.txt)
+      fireEvent.press(screen.getByTestId('pollVote-agree'))
+      await screen.findByText(SECOND_SEED.txt)
+
+      expect(mockCreateRecord).toHaveBeenCalledTimes(1)
+      expect(JSON.stringify(voteRequests())).toContain(voteUri)
+    })
+
     it('signs the vote of a signed-in viewer', async () => {
       mockViewer = {did: VIEWER}
       const statement = {
@@ -513,7 +536,7 @@ describe('AssemblyEmbed', () => {
         at_cid: 'bafyreistatement',
       }
       const voteUri = `at://${VIEWER}/community.blacksky.assembly.vote/3kvote`
-      mockCreateRecord.mockResolvedValue({data: {uri: voteUri}})
+      mockCreateRecord.mockResolvedValue({uri: voteUri})
       serve({
         participation: reply({
           auth: {token: 'participant-token'},
