@@ -184,7 +184,6 @@ import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
 import {
   IS_ANDROID,
-  IS_DEV,
   IS_IOS,
   IS_IPAD,
   IS_LIQUID_GLASS,
@@ -1470,9 +1469,7 @@ export const ComposePost = ({
           })
         },
         langs: currentLanguages,
-        appviewClient: postingAgent
-          ? buildAppviewClient(postingAgent)
-          : client,
+        appviewClient: postingAgent ? buildAppviewClient(postingAgent) : client,
         chatClient: postingAgent ? buildChatClient(postingAgent) : chatClient,
         pdsClient: postingPdsClient,
         omitViaField,
@@ -2288,7 +2285,10 @@ let ComposerPost = memo(function ComposerPost({
               variant="ghost"
               shape={enableSquareButtons ? 'square' : 'round'}
               onPress={() => {
-                if (post.shortenedGraphemeLength > 0 || postHasAttachment(post)) {
+                if (
+                  post.shortenedGraphemeLength > 0 ||
+                  postHasAttachment(post)
+                ) {
                   discardPromptControl.open()
                 } else {
                   dispatch({
@@ -2859,8 +2859,6 @@ function ComposerFooter({
   const t = useTheme()
   const {t: l} = useLingui()
   const {gtPhone} = useBreakpoints()
-  const ax = useAnalytics()
-  const arePollsEnabled = IS_DEV || ax.features.enabled(ax.features.PollsEnable)
   const hasPoll = !!post.embed.poll
   /*
    * Once we've allowed a certain type of asset to be selected, we don't allow
@@ -2999,30 +2997,28 @@ function ComposerFooter({
               {IS_WEB && (
                 <SelectGameBtn onSelectGame={onSelectGame} disabled={!!media} />
               )}
-              {arePollsEnabled && (
-                <SelectPollBtn
-                  onPress={() => dispatch({type: 'embed_add_poll'})}
-                  disabled={!canAddPoll || postHasAttachment(post)}
-                />
-              )}
+              <SelectPollBtn
+                onPress={() => dispatch({type: 'embed_add_poll'})}
+                disabled={!canAddPoll || postHasAttachment(post)}
+              />
               {IS_WEB && gtPhone ? (
-              <EmojiPicker.Root nextFocusRef={textInputRef}>
-                <EmojiPicker.Trigger label={l`Open emoji picker`}>
-                  {({props}) => (
-                    <Button
-                      style={a.p_sm}
-                      label={props.accessibilityLabel}
-                      variant="ghost"
-                      shape={enableSquareButtons ? 'square' : 'round'}
-                      color="primary"
-                      {...props}>
-                      <EmojiSmileIcon size="lg" />
-                    </Button>
-                  )}
-                </EmojiPicker.Trigger>
-                <EmojiPicker.Picker />
-              </EmojiPicker.Root>
-            ) : null}
+                <EmojiPicker.Root nextFocusRef={textInputRef}>
+                  <EmojiPicker.Trigger label={l`Open emoji picker`}>
+                    {({props}) => (
+                      <Button
+                        style={a.p_sm}
+                        label={props.accessibilityLabel}
+                        variant="ghost"
+                        shape={enableSquareButtons ? 'square' : 'round'}
+                        color="primary"
+                        {...props}>
+                        <EmojiSmileIcon size="lg" />
+                      </Button>
+                    )}
+                  </EmojiPicker.Trigger>
+                  <EmojiPicker.Picker />
+                </EmojiPicker.Root>
+              ) : null}
             </ToolbarWrapper>
           )}
         </LayoutAnimationConfig>
