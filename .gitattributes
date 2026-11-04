@@ -1,0 +1,5 @@
+# The icon fonts are hashed over the raw SVG bytes, so a CRLF working tree
+# (core.autocrlf=true on Windows) builds fonts under different family names
+# than the committed glyphmaps. Keep icon sources LF so the build matches.
+assets/icons/**/*.svg text eol=lf
+src/components/icons/**/*.tsx text eol=lf
