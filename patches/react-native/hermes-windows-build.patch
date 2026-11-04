@@ -1,0 +1,55 @@
+diff --git a/ReactAndroid/hermes-engine/build.gradle.kts b/ReactAndroid/hermes-engine/build.gradle.kts
+index 0a1ea2a..f188dd9 100644
+--- a/ReactAndroid/hermes-engine/build.gradle.kts
++++ b/ReactAndroid/hermes-engine/build.gradle.kts
+@@ -119,9 +119,10 @@ val unzipHermes by
+       dependsOn(downloadHermes)
+       from(tarTree(downloadHermesDest)) {
+         eachFile {
+-          // We flatten the unzip as the tarball contains a `facebook-hermes-<SHA>`
+-          // folder at the top level.
+-          if (this.path.startsWith("facebook-hermes-")) {
++          // We flatten the unzip as the tarball contains a single folder at the
++          // top level. The Hermes repo moved from `facebook/hermes` to
++          // `meta/hermes`, so the folder is now `meta-hermes-<SHA>`.
++          if (this.path.contains("/")) {
+             this.path = this.path.substringAfter("/")
+           }
+         }
+@@ -158,7 +159,9 @@ fun configureBuildForHermesCommandLineArgs(
+       ".",
+       "-B",
+       hermesBuildDir.toString(),
+-      "-DJSI_DIR=" + jsiDir.absolutePath,
++      // CMake parses `\` in an argument as an escape, so a Windows path with
++      // backslashes breaks the source list that reads JSI_DIR.
++      "-DJSI_DIR=" + jsiDir.absolutePath.replace('\\', '/'),
+       "-DCMAKE_BUILD_TYPE=Release",
+   )
+   if (enableDebugger) {
+@@ -341,7 +344,7 @@ android {
+             "-DANDROID_PIE=True",
+             "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+             "-DIMPORT_HOST_COMPILERS=${File(hermesBuildDir, "ImportHostCompilers.cmake").toString()}",
+-            "-DJSI_DIR=${jsiDir}",
++            "-DJSI_DIR=${jsiDir.absolutePath.replace('\\', '/')}",
+             "-DHERMES_BUILD_SHARED_JSI=True",
+             "-DHERMES_RELEASE_VERSION=for RN ${version}",
+             "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=True",
+@@ -352,6 +355,16 @@ android {
+ 
+         arguments("-DHERMESVM_HEAP_HV_MODE=HEAP_HV_PREFER32")
+ 
++        /*
++         * When the build host is Windows, Hermes' CMakeLists sees WIN32 (set before
++         * cross-compile detection) and defines _WINDOWS, so ProcessStats.cpp includes
++         * windows.h against the Android NDK. Undefine it for the NDK targets.
++         */
++        if (Os.isFamily(Os.FAMILY_WINDOWS)) {
++          cppFlags("-U_WINDOWS")
++          cFlags("-U_WINDOWS")
++        }
++
+         targets("hermesvm")
+       }
+     }
