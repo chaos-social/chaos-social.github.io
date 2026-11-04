@@ -1,4 +1,4 @@
-import {View} from 'react-native'
+import {type StyleProp, View, type ViewStyle} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {logger} from '#/logger'
@@ -19,9 +19,14 @@ import {
 export function RsvpButtons({
   event,
   size = 'small',
+  fill,
+  style,
 }: {
   event: EventView
   size?: 'small' | 'large'
+  /** Stretch to the parent's width and split it evenly, for centered layouts. */
+  fill?: boolean
+  style?: StyleProp<ViewStyle>
 }) {
   const {t: l} = useLingui()
   const requireAuth = useRequireAuth()
@@ -55,7 +60,7 @@ export function RsvpButtons({
     },
   ]
   return (
-    <View style={[a.flex_row, a.gap_sm]}>
+    <View style={[a.flex_row, a.gap_sm, fill && a.w_full, style]}>
       {choices.map(choice => {
         const selected = current === choice.status
         return (

@@ -9,8 +9,11 @@ import {UserAvatar} from '#/view/com/util/UserAvatar'
 import {atoms as a, useTheme} from '#/alf'
 import {AvatarStack} from '#/components/AvatarStack'
 import {Button, ButtonText} from '#/components/Button'
+import {Globe_Stroke2_Corner0_Rounded as GlobeIcon} from '#/components/icons/Globe'
+import {Pin_Stroke2_Corner0_Rounded as PinIcon} from '#/components/icons/Pin'
 import {InlineLinkText} from '#/components/Link'
 import * as ProfileCard from '#/components/ProfileCard'
+import {RichText} from '#/components/RichText'
 import {Text} from '#/components/Typography'
 import {Poster} from '#/features/events/components/Poster'
 import {RsvpButtons} from '#/features/events/components/RsvpButtons'
@@ -92,11 +95,16 @@ export function EventHeader({
           </View>
         )}
         {place && (
-          <Text
-            emoji
-            style={[a.text_md, a.text_center, t.atoms.text_contrast_medium]}>
-            📍 {place}
-          </Text>
+          <View style={[a.flex_row, a.align_center, a.gap_xs]}>
+            {parsed.location ? (
+              <PinIcon size="sm" style={[t.atoms.text_contrast_medium]} />
+            ) : (
+              <GlobeIcon size="sm" style={[t.atoms.text_contrast_medium]} />
+            )}
+            <Text emoji style={[a.text_md, t.atoms.text_contrast_medium]}>
+              {place}
+            </Text>
+          </View>
         )}
         {parsed.joinUrl && !parsed.cancelled && !past && (
           <Button
@@ -124,7 +132,9 @@ export function EventHeader({
           </Text>
         </View>
         {!parsed.cancelled && !past && (
-          <RsvpButtons event={event} size="large" />
+          <View style={[a.w_full, {maxWidth: 420}]}>
+            <RsvpButtons event={event} size="large" fill />
+          </View>
         )}
         <GuestCounts event={event} going={going} interested={interested} />
       </View>
@@ -141,9 +151,10 @@ export function EventHeader({
           <Text style={[a.text_md, a.font_bold]}>
             <Trans>About</Trans>
           </Text>
-          <Text emoji style={[a.text_md, a.leading_snug]}>
-            {parsed.description}
-          </Text>
+          <RichText
+            value={parsed.description}
+            style={[a.text_md, a.leading_snug]}
+          />
         </View>
       )}
       {otherLinks.length > 0 && (
