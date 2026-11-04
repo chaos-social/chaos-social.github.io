@@ -279,6 +279,11 @@
       "count": 2
     }
   },
+  "src/components/forms/DateTimeField/index.web.tsx": {
+    "typescript/no-unsafe-call": {
+      "count": 1
+    }
+  },
   "src/components/forms/SegmentedControl.tsx": {
     "typescript/no-explicit-any": {
       "count": 1

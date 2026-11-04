@@ -5,6 +5,11 @@ import {RichText} from '@bsky/sdk/richtext'
 import {nanoid} from 'nanoid/non-secure'
 
 import {
+  deviceTimezone,
+  type EventDraft,
+  isEventDraftPublishable,
+} from '#/lib/api/event'
+import {
   type AssemblyRef,
   isPollDraftPublishable,
   isPollTopicPublishable,
@@ -102,15 +107,11 @@ export type EmbedDraft = {
   // We'll always submit quote and actual media (images, video, gifs) chosen by the user.
   quote: Link | undefined
   media:
-    | ImagesMedia
-    | GalleryMedia
-    | VideoMedia
-    | GifMedia
-    | GameMedia
-    | undefined
+    ImagesMedia | GalleryMedia | VideoMedia | GifMedia | GameMedia | undefined
   // This field may end up ignored if we have more important things to display than a link card:
   link: Link | undefined
   poll?: PollDraft
+  event?: EventDraft
 }
 
 export type PostDraft = {
@@ -155,10 +156,18 @@ export type PostAction =
   | {type: 'embed_remove_poll_statement'; index: number}
   | {type: 'embed_set_poll_assembly'; assembly: AssemblyRef}
   | {type: 'embed_remove_poll'}
+  | {type: 'embed_add_event'}
+  | {type: 'embed_update_event'; patch: Partial<EventDraft>}
+  | {type: 'embed_set_event_record'; record: {uri: string; cid: string}}
+  | {type: 'embed_remove_event'}
 
 export function postHasAttachment(post: PostDraft): boolean {
   return Boolean(
-    post.embed.media || post.embed.link || post.embed.quote || post.embed.poll,
+    post.embed.media ||
+    post.embed.link ||
+    post.embed.quote ||
+    post.embed.poll ||
+    post.embed.event,
   )
 }
 
@@ -174,7 +183,20 @@ export function isPollPostable(post: PostDraft): boolean {
     isPollDraftPublishable(poll) &&
     !post.embed.media &&
     !post.embed.link &&
-    !post.embed.quote
+    !post.embed.quote &&
+    !post.embed.event
+  )
+}
+
+export function isEventPostable(post: PostDraft): boolean {
+  const event = post.embed.event
+  if (!event) return true
+  return (
+    isEventDraftPublishable(event) &&
+    !post.embed.media &&
+    !post.embed.link &&
+    !post.embed.quote &&
+    !post.embed.poll
   )
 }
 
@@ -261,6 +283,19 @@ function keepFirstPoll(posts: PostDraft[]): PostDraft[] {
   )
 }
 
+export function threadHasEvent(thread: ThreadDraft): boolean {
+  return thread.posts.some(post => post.embed.event)
+}
+
+function keepFirstEvent(posts: PostDraft[]): PostDraft[] {
+  const first = posts.findIndex(post => post.embed.event)
+  return posts.map((post, index) =>
+    post.embed.event && index !== first
+      ? postReducer(post, {type: 'embed_remove_event'})
+      : post,
+  )
+}
+
 /**
  * Threshold for picking between embed variants. <= this count uses the
  * legacy `app.bsky.embed.images` shape; > this count promotes to
@@ -316,6 +351,12 @@ export function composerReducer(
       if (
         action.postAction.type === 'embed_add_poll' &&
         threadHasPoll(state.thread)
+      ) {
+        return state
+      }
+      if (
+        action.postAction.type === 'embed_add_event' &&
+        threadHasEvent(state.thread)
       ) {
         return state
       }
@@ -450,7 +491,7 @@ export function composerReducer(
         loadedMediaMap: loadedMedia,
         originalLocalRefs,
         thread: {
-          posts: keepFirstPoll(posts),
+          posts: keepFirstEvent(keepFirstPoll(posts)),
           postgate: createPostgateRecord({
             post: '',
             embeddingRules: postgateEmbeddingRules,
@@ -485,6 +526,8 @@ export function composerReducer(
   }
 }
 
+const pad2 = (n: number) => String(n).padStart(2, '0')
+
 function postReducer(state: PostDraft, action: PostAction): PostDraft {
   switch (action.type) {
     case 'update_richtext': {
@@ -507,7 +550,7 @@ function postReducer(state: PostDraft, action: PostAction): PostDraft {
       }
     }
     case 'embed_add_images': {
-      if (action.images.length === 0 || state.embed.poll) {
+      if (action.images.length === 0 || state.embed.poll || state.embed.event) {
         return state
       }
       const prevMedia = state.embed.media
@@ -598,7 +641,7 @@ function postReducer(state: PostDraft, action: PostAction): PostDraft {
       return state
     }
     case 'embed_add_video': {
-      if (state.embed.poll) {
+      if (state.embed.poll || state.embed.event) {
         return state
       }
       const prevMedia = state.embed.media
@@ -660,7 +703,7 @@ function postReducer(state: PostDraft, action: PostAction): PostDraft {
       }
     }
     case 'embed_add_uri': {
-      if (state.embed.poll) {
+      if (state.embed.poll || state.embed.event) {
         return state
       }
       const prevQuote = state.embed.quote
@@ -715,7 +758,7 @@ function postReducer(state: PostDraft, action: PostAction): PostDraft {
       }
     }
     case 'embed_add_gif': {
-      if (state.embed.poll) {
+      if (state.embed.poll || state.embed.event) {
         return state
       }
       const prevMedia = state.embed.media
@@ -844,6 +887,54 @@ function postReducer(state: PostDraft, action: PostAction): PostDraft {
         embed: {
           ...state.embed,
           poll: undefined,
+        },
+      }
+    }
+    case 'embed_add_event': {
+      if (postHasAttachment(state)) {
+        return state
+      }
+      const now = new Date()
+      return {
+        ...state,
+        embed: {
+          ...state.embed,
+          event: {
+            name: '',
+            date: `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`,
+            time: '18:00',
+            timezone: deviceTimezone(),
+            mode: 'inperson',
+          },
+        },
+      }
+    }
+    case 'embed_update_event': {
+      if (!state.embed.event) return state
+      return {
+        ...state,
+        embed: {
+          ...state.embed,
+          event: {...state.embed.event, ...action.patch},
+        },
+      }
+    }
+    case 'embed_set_event_record': {
+      if (!state.embed.event) return state
+      return {
+        ...state,
+        embed: {
+          ...state.embed,
+          event: {...state.embed.event, record: action.record},
+        },
+      }
+    }
+    case 'embed_remove_event': {
+      return {
+        ...state,
+        embed: {
+          ...state.embed,
+          event: undefined,
         },
       }
     }
