@@ -197,7 +197,7 @@ function GuestCounts({
 }) {
   if (event.goingCount + event.interestedCount === 0) return null
   return (
-    <View style={[a.gap_sm]}>
+    <View style={[a.flex_row, a.flex_wrap, a.align_center, a.gap_xl]}>
       <CountRow
         label={plural(event.goingCount, {one: '# going', other: '# going'})}
         avatars={going}

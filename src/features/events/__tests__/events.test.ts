@@ -215,16 +215,49 @@ describe('eventDateParts', () => {
 describe('formatEventTime', () => {
   const i18n = setupI18n({locale: 'en', messages: {en: {}}})
   const base = {name: 'x', cancelled: false, links: []}
+  /**
+   * Pin the device zone without touching the real Intl zone data. The code
+   * only ever calls `i18n.date(..., options)`, so a zone in `options` is
+   * exactly what a device in that zone would produce.
+   */
+  const pinZone = (timeZone: string) => {
+    const date = i18n.date.bind(i18n)
+    i18n.date = (_value, options = {}) =>
+      // Only stand in for "the device zone" (no explicit zone in options);
+      // an explicit zone is a deliberate request that must be respected.
+      date(_value, {timeZone, ...options})
+    return () => {
+      i18n.date = date
+    }
+  }
 
-  it('shows the event timezone and the local time when they differ', () => {
-    // Europe/Berlin vs Asia/Tokyo never agree, whatever the test machine's zone.
+  it('drops the local date when both zones are on the same day', () => {
+    const unpin = pinZone('America/New_York')
+    // 10:00 UTC is Oct 1 in both New York and Berlin.
     const time = formatEventTime(i18n, {
       ...base,
-      startsAt: new Date('2026-10-01T23:00:00.000Z'),
-      timezone: 'Asia/Tokyo',
+      startsAt: new Date('2026-10-01T10:00:00.000Z'),
+      timezone: 'Europe/Berlin',
     })
-    expect(time?.primary).toContain('Oct 2')
+    unpin()
+    expect(time?.primary).toContain('Oct 1')
     expect(time?.local).toBeDefined()
+    expect(time?.local).not.toMatch(/Oct/)
+    expect(time?.local).toMatch(/\d{1,2}:\d{2}/)
+  })
+
+  it('keeps the local date when the zones fall on different days', () => {
+    const unpin = pinZone('Asia/Tokyo')
+    // 21:00 UTC is Oct 1 in Berlin but already Oct 2 in Tokyo, so the local
+    // side must keep its date rather than read as the event's day.
+    const time = formatEventTime(i18n, {
+      ...base,
+      startsAt: new Date('2026-10-01T21:00:00.000Z'),
+      timezone: 'Europe/Berlin',
+    })
+    unpin()
+    expect(time?.primary).toContain('Oct 1')
+    expect(time?.local).toContain('Oct 2')
   })
 
   it('omits the local time when there is no event timezone', () => {

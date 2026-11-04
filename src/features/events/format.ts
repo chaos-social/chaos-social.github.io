@@ -15,9 +15,23 @@ const format = (i18n: I18n, date: Date, options: Intl.DateTimeFormatOptions) =>
     ...options,
   })
 
+/** The calendar day a moment falls on, in a given (or the device's) zone. */
+const dayKey = (i18n: I18n, date: Date, timeZone?: string) =>
+  i18n.date(date, {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    ...(timeZone ? {timeZone} : {}),
+  })
+
 /**
  * The start time in the event's own timezone, plus the viewer's local time
  * when that differs, so an in-person event reads the way the host wrote it.
+ *
+ * The local part drops the date when both zones fall on the same day, since
+ * `primary` already shows it and repeating it overflowed the feed card. When
+ * the zones fall on different days the date is kept, so "7:00 PM" is not read
+ * as the same day as the event.
  */
 export function formatEventTime(
   i18n: I18n,
@@ -27,9 +41,20 @@ export function formatEventTime(
   const local = format(i18n, event.startsAt, {})
   if (!event.timezone) return {primary: local}
   const inEventZone = format(i18n, event.startsAt, {timeZone: event.timezone})
-  return inEventZone === local
-    ? {primary: local}
-    : {primary: inEventZone, local}
+  if (inEventZone === local) return {primary: local}
+  const sameDay =
+    dayKey(i18n, event.startsAt) ===
+    dayKey(i18n, event.startsAt, event.timezone)
+  return {
+    primary: inEventZone,
+    local: sameDay
+      ? format(i18n, event.startsAt, {
+          weekday: undefined,
+          month: undefined,
+          day: undefined,
+        })
+      : local,
+  }
 }
 
 export type EventPhase = 'upcoming' | 'current' | 'past'
