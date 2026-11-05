@@ -1,5 +1,5 @@
 const INTERNAL_EMBED_PREFIX = '/__embed'
-const EMBED_CACHE_VERSION = 'v1'
+const EMBED_CACHE_VERSION = 'v2'
 
 const PROFILE_CACHE_SECONDS = 60 * 60
 const POST_CACHE_SECONDS = 24 * 60 * 60
