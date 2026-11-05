@@ -1,4 +1,4 @@
-import {memo, useCallback, useMemo, useState} from 'react'
+import {memo, useMemo, useState} from 'react'
 import {StyleSheet, View} from 'react-native'
 import {AtUri} from '@atproto/syntax'
 import {type ModerationDecision} from '@bsky/sdk/moderation'
@@ -11,8 +11,6 @@ import {MAX_POST_LINES} from '#/lib/constants'
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {usePalette} from '#/lib/hooks/usePalette'
 import {makeProfileLink} from '#/lib/routes/links'
-import {segmentsToText} from '#/lib/strings/bridged-html'
-import {countLines} from '#/lib/strings/helpers'
 import {userStyle} from '#/lib/userstyles'
 import {
   POST_TOMBSTONE,
@@ -53,6 +51,7 @@ import {PostRepliedTo} from '#/components/Post/PostRepliedTo'
 import {ShowMoreTextButton} from '#/components/Post/ShowMoreTextButton'
 import {TranslatedPost} from '#/components/Post/Translated'
 import {useBridgedHtmlSegments} from '#/components/Post/useBridgedHtmlSegments'
+import {usePostTextLimit} from '#/components/Post/usePostTextLimit'
 import {PostControls} from '#/components/PostControls'
 import {DiscoverDebug} from '#/components/PostControls/DiscoverDebug'
 import {PostTags} from '#/components/PostTags'
@@ -550,10 +549,9 @@ let PostContent = ({
   feedDescriptor?: string
 }): React.ReactNode => {
   const htmlSegments = useBridgedHtmlSegments(post.record)
-  const [limitLines, setLimitLines] = useState(
-    () =>
-      countLines(htmlSegments ? segmentsToText(htmlSegments) : richText.text) >=
-      MAX_POST_LINES,
+  const {limitLines, onPressShowMore} = usePostTextLimit(
+    richText.text,
+    htmlSegments,
   )
   const showPostNumber = useHasThreadItemPostNumber(postNumbering)
 
@@ -564,10 +562,6 @@ let PostContent = ({
         : undefined,
     [post],
   )
-
-  const onPressShowMore = useCallback(() => {
-    setLimitLines(false)
-  }, [setLimitLines])
 
   return (
     <ContentHider

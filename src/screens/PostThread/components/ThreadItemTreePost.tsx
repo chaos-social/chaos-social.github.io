@@ -1,4 +1,4 @@
-import {memo, useCallback, useMemo, useState} from 'react'
+import {memo, useCallback, useMemo} from 'react'
 import {View} from 'react-native'
 import {AtUri} from '@atproto/syntax'
 import {RichText as RichTextAPI} from '@bsky/sdk/richtext'
@@ -8,8 +8,6 @@ import {MAX_POST_LINES} from '#/lib/constants'
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {makeProfileLink} from '#/lib/routes/links'
 import {getShapeRadius} from '#/lib/shapes'
-import {segmentsToText} from '#/lib/strings/bridged-html'
-import {countLines} from '#/lib/strings/helpers'
 import {userStyle} from '#/lib/userstyles'
 import {
   POST_TOMBSTONE,
@@ -46,6 +44,7 @@ import {Embed, PostEmbedViewContext} from '#/components/Post/Embed'
 import {ShowMoreTextButton} from '#/components/Post/ShowMoreTextButton'
 import {TranslatedPost} from '#/components/Post/Translated'
 import {useBridgedHtmlSegments} from '#/components/Post/useBridgedHtmlSegments'
+import {usePostTextLimit} from '#/components/Post/usePostTextLimit'
 import {PostControls, PostControlsSkeleton} from '#/components/PostControls'
 import {PostTags} from '#/components/PostTags'
 import {RichText} from '#/components/RichText'
@@ -293,11 +292,9 @@ const ThreadItemTreePostInner = memo(function ThreadItemTreePostInner({
     [record],
   )
   const htmlSegments = useBridgedHtmlSegments(record)
-  const [limitLines, setLimitLines] = useState(
-    () =>
-      countLines(
-        htmlSegments ? segmentsToText(htmlSegments) : richText?.text,
-      ) >= MAX_POST_LINES,
+  const {limitLines, onPressShowMore} = usePostTextLimit(
+    richText?.text,
+    htmlSegments,
   )
   const threadRootUri = record.reply?.root?.uri || post.uri
   const postHref = useMemo(() => {
@@ -337,10 +334,6 @@ const ThreadItemTreePostInner = memo(function ThreadItemTreePostInner({
       logContext: 'PostReply',
     })
   }, [openComposer, post, record, onPostSuccess, moderation])
-
-  const onPressShowMore = useCallback(() => {
-    setLimitLines(false)
-  }, [setLimitLines])
 
   return (
     <ThreadItemTreePostOuterWrapper item={item}>
