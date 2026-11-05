@@ -143,12 +143,23 @@
     root.replaceChildren(player)
     // Script access and networking let a SWF reach the surrounding page and the
     // network; both stay off since the file is untrusted.
-    return player.ruffle().load({
-      url: blobUrl,
-      autoplay: 'on',
-      allowScriptAccess: false,
-      allowNetworking: 'none',
-    })
+    return player
+      .ruffle()
+      .load({
+        url: blobUrl,
+        autoplay: 'on',
+        allowScriptAccess: false,
+        allowNetworking: 'none',
+      })
+      .then(function () {
+        /*
+         * Ruffle has no mute API, only this property, and loading resets it.
+         * Games are embedded to be clicked, but a Flash movie paints and
+         * sounds before that, and the composer's off-screen capture frame is
+         * never clicked at all.
+         */
+        player.volume = 0
+      })
   }
 
   function playJar(blobUrl) {

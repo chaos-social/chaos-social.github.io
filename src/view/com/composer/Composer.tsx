@@ -2931,6 +2931,7 @@ function ComposerFooter({
       const gameUrl = URL.createObjectURL(game.file)
       void captureGameThumbnail({
         kind: game.kind,
+        file: game.file,
         playerUrl: getGamePlayerUrl(window.location.origin, gameUrl, game),
       })
         .then(thumb => {

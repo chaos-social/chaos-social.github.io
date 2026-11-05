@@ -1,6 +1,11 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["src", "modules", "app.config.js"],
+  /*
+   * The archive reader is shared with the player page, which serves it
+   * statically; the composer imports it from there, so it must be in the
+   * program for the import to resolve.
+   */
+  "include": ["src", "modules", "app.config.js", "public/static/iframe/*.js"],
   /*
    * Ambient check shims apply only to the platform pass that includes them
    * back (tsconfig.check.android.json, tsconfig.check.web.json).

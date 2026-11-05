@@ -1,8 +1,9 @@
+import {captureArchiveThumbnail} from '#/view/com/composer/games/captureArchiveThumbnail'
 import {type GameKind} from '#/components/Post/Embed/GameEmbed/utils'
 
 /**
- * How long to let a game draw before its frame is taken. Carts vary; the first
- * painted frame is what the post should show.
+ * How long to let a runtime draw before its frame is taken. Carts and movies
+ * vary; the first painted frames are what the post should show.
  */
 const CAPTURE_DELAY_MS = 8000
 
@@ -13,20 +14,27 @@ const THUMB_QUALITY = 0.8
 /**
  * Takes a still of a game for its link-card thumbnail.
  *
- * Only runtimes that expose a readable canvas can be captured, which today means
- * TIC-80: Ruffle and CheerpJ are cross-origin scripts and the VNDS engine has
- * not drawn anything until the player is interacted with.
+ * - VNDS archives ship their own cover art, so that is used directly.
+ * - TIC-80 and Flash are emulated in an off-screen frame and the canvas copied.
+ * - Java applets are not attempted: CheerpJ gives no handle on its display.
+ *
+ * The frame is mute: nothing the user did not ask to play should make sound.
+ * Flash keeps painting before the first click, so it has to be silenced from
+ * outside the runtime.
  *
  * @returns a PNG blob, or undefined when this kind can't be captured
  */
 export async function captureGameThumbnail({
   kind,
+  file,
   playerUrl,
 }: {
   kind: GameKind
+  file: Blob
   playerUrl: string
 }): Promise<Blob | undefined> {
-  if (kind !== 'tic80') return undefined
+  if (kind === 'vnds') return captureArchiveThumbnail(file)
+  if (kind !== 'tic80' && kind !== 'flash') return undefined
 
   const frame = document.createElement('iframe')
   /* Off-screen but rendered: a `display: none` frame gets no layout to draw. */
@@ -38,6 +46,7 @@ export async function captureGameThumbnail({
     document.body.appendChild(frame)
     const canvas = await waitForCanvas(frame)
     await new Promise(resolve => setTimeout(resolve, CAPTURE_DELAY_MS))
+    if (kind === 'flash') silenceFrame(frame)
     return await canvasToBlob(canvas)
   } catch {
     // A thumbnail is a nicety; posting must not fail without one.
@@ -47,8 +56,20 @@ export async function captureGameThumbnail({
   }
 }
 
+/**
+ * Mutes a playing frame. Ruffle exposes its volume as a plain property, and
+ * both runtimes live in the player page, so this reaches into the same-origin
+ * frame rather than changing their APIs.
+ */
+function silenceFrame(frame: HTMLIFrameElement) {
+  const player = frame.contentDocument?.querySelector<
+    HTMLElement & {volume: number}
+  >('ruffle-player')
+  if (player) player.volume = 0
+}
+
 function waitForCanvas(frame: HTMLIFrameElement) {
-  /* The same signal the player uses: the runtime has no ready event. */
+  /* Neither runtime has a ready event; the first sized canvas is the signal. */
   return new Promise<HTMLCanvasElement>((resolve, reject) => {
     const timeout = setTimeout(
       () => reject(new Error('The player did not start')),
@@ -56,7 +77,7 @@ function waitForCanvas(frame: HTMLIFrameElement) {
     )
     frame.addEventListener('load', () => {
       const check = setInterval(() => {
-        const canvas = frame.contentDocument?.querySelector('canvas')
+        const canvas = findCanvas(frame)
         if (canvas && canvas.width > 0) {
           clearInterval(check)
           clearTimeout(timeout)
@@ -65,6 +86,15 @@ function waitForCanvas(frame: HTMLIFrameElement) {
       }, 250)
     })
   })
+}
+
+/** Ruffle draws into a canvas inside its own shadow root. */
+function findCanvas(frame: HTMLIFrameElement) {
+  const doc = frame.contentDocument
+  const ruffle = doc?.querySelector<HTMLElement>('ruffle-player')
+  return (
+    ruffle?.shadowRoot?.querySelector('canvas') ?? doc?.querySelector('canvas')
+  )
 }
 
 /**
