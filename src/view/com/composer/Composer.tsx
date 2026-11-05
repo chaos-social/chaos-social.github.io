@@ -142,6 +142,7 @@ import {
   ExternalEmbedLink,
 } from '#/view/com/composer/ExternalEmbed'
 import {ExternalEmbedRemoveBtn} from '#/view/com/composer/ExternalEmbedRemoveBtn'
+import {captureGameThumbnail} from '#/view/com/composer/games/captureGameThumbnail'
 import {GamePreview} from '#/view/com/composer/games/GamePreview'
 import {SelectGameBtn} from '#/view/com/composer/games/SelectGameBtn'
 import {GifAltTextDialog} from '#/view/com/composer/GifAltText'
@@ -179,6 +180,7 @@ import {CircleInfo_Stroke2_Corner0_Rounded as CircleInfoIcon} from '#/components
 import {EmojiArc_Stroke2_Corner0_Rounded as EmojiSmileIcon} from '#/components/icons/Emoji'
 import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
 import {TimesLarge_Stroke2_Corner0_Rounded as XIcon} from '#/components/icons/Times'
+import {getGamePlayerUrl} from '#/components/Post/Embed/GameEmbed/utils'
 import {LazyQuoteEmbed} from '#/components/Post/Embed/LazyQuoteEmbed'
 import * as Prompt from '#/components/Prompt'
 import * as Toast from '#/components/Toast'
@@ -2920,6 +2922,21 @@ function ComposerFooter({
   const onSelectGame = useCallback(
     (game: Omit<GameMedia, 'type'>) => {
       dispatch({type: 'embed_add_game', game})
+
+      /*
+       * The still has to be taken now: the file is in memory here, and a
+       * published record can't be edited afterwards. It lands whenever it
+       * lands - posting waits for neither.
+       */
+      const gameUrl = URL.createObjectURL(game.file)
+      void captureGameThumbnail({
+        kind: game.kind,
+        playerUrl: getGamePlayerUrl(window.location.origin, gameUrl, game),
+      })
+        .then(thumb => {
+          if (thumb) dispatch({type: 'embed_update_game_thumb', thumb})
+        })
+        .finally(() => URL.revokeObjectURL(gameUrl))
     },
     [dispatch],
   )

@@ -126,6 +126,23 @@ export function GameEmbed({
               t.atoms.bg_contrast_25,
             ]}>
             {/*
+             * A still of the game, when the post carries one, stands in for
+             * the play glyph; it is what tells the game apart in a feed.
+             */}
+            {view.thumb && (
+              <img
+                src={view.thumb}
+                alt=""
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                }}
+              />
+            )}
+            {/*
              * The glyph inside the icon is absolutely positioned, so it would
              * anchor above the label rather than in the circle. Give it its
              * own full-width row to centre against.

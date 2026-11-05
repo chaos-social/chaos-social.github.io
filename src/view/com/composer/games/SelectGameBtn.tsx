@@ -10,11 +10,12 @@ import {GameController_Stroke2_Corner0_Rounded as GameIcon} from '#/components/i
 import {
   GAME_MAX_SIZE,
   getGameKindFromFilename,
+  getUploadedGameSize,
   stripGameExtension,
 } from '#/components/Post/Embed/GameEmbed/utils'
 import * as toast from '#/components/Toast'
 
-export const GAME_FILE_ACCEPT = '.swf,.jar,.zip,.tar.gz,.tgz'
+export const GAME_FILE_ACCEPT = '.swf,.jar,.zip,.tar.gz,.tgz,.tic'
 
 /**
  * Web only. Ruffle and CheerpJ can't run natively; the native build resolves
@@ -45,7 +46,7 @@ export function SelectGameBtn({
 
     const kind = getGameKindFromFilename(file.name)
     if (!kind) {
-      toast.show(l`Only .swf, .jar, and .zip or .tar.gz files are supported`, {
+      toast.show(l`That file type is not supported`, {
         type: 'warning',
       })
       return
@@ -63,6 +64,7 @@ export function SelectGameBtn({
       kind,
       title: stripGameExtension(file.name),
       alt: '',
+      ...getUploadedGameSize(kind),
     })
   }
 
@@ -74,7 +76,7 @@ export function SelectGameBtn({
         label={l({
           message: 'Attach a game',
           comment:
-            'Accessibility label for the button in the post composer that attaches a Flash, Java, or VNDS game file.',
+            'Accessibility label for the button in the post composer that attaches a game file.',
         })}
         accessibilityHint={l({
           message: 'Opens a file picker for a game file',

@@ -786,6 +786,18 @@ async function resolveMedia(
       game.file,
       getGameMimeType(game.kind),
     )
+    /* Other clients show this on the link card; ours plays the game instead. */
+    let thumb: app.bsky.embed.external.External['thumb']
+    if (game.thumb) {
+      try {
+        thumb = (await uploadBlob(pdsClient, game.thumb, 'image/png')).blob
+      } catch (e) {
+        // A missing still should not cost the user their post.
+        logger.warn('Failed to upload the game thumbnail', {
+          safeMessage: e instanceof Error ? e.message : String(e),
+        })
+      }
+    }
     const external = {
       uri: getGameUrl(
         IFRAME_HOST,
@@ -794,6 +806,7 @@ async function resolveMedia(
       ) as UriString,
       title: game.title,
       description: createGameDescription(game.kind, game.alt),
+      thumb,
       /*
        * Extra field on `external`. The AppView keeps unknown fields here, so
        * both our renderer and the player page can read the attachment.

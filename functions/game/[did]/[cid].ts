@@ -33,7 +33,7 @@ export const onRequestGet: PagesFunction<Env> = async context => {
 
   const title = 'Game on Witchsky'
   const description =
-    'Play this Flash game, Java applet, or visual novel in your browser.'
+    'Play this Flash game, Java applet, visual novel or TIC-80 cart in your browser.'
 
   const page = `<!DOCTYPE html>
 <html lang="en">

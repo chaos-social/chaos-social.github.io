@@ -9,6 +9,7 @@ import {
   getGameMimeType,
   getGamePlayerUrl,
   getGameUrl,
+  getUploadedGameSize,
   isGameEmbed,
   parseGamePath,
   stripGameExtension,
@@ -167,9 +168,24 @@ describe('getGameKindFromFilename', () => {
     ['saya-1.0.tar.gz', 'vnds'],
     ['saya.tgz', 'vnds'],
     ['saya.zip', 'vnds'],
+    ['hello.tic', 'tic80'],
+    ['Hello.TIC', 'tic80'],
+    /* PICO-8 carts are PNG images; nothing here can run them. */
+    ['celeste.p8.png', undefined],
     ['notes.txt', undefined],
   ])('%s -> %s', (name, kind) => {
     expect(getGameKindFromFilename(name)).toBe(kind)
+  })
+})
+
+describe('getUploadedGameSize', () => {
+  it('records the window TIC-80 draws in, at 16:9', () => {
+    expect(getUploadedGameSize('tic80')).toEqual({width: 320, height: 180})
+  })
+
+  it('leaves the others to be measured from the file', () => {
+    expect(getUploadedGameSize('flash')).toBeUndefined()
+    expect(getUploadedGameSize('vnds')).toBeUndefined()
   })
 })
 

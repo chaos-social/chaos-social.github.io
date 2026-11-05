@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>TIC-80</title>
+    <style>
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #1a1c2c; }
+        #canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            image-rendering: pixelated;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" tabindex="0" oncontextmenu="event.preventDefault()" onmousedown="window.focus()"></canvas>
+
+    <script>
+        /*
+         * Local change to upstream's player page: the cart comes from this
+         * page's own ?cart= parameter instead of being hardcoded by an export.
+         * The emulator only reads `arguments` while it starts up, so it must be
+         * set before tic80.js loads - which is why this page loads the script
+         * itself rather than leaving it to the runtime.
+         */
+        var params = new URLSearchParams(location.search);
+        var cart = params.get('cart');
+        var cartPath = './cart.tic';
+
+        /*
+         * The emulator refuses any cartridge argument that does not end in
+         * `.tic` (cart_argument(), sokol main.c) and picks the parser from the
+         * name's extension, so a blob or PDS URL - which has no extension -
+         * loads as a black screen. Give it a local name instead and answer its
+         * request for that name with the real cart's bytes.
+         */
+        if (cart) {
+            var cartUrl = cart;
+            var cartHref = new URL(cartPath, document.baseURI).href;
+            var loadCart = window.fetch.bind(window);
+            /* The emulator treats an unreadable cart as "no cart" and exits to a
+               blank canvas, so a failed fetch has to be reported from here. */
+            loadCart(cartUrl)
+                .then(function (response) {
+                    if (response.ok) return;
+                    throw new Error(response.status + ' ' + response.statusText);
+                })
+                .catch(function (error) {
+                    var status = document.createElement('p');
+                    status.style.cssText =
+                        'position:absolute;inset:0;margin:0;display:grid;place-items:center;' +
+                        'font:16px system-ui,sans-serif;color:#deeed6;text-align:center;padding:24px';
+                    status.textContent = 'This game could not be loaded: ' + error.message;
+                    document.body.appendChild(status);
+                });
+            window.fetch = function (input, init) {
+                var url = typeof input === 'string' ? input : input.url;
+                var isCart = false;
+                try {
+                    isCart = new URL(url, document.baseURI).href === cartHref;
+                } catch (e) {
+                    /* Not a URL we can compare. */
+                }
+                if (!isCart) return loadCart(input, init);
+                return loadCart(cartUrl, init).then(function (response) {
+                    if (!response.ok) return response;
+                    return response.blob().then(function (blob) {
+                        return new Response(new File([blob], 'cart.tic'), {
+                            headers: {
+                                'Content-Type': 'application/octet-stream',
+                            },
+                        });
+                    });
+                });
+            };
+            cart = cartPath;
+        }
+
+        var Module = {
+            canvas: document.getElementById('canvas'),
+            arguments: cart ? [cart] : [],
+        };
+        /*
+         * The emulator builds its own WebGL attributes, so the only place to
+         * ask for a readable back buffer - needed to capture a thumbnail once
+         * the game has drawn - is the canvas, before it is ever asked for a
+         * context. Without this every capture comes back blank.
+         */
+        (function () {
+            var canvas = document.getElementById('canvas');
+            var getContext = canvas.getContext.bind(canvas);
+            canvas.getContext = function (type, attrs) {
+                if (type === 'webgl2' || type === 'webgl') {
+                    attrs = Object.assign({}, attrs, { preserveDrawingBuffer: true });
+                }
+                return getContext(type, attrs);
+            };
+        })();
+        document.getElementById('canvas').focus();
+
+        var script = document.createElement('script');
+        script.src = 'tic80.js';
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>

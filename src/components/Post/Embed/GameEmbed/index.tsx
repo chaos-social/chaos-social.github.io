@@ -1,4 +1,5 @@
 import {View} from 'react-native'
+import {Image} from 'expo-image'
 import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 import {Trans} from '@lingui/react/macro'
@@ -58,9 +59,23 @@ export function GameEmbed({
             {aspectRatio: getGameAspect(game)},
             t.atoms.bg_contrast_25,
           ]}>
-          <Text style={[a.text_md, a.font_semi_bold, t.atoms.text_contrast_medium]}>
-            {GAME_KIND_LABEL[game.kind]}
-          </Text>
+          {view.thumb ? (
+            <Image
+              source={{uri: view.thumb}}
+              style={[a.absolute, a.inset_0]}
+              contentFit="cover"
+              accessibilityIgnoresInvertColors
+            />
+          ) : (
+            <Text
+              style={[
+                a.text_md,
+                a.font_semi_bold,
+                t.atoms.text_contrast_medium,
+              ]}>
+              {GAME_KIND_LABEL[game.kind]}
+            </Text>
+          )}
         </View>
         <View style={[a.p_md, a.gap_2xs, t.atoms.bg]}>
           <Text numberOfLines={2} style={[a.text_lg, a.font_semi_bold]} emoji>

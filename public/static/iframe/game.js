@@ -4,12 +4,12 @@
  *
  * Query params:
  *   game  - player page URL, https://witchsky.app/game/<did>/<cid>
- *   kind  - flash | jar | vnds
+ *   kind  - flash | jar | vnds | tic80
  *   w, h  - optional player dimensions
  *   alt   - optional description
  */
 ;(function () {
-  var KINDS = ['flash', 'jar', 'vnds']
+  var KINDS = ['flash', 'jar', 'vnds', 'tic80']
   var root = document.getElementById('root')
   var params = new URLSearchParams(window.location.search)
 
@@ -82,12 +82,30 @@
   function getBlobUrl(gameUrl) {
     /*
      * The composer previews an unsaved file, which has no repo location yet,
-     * so it passes the object URL straight through.
+     * so it passes the object URL straight through. A URL that is already a
+     * file rather than a player page is used as-is too.
+     *
+     * `main` calls this outside any promise chain, so every failure has to be
+     * rejected, not thrown.
      */
     if (/^(blob|data):/.test(gameUrl)) return Promise.resolve(gameUrl)
 
     var path = getGamePath(gameUrl)
-    if (!path) throw new Error('Invalid game URL')
+    if (!path) {
+      var url
+      try {
+        url = new URL(gameUrl, window.location.href)
+      } catch (e) {
+        return Promise.reject(new Error('Invalid game URL'))
+      }
+      if (url.origin === window.location.origin) {
+        return Promise.reject(new Error('Invalid game URL'))
+      }
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+        return Promise.reject(new Error('Unsupported game URL'))
+      }
+      return Promise.resolve(url.toString())
+    }
     return resolvePdsUrl(path.did).then(function (pds) {
       if (!pds) throw new Error('Could not find the game’s hosting server')
       var url = new URL('/xrpc/com.atproto.sync.getBlob', pds)
@@ -152,6 +170,16 @@
       })
   }
 
+  /*
+   * The composer takes the thumbnail for a new post, because the cart is in
+   * memory there and the record can't be edited afterwards. Nothing to do here.
+   */
+  function playTic80(blobUrl) {
+    return import('./game-tic80.js').then(function (mod) {
+      return mod.play({cartUrl: blobUrl, host: root})
+    })
+  }
+
   function playVnds(blobUrl) {
     return import('./game-vnds.js').then(function (mod) {
       return mod.play({
@@ -173,6 +201,7 @@
       .then(function (blobUrl) {
         if (kind === 'flash') return playFlash(blobUrl)
         if (kind === 'jar') return playJar(blobUrl)
+        if (kind === 'tic80') return playTic80(blobUrl)
         return playVnds(blobUrl)
       })
       .then(function () {

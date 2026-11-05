@@ -84,6 +84,8 @@ type GifMedia = {
 export type GameMedia = {
   type: 'game'
   file: Blob
+  /** A still of the game, taken while it plays, for the link card. */
+  thumb?: Blob
   kind: GameKind
   title: string
   alt: string
@@ -149,6 +151,7 @@ export type PostAction =
   | {type: 'embed_remove_gif'}
   | {type: 'embed_add_game'; game: Omit<GameMedia, 'type'>}
   | {type: 'embed_update_game'; alt: string}
+  | {type: 'embed_update_game_thumb'; thumb: Blob}
   | {type: 'embed_remove_game'}
   | {type: 'embed_add_poll'}
   | {type: 'embed_update_poll_statement'; index: number; text: string}
@@ -957,6 +960,18 @@ function postReducer(state: PostDraft, action: PostAction): PostDraft {
         embed: {
           ...state.embed,
           media: {...prevMedia, alt: action.alt},
+        },
+      }
+    }
+    case 'embed_update_game_thumb': {
+      /* Landed late, so the game may have been removed in the meantime. */
+      const prevMedia = state.embed.media
+      if (prevMedia?.type !== 'game') return state
+      return {
+        ...state,
+        embed: {
+          ...state.embed,
+          media: {...prevMedia, thumb: action.thumb},
         },
       }
     }

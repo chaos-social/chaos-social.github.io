@@ -14,7 +14,7 @@ export type GameEmbed = {
   alt?: string
 }
 
-export type GameKind = 'flash' | 'jar' | 'vnds'
+export type GameKind = 'flash' | 'jar' | 'vnds' | 'tic80'
 
 /** Extra field carrying {@link GameEmbed} on an external embed's record. */
 export const GAME_FIELD = 'witchsky$game'
@@ -26,6 +26,7 @@ export const GAME_KIND_LABEL: Record<GameKind, string> = {
   flash: 'Flash',
   jar: 'Java applet',
   vnds: 'VNDS visual novel',
+  tic80: 'TIC-80',
 }
 
 /**
@@ -65,7 +66,12 @@ export function isGameEmbed(value: unknown): value is GameEmbed {
 }
 
 export function isGameKind(value: unknown): value is GameKind {
-  return value === 'flash' || value === 'jar' || value === 'vnds'
+  return (
+    value === 'flash' ||
+    value === 'jar' ||
+    value === 'vnds' ||
+    value === 'tic80'
+  )
 }
 
 /**
@@ -112,7 +118,8 @@ export function parseGamePath(pathname: string): {
 /**
  * The game's own resolution, which is also the embed's aspect ratio. Only VNDS
  * uses it as the iframe's intrinsic size; other kinds simply fill their frame.
- * Defaults to the DS's 256x192 when the record carries no size.
+ * TIC-80's window is 16:9 with the cart letterboxed inside it, so that is what
+ * its posts record.
  */
 export function getGameNativeSize(game: Pick<GameEmbed, 'width' | 'height'>) {
   const {width, height} = game
@@ -126,6 +133,15 @@ export function getGameNativeSize(game: Pick<GameEmbed, 'width' | 'height'>) {
 export function getGameAspect(game: Pick<GameEmbed, 'width' | 'height'>) {
   const {width, height} = getGameNativeSize(game)
   return width / height
+}
+
+/**
+ * The size to record for a newly uploaded game, where known up front. TIC-80
+ * draws into a 16:9 window whatever the cart is; the others are measured from
+ * the file once it loads.
+ */
+export function getUploadedGameSize(kind: GameKind) {
+  return kind === 'tic80' ? {width: 320, height: 180} : undefined
 }
 
 /**
@@ -146,17 +162,22 @@ export function getGameMimeType(kind: GameKind): string {
       return 'application/java-archive'
     case 'vnds':
       return 'application/gzip'
+    case 'tic80':
+      return 'application/octet-stream'
   }
 }
 
 /** Filename without its extension, treating `.tar.gz` and `.tgz` as one. */
 export function stripGameExtension(name: string): string {
-  return name.replace(/\.(tar\.gz|tgz|zip|swf|jar)$/i, '')
+  return name.replace(/\.(tar\.gz|tgz|zip|swf|jar|tic|png)$/i, '')
 }
 
 /**
  * Kind implied by a filename. Browsers report inconsistent MIME types for these
  * formats, especially `.swf`, so the extension is the only reliable signal.
+ *
+ * A `.p8.png` is a PNG cart image and is deliberately not accepted: PICO-8's
+ * player is proprietary, so there is nothing here that could run it.
  */
 export function getGameKindFromFilename(name: string): GameKind | undefined {
   const lower = name.toLowerCase()
@@ -165,5 +186,6 @@ export function getGameKindFromFilename(name: string): GameKind | undefined {
   // `.tgz` is the short form of `.tar.gz`; `.zip` is the other VNDS archive shape.
   if (lower.endsWith('.tar.gz') || lower.endsWith('.tgz') || lower.endsWith('.zip'))
     return 'vnds'
+  if (lower.endsWith('.tic')) return 'tic80'
   return undefined
 }
