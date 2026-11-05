@@ -58,7 +58,7 @@ function PostTag({tag, authorHandle}: {tag: string; authorHandle: string}) {
       ]}>
       <RichTextTag
         tag={tag}
-        display={`#${tag}`}
+        display={`#${tag.replace(/\r\n|[\r\n\u2028\u2029]/g, ' ')}`}
         authorHandle={authorHandle}
         textStyle={[
           a.text_sm,
