@@ -66,6 +66,7 @@ type Config struct {
 	linkHost      string
 	ipccHost      string
 	staticCDNHost string
+	appName       string
 }
 
 func serve(cctx *cli.Context) error {
@@ -137,6 +138,7 @@ func serve(cctx *cli.Context) error {
 			linkHost:      linkHost,
 			ipccHost:      ipccHost,
 			staticCDNHost: staticCDNHost,
+			appName:       cctx.String("app-name"),
 		},
 		ipccClient: http.Client{
 			Transport: &http.Transport{
@@ -518,6 +520,7 @@ func (srv *Server) Shutdown() error {
 func (srv *Server) NewTemplateContext() pongo2.Context {
 	return pongo2.Context{
 		"staticCDNHost":        srv.cfg.staticCDNHost,
+		"appName":              srv.cfg.appName,
 		"featureGateBootstrap": srv.featureGates.snapshot(),
 		"favicon":              fmt.Sprintf("%s/static/favicon.png", srv.cfg.staticCDNHost),
 		"noindex":              false,

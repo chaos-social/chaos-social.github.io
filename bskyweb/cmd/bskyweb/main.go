@@ -125,6 +125,13 @@ func run(args []string) {
 					Value:    "",
 					EnvVars:  []string{"STATIC_CDN_HOST"},
 				},
+				&cli.StringFlag{
+					Name:     "app-name",
+					Usage:    "product name used in page titles and metadata",
+					Required: false,
+					Value:    "Witchsky",
+					EnvVars:  []string{"EXPO_PUBLIC_APP_NAME"},
+				},
 				&cli.BoolFlag{
 					Name:     "bsky-canonical-instance",
 					Usage:    "Enable if this is the canonical deployment (bsky.app)",

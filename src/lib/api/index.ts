@@ -54,7 +54,7 @@ import {
   getGameMimeType,
   getGameUrl,
 } from '#/components/Post/Embed/GameEmbed/utils'
-import {IS_IOS, IS_WEB} from '#/env'
+import {APP_NAME, IS_IOS, IS_WEB} from '#/env'
 import {makeEventUrl} from '#/features/events/url'
 import {app, chat, com} from '#/lexicons'
 import * as bsky from '#/types/bsky'
@@ -250,10 +250,10 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
   const writes: com.atproto.repo.applyWrites.$InputBody['writes'] = []
   const uris: string[] = []
   const via = IS_WEB
-    ? 'Witchsky Web App'
+    ? `${APP_NAME} Web App`
     : IS_IOS
-      ? 'Witchsky for iPhone'
-      : 'Witchsky for Android'
+      ? `${APP_NAME} for iPhone`
+      : `${APP_NAME} for Android`
 
   let now = new Date()
   let tid: TID | undefined

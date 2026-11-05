@@ -10,10 +10,32 @@ async function buildPwa() {
   const output = path.join(root, 'dist')
   const pwa = path.join(output, 'pwa')
   await buildPwaIcons(pwa)
-  await fs.copyFile(
-    path.join(root, 'public/pwa/manifest.webmanifest'),
-    path.join(pwa, 'manifest.webmanifest'),
+  const appName = process.env.EXPO_PUBLIC_APP_NAME
+  const manifest = JSON.parse(
+    await fs.readFile(
+      path.join(root, 'public/pwa/manifest.webmanifest'),
+      'utf8',
+    ),
   )
+  if (appName) {
+    manifest.name = appName
+    manifest.short_name = appName
+  }
+  await fs.writeFile(
+    path.join(pwa, 'manifest.webmanifest'),
+    JSON.stringify(manifest, null, 2) + '\n',
+  )
+  if (appName) {
+    const indexPath = path.join(output, 'index.html')
+    const html = await fs.readFile(indexPath, 'utf8')
+    await fs.writeFile(
+      indexPath,
+      html.replace(
+        /<title>[^<]*<\/title>/,
+        `<title>${appName.replace(/[<&]/g, '')}</title>`,
+      ),
+    )
+  }
   await fs.copyFile(
     path.join(output, 'index.html'),
     path.join(pwa, 'offline.html'),

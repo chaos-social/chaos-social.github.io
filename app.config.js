@@ -59,7 +59,7 @@ module.exports = function (_config) {
   return {
     expo: {
       version: VERSION,
-      name: 'Witchsky',
+      name: process.env.EXPO_PUBLIC_APP_NAME || 'Witchsky',
       slug: 'witchsky',
       scheme: ['bluesky', 'witchsky', 'app.witchsky'],
       // owner: 'blueskysocial',
@@ -98,7 +98,8 @@ module.exports = function (_config) {
             'Used to save images to your library.',
           NSPhotoLibraryUsageDescription:
             'Used for profile pictures, posts, and other kinds of content',
-          CFBundleSpokenName: 'witchsky.app',
+          CFBundleSpokenName:
+            process.env.EXPO_PUBLIC_APP_NAME || 'witchsky.app',
           CFBundleLocalizations: [
             'en',
             'an',

@@ -34,6 +34,7 @@ steps:
         "EXPO_PUBLIC_BUNDLE_IDENTIFIER=$TANGLED_SHA" \
         "EXPO_PUBLIC_BUNDLE_DATE=$bundle_date" \
         "EXPO_PUBLIC_OAUTH_BASE_URL=$oauth_base_url" \
+        "EXPO_PUBLIC_APP_NAME=${APP_NAME:-Witchsky}" \
         > .env
 
   - name: Build

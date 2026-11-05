@@ -3,6 +3,7 @@ import {z} from 'zod'
 import {DEFAULT_ALT_TEXT_AI_PROMPT, MAX_ALT_TEXT} from '#/lib/constants'
 import {logger} from '#/logger'
 import {type AltTextAiConfig} from '#/state/preferences/openrouter'
+import {APP_NAME} from '#/env'
 
 const responseSchema = z.object({
   choices: z.array(
@@ -68,7 +69,7 @@ export async function generateAltText(
   }
   if (config.provider === 'openrouter') {
     headers['HTTP-Referer'] = 'https://witchsky.app'
-    headers['X-Title'] = 'Witchsky'
+    headers['X-Title'] = APP_NAME
   }
 
   const response = await fetch(getChatCompletionsUrl(config.baseUrl), {

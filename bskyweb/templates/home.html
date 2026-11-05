@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block head_title %}Bluesky{% endblock %}
+{% block head_title %}{{ appName }}{% endblock %}
 
 {% block html_head_extra -%}
-  <meta property="og:title" content="Bluesky" />
+  <meta property="og:title" content="{{ appName }}" />
   <meta property="og:type" content="website" />
-  <meta name="twitter:title" content="Bluesky" />
+  <meta name="twitter:title" content="{{ appName }}" />
 
   <meta name="description" content="Social media as it should be. Find your community among millions of users, unleash your creativity, and have some fun again." />
   <meta property="og:description" content="Social media as it should be. Find your community among millions of users, unleash your creativity, and have some fun again." />
@@ -22,6 +22,6 @@
 {%- endblock %}
 
 {% block noscript_extra %}
-<h1 lang="en">Bluesky</h1>
+<h1 lang="en">{{ appName }}</h1>
 <p lang="en">Social media as it should be. Find your community among millions of users, unleash your creativity, and have some fun again.</p>
 {% endblock %}

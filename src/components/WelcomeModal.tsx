@@ -13,6 +13,7 @@ import {type WelcomeModalControl} from '#/components/hooks/useWelcomeModal.share
 import {TimesLarge_Stroke2_Corner0_Rounded as XIcon} from '#/components/icons/Times'
 import {Text} from '#/components/Typography'
 import {useAnalytics} from '#/analytics'
+import {APP_NAME} from '#/env'
 
 const welcomeModalBg = require('../../assets/images/welcome-modal-bg.webp')
 
@@ -115,7 +116,7 @@ export function WelcomeModal({control}: WelcomeModalProps) {
                       a.user_select_none,
                       {color: 'rgb(42, 40, 40)', letterSpacing: -0.5},
                     ]}>
-                    Witchsky
+                    {APP_NAME}
                   </Text>
                 </View>
               </View>

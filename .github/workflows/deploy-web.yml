@@ -21,6 +21,7 @@ jobs:
       # have to be set here. A value set in the Pages dashboard is too late.
       EXPO_PUBLIC_ENV: production
       EXPO_PUBLIC_OAUTH_BASE_URL: ${{ vars.OAUTH_BASE_URL || 'https://witchsky.app' }}
+      EXPO_PUBLIC_APP_NAME: ${{ vars.APP_NAME || 'Witchsky' }}
       EXPO_PUBLIC_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
       EXPO_PUBLIC_BUNDLE_IDENTIFIER: ${{ github.sha }}
       EXPO_PUBLIC_BUNDLE_DATE: ${{ github.run_id }}

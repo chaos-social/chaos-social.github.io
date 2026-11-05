@@ -37,6 +37,13 @@ export const IS_E2E = ENV === 'e2e'
 export const IS_INTERNAL = IS_DEV || IS_TESTFLIGHT
 
 /**
+ * The product name shown inside the app: user agent, attribution headers, and
+ * the welcome screen. The native display name and web title still come from
+ * `app.config.js` and the HTML templates, so set this alongside those.
+ */
+export const APP_NAME: string = process.env.EXPO_PUBLIC_APP_NAME || 'Witchsky'
+
+/**
  * The commit hash that the current bundle was made from. The user can
  * see the commit hash in the app's settings along with the other version info.
  * Useful for debugging/reporting.
