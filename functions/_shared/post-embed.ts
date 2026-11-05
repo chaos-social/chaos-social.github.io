@@ -1,23 +1,55 @@
 import {renderCachedEmbed} from './embed-cache.ts'
 import {html, type ProfileView, renderHandleString} from './profile-embed.ts'
+import {getVideoBlobUrl} from './video-blob.ts'
 
 type Facet = {
   features?: Array<{$type?: string; uri?: string}>
   index?: {byteEnd?: number; byteStart?: number}
 }
 
+type AspectRatio = {height?: number; width?: number}
+
+type ImageView = {thumb?: string; thumbnail?: string; fullsize?: string}
+
+type VideoView = {
+  alt?: string
+  aspectRatio?: AspectRatio
+  cid?: string
+  playlist?: string
+  thumbnail?: string
+}
+
 type Embed = {
   $type?: string
-  external?: {uri?: string}
-  images?: Array<{thumb?: string}>
-  record?: Embed | ViewRecord
+  external?: {thumb?: string; uri?: string}
+  images?: ImageView[]
+  items?: ImageView[]
+  media?: Embed
+  /**
+   * `app.bsky.embed.record#view` puts the quoted post directly in `record`;
+   * `recordWithMedia#view` nests a `record#view` there, so the quoted post ends
+   * up at `record.record`.
+   */
+  record?: Embed | ViewRecord | {$type?: string; record?: Embed | ViewRecord}
   thumbnail?: string
 }
 
 type ViewRecord = {
   $type?: string
-  author: ProfileView
-  value?: {text?: string}
+  author?: ProfileView
+  embeds?: Embed[]
+  uri?: string
+  value?: {
+    $type?: string
+    embed?: {
+      $type?: string
+      cid?: string
+      playlist?: string
+      thumbnail?: string
+      aspectRatio?: AspectRatio
+    }
+    text?: string
+  }
 }
 
 type Thread = {
@@ -33,10 +65,12 @@ type Thread = {
 
 const TYPE = {
   external: 'app.bsky.embed.external#view',
+  gallery: 'app.bsky.embed.gallery#view',
   images: 'app.bsky.embed.images#view',
   record: 'app.bsky.embed.record#view',
   recordWithMedia: 'app.bsky.embed.recordWithMedia#view',
   thread: 'app.bsky.feed.defs#threadViewPost',
+  video: 'app.bsky.embed.video#view',
   viewRecord: 'app.bsky.embed.record#viewRecord',
 }
 
@@ -45,6 +79,24 @@ function isType<T extends {$type?: string}>(
   type: string,
 ): value is T {
   return value?.$type === type
+}
+
+function getRecord(embed: Embed | undefined) {
+  return embed && 'record' in embed ? embed.record : undefined
+}
+
+/**
+ * The quoted post, or undefined when the record is blocked, detached or gone.
+ */
+function getQuotedViewRecord(embed: Embed | undefined): ViewRecord | undefined {
+  if (!isType(embed, TYPE.record) && !isType(embed, TYPE.recordWithMedia)) {
+    return
+  }
+  const record = getRecord(embed)
+  const inner = record && 'record' in record ? record.record : record
+  return inner && isType(inner, TYPE.viewRecord)
+    ? (inner as ViewRecord)
+    : undefined
 }
 
 function expandFacetedLinks(text: string, facets: Facet[]): string {
@@ -127,13 +179,8 @@ export function expandPostTextRich(postView: Thread): string {
 
   // Append placeholder for quote posts or other record embeds
   if (isType(embed, TYPE.record) || isType(embed, TYPE.recordWithMedia)) {
-    const recordEmbed = embed?.record
-    const embeddedRecord =
-      recordEmbed && 'record' in recordEmbed
-        ? (recordEmbed.record ?? recordEmbed)
-        : recordEmbed
-    if (isType(embeddedRecord, TYPE.viewRecord)) {
-      const viewRecord = embeddedRecord as ViewRecord
+    const viewRecord = getQuotedViewRecord(embed)
+    if (viewRecord?.author) {
       const quote = `↘️ quoting ${renderHandleString(
         viewRecord.author,
       )}:\n\n${viewRecord.value?.text ?? ''}`
@@ -158,6 +205,130 @@ export function expandPostTextRich(postView: Thread): string {
   return expandedText
 }
 
+export type PreviewMedia =
+  | {kind: 'external'; thumb: string}
+  | {kind: 'images'; urls: string[]}
+  | {
+      aspectRatio?: AspectRatio
+      cid: string
+      did: string
+      kind: 'video'
+      thumbnail?: string
+    }
+
+function getEmbedMedia(
+  embed: Embed | undefined,
+  authorDid: string,
+): PreviewMedia | undefined {
+  if (!embed) return
+
+  const {images, items, external} = embed
+
+  if (embed.$type === TYPE.recordWithMedia) {
+    return getEmbedMedia(embed.media, authorDid)
+  }
+
+  if (embed.$type === TYPE.images || embed.$type === TYPE.gallery) {
+    // images use `thumb`, gallery items use `thumbnail`
+    const urls = (images ?? items ?? [])
+      .map(image => image.thumb ?? image.thumbnail)
+      .filter((url): url is string => !!url)
+    return urls.length ? {kind: 'images', urls: urls.slice(0, 4)} : undefined
+  }
+
+  if (embed.$type === TYPE.video) {
+    const video = embed as VideoView
+    if (!video.cid) return
+    return {
+      aspectRatio: video.aspectRatio,
+      cid: video.cid,
+      did: authorDid,
+      kind: 'video',
+      thumbnail: video.thumbnail,
+    }
+  }
+
+  if (embed.$type === TYPE.external) {
+    return external?.thumb
+      ? {kind: 'external', thumb: external.thumb}
+      : undefined
+  }
+}
+
+/**
+ * The post's own media, falling back to the quoted post's when it has none -
+ * a text post quoting a video should still preview the video. One level only,
+ * matching vxBsky.
+ */
+export function getPreviewMedia(thread: Thread): PreviewMedia | undefined {
+  const post = thread.post
+  const own = getEmbedMedia(post.embed, post.author.did)
+  if (own) return own
+
+  const quoted = getQuotedViewRecord(post.embed)
+  if (!quoted) return
+  return getEmbedMedia(
+    quoted.embeds?.[0],
+    quoted.author?.did ?? post.author.did,
+  )
+}
+
+export async function renderEmbedMeta(media: PreviewMedia | undefined) {
+  if (!media) {
+    return html`<meta name="twitter:card" content="summary" />`
+  }
+
+  if (media.kind === 'external') {
+    return html`
+      <meta property="og:image" content="${media.thumb}" />
+      <meta name="twitter:card" content="summary_large_image" />
+    `
+  }
+
+  if (media.kind === 'images') {
+    return html`
+      ${media.urls.map(url => html`<meta property="og:image" content="${url}" />`)}
+      <meta name="twitter:card" content="summary_large_image" />
+    `
+  }
+
+  const stream = await getVideoBlobUrl(media.did, media.cid)
+  const {width, height} = media.aspectRatio ?? {}
+
+  return html`
+    ${
+      media.thumbnail
+        ? html`
+            <meta property="og:image" content="${media.thumbnail}" />
+            <meta name="twitter:image" content="${media.thumbnail}" />
+          `
+        : ''
+    }
+    <meta property="og:video" content="${stream}" />
+    <meta property="og:video:secure_url" content="${stream}" />
+    <meta property="og:video:type" content="video/mp4" />
+    ${
+      width && height
+        ? html`
+            <meta property="og:video:width" content="${String(width)}" />
+            <meta property="og:video:height" content="${String(height)}" />
+          `
+        : ''
+    }
+    <meta name="twitter:card" content="player" />
+    <meta name="twitter:player:stream" content="${stream}" />
+    <meta name="twitter:player:stream:content_type" content="video/mp4" />
+    ${
+      width && height
+        ? html`
+            <meta name="twitter:player:width" content="${String(width)}" />
+            <meta name="twitter:player:height" content="${String(height)}" />
+          `
+        : ''
+    }
+  `
+}
+
 class HeadHandler {
   thread: Thread
   url: string
@@ -178,27 +349,7 @@ class HeadHandler {
           `
         : ''
 
-    const embed = this.thread.post.embed
-
-    const embedElems = !embed
-      ? ''
-      : isType(embed, TYPE.images) && embed.images?.length
-        ? html`${embed.images
-              .filter(image => image.thumb)
-              .map(
-                image =>
-                  html`<meta
-                    property="og:image"
-                    content="${image.thumb as string}" />`,
-              )}
-            <meta name="twitter:card" content="summary_large_image" /> `
-        : // TODO: in the future, embed videos
-          'thumbnail' in embed && embed.thumbnail
-          ? html`
-              <meta property="og:image" content="${embed.thumbnail}" />
-              <meta name="twitter:card" content="summary_large_image" />
-            `
-          : html`<meta name="twitter:card" content="summary" />`
+    const embedElems = await renderEmbedMeta(getPreviewMedia(this.thread))
 
     element.append(
       html`
