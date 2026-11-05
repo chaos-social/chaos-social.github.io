@@ -4,7 +4,7 @@ import {type Client} from '@atproto/lex'
 import {isValidDid} from '@atproto/syntax'
 
 import {type ImageMeta} from '#/state/gallery'
-import {LOGO_PATH, LOGO_VIEW_BOX} from '#/view/icons/Logo'
+import {HAT_PATH, LOGO_VIEW_BOX} from '#/view/icons/Logo'
 import {
   AVATAR_SIZE,
   type HatPlacement,
@@ -28,7 +28,7 @@ export async function exportAvatar({
     const image = await loadImage(url)
     const hat = await loadImage(
       `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${LOGO_VIEW_BOX}"><path fill="${color}" d="${LOGO_PATH}"/></svg>`,
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${LOGO_VIEW_BOX}"><path fill="${color}" d="${HAT_PATH}"/></svg>`,
       )}`,
     )
     const canvas = document.createElement('canvas')

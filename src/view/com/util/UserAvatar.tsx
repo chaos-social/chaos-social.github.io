@@ -46,7 +46,7 @@ import {
 import {useThumbnailFormat} from '#/state/preferences/thumbnail-format'
 import {unstableCacheProfileView} from '#/state/queries/unstable-profile-cache'
 import {EditImageDialog} from '#/view/com/composer/photos/EditImageDialog'
-import {LOGO_PATH} from '#/view/icons/Logo'
+import {HAT_PATH} from '#/view/icons/Logo'
 import {atoms as a, tokens, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
 import {useDialogControl} from '#/components/Dialog'
@@ -256,7 +256,7 @@ let DefaultAvatar = ({
         fill={accentForeground(t, t.palette.primary_500)}
       />
       <Path
-        d={LOGO_PATH}
+        d={HAT_PATH}
         transform="rotate(8 12.3 10) translate(7.18 1.3) scale(0.02)"
         fill={accentForeground(t, t.palette.primary_500)}
         stroke={t.palette.primary_500}

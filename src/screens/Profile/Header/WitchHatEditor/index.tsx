@@ -6,7 +6,7 @@ import {Trans, useLingui} from '@lingui/react/macro'
 import {logger} from '#/logger'
 import {type ImageMeta} from '#/state/gallery'
 import {usePdsClient} from '#/state/session'
-import {LOGO_PATH, LOGO_VIEW_BOX} from '#/view/icons/Logo'
+import {HAT_PATH, LOGO_VIEW_BOX} from '#/view/icons/Logo'
 import {DragArea} from '#/screens/Profile/Header/WitchHatEditor/DragArea'
 import {EditorSlider} from '#/screens/Profile/Header/WitchHatEditor/EditorSlider'
 import {exportAvatar} from '#/screens/Profile/Header/WitchHatEditor/exportAvatar'
@@ -184,7 +184,7 @@ function EditorInner({
               },
             ]}>
             <Svg viewBox={LOGO_VIEW_BOX} width={hatSize} height={hatSize}>
-              <Path d={LOGO_PATH} fill={color} />
+              <Path d={HAT_PATH} fill={color} />
             </Svg>
           </View>
         </View>

@@ -7,7 +7,7 @@ import {exportAvatar} from '#/screens/Profile/Header/WitchHatEditor/exportAvatar
 import getBlob from '#/lexicons/com/atproto/sync/getBlob'
 
 jest.mock('#/view/icons/Logo', () => ({
-  LOGO_PATH: 'M0 0L512 512Z',
+  HAT_PATH: 'M0 0L512 512Z',
   LOGO_VIEW_BOX: '0 0 512 512',
 }))
 
