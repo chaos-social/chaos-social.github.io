@@ -1,17 +1,16 @@
 import {useState} from 'react'
-import {Pressable, View} from 'react-native'
-import {Image} from 'expo-image'
+import {Pressable} from 'react-native'
 import {useLingui} from '@lingui/react/macro'
 
 import {useAutoplayDisabled} from '#/state/preferences'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
-import {atoms as a, web} from '#/alf'
+import {web} from '#/alf'
 import {Button} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
 import {Portal} from '#/components/Portal'
 import * as Tooltip from '#/components/Tooltip'
-import {Text} from '#/components/Typography'
 import {IS_NATIVE} from '#/env'
+import {BluemojiDetails} from '#/features/bluemoji/BluemojiDetails'
 import {InlineImage} from '#/features/bluemoji/InlineImage'
 import {useBluemojiItemQuery} from '#/features/bluemoji/queries'
 import {
@@ -83,22 +82,7 @@ export function InlineBluemoji({
             nativeOptions={{preventExpansion: true}}>
             <Dialog.Handle />
             <Dialog.ScrollableInner label={l`Emoji details`}>
-              <View style={[a.flex_row, a.align_center, a.gap_md]}>
-                <Image
-                  source={{uri}}
-                  accessibilityLabel={alt}
-                  accessibilityHint={undefined}
-                  style={{width: 48, height: 48}}
-                  contentFit="contain"
-                  autoplay={!autoplayDisabled}
-                />
-                <View style={[a.flex_1, a.gap_xs]}>
-                  <Text emoji style={a.font_bold}>
-                    {item.record.name}
-                  </Text>
-                  {alt !== item.record.name ? <Text emoji>{alt}</Text> : null}
-                </View>
-              </View>
+              <BluemojiDetails item={item} uri={uri} alt={alt} />
             </Dialog.ScrollableInner>
           </Dialog.Outer>
         </Portal>
@@ -123,22 +107,7 @@ export function InlineBluemoji({
         </Button>
       </Tooltip.Target>
       <Tooltip.Content label={l`Emoji details`}>
-        <View style={[a.flex_row, a.align_center, a.gap_md]}>
-          <Image
-            source={{uri}}
-            accessibilityLabel={alt}
-            accessibilityHint={undefined}
-            style={{width: 48, height: 48}}
-            contentFit="contain"
-            autoplay={!autoplayDisabled}
-          />
-          <View style={[a.flex_1, a.gap_xs]}>
-            <Text emoji style={a.font_bold}>
-              {item.record.name}
-            </Text>
-            {alt !== item.record.name ? <Text emoji>{alt}</Text> : null}
-          </View>
-        </View>
+        <BluemojiDetails item={item} uri={uri} alt={alt} />
       </Tooltip.Content>
     </Tooltip.Outer>
   )
