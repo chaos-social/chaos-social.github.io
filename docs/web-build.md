@@ -13,6 +13,9 @@ pulls in:
   autodetect entry, which is what makes `chroma('#rrggbb')` parse at all.
 - `src/ops/<op>.js` - assigns methods onto `Color.prototype`, which is what
   makes `.oklch()`, `.hex()`, `.luminance()`, `.darken()` etc. exist.
+- `src/interpolator/<space>.js` - registers each color space with
+  `chroma.mix`; without them, `chroma.mix(a, b, t, 'lab')` throws
+  `interpolation mode lab is not defined`.
 - `src/generator/mix.js` - backs `chroma.mix` and `chroma.scale`.
 
 Under tree shaking all of that is dropped, and both failures are runtime-only:
@@ -21,9 +24,10 @@ Under tree shaking all of that is dropped, and both failures are runtime-only:
 | --- | --- |
 | format registrations | `unknown format: #rrggbb` |
 | operator registrations | `e.luminance is not a function` |
+| interpolator registrations | `interpolation mode lab is not defined` |
 
-`src/platform/chroma-formats.web.ts` imports the **whole** io and ops set so
-both survive pruning, and `index.web.ts` references its exported value so the
+`src/platform/chroma-formats.web.ts` imports the **whole** io, ops and
+interpolator sets so all of them survive pruning, and `index.web.ts` references its exported value so the
 module itself is not pruned either - a bare side-effect import is dropped too.
 Registering the full set rather than only the methods currently called is
 deliberate: chroma reaches operators indirectly (`chroma.contrast` calls
@@ -36,9 +40,10 @@ To confirm a build is good, either run the deploy workflow's
 ```sh
 grep -c '\[3,4,5,6,7,8,9\]' dist/_expo/static/js/web/index-*.js   # hex format
 grep -c 'prototype\.luminance' dist/_expo/static/js/web/index-*.js # an operator
+grep -c 'default\.lab=' dist/_expo/static/js/web/index-*.js              # an interpolator
 ```
 
-Both must be non-zero.
+All three must be non-zero.
 
 Do not "fix" this by setting `EXPO_UNSTABLE_TREE_SHAKING=0`: that disables
 tree shaking for the whole app (roughly 2 MiB of extra JS) to work around one

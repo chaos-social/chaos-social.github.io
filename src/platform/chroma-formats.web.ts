@@ -47,6 +47,20 @@ import 'chroma-js/src/ops/premultiply.js'
 import 'chroma-js/src/ops/saturate.js'
 import 'chroma-js/src/ops/set.js'
 import 'chroma-js/src/ops/shade.js'
+// Interpolators - a color space is only available to chroma.mix once its
+// interpolator module has run; without these, mix(..., 'rgb') throws
+// "interpolation mode rgb is not defined".
+import 'chroma-js/src/interpolator/hcg.js'
+import 'chroma-js/src/interpolator/hsi.js'
+import 'chroma-js/src/interpolator/hsl.js'
+import 'chroma-js/src/interpolator/hsv.js'
+import 'chroma-js/src/interpolator/lab.js'
+import 'chroma-js/src/interpolator/lch.js'
+import 'chroma-js/src/interpolator/lrgb.js'
+import 'chroma-js/src/interpolator/num.js'
+import 'chroma-js/src/interpolator/oklab.js'
+import 'chroma-js/src/interpolator/oklch.js'
+import 'chroma-js/src/interpolator/rgb.js'
 // Used by chroma.mix / chroma.scale.
 import 'chroma-js/src/generator/mix.js'
 

@@ -74,6 +74,9 @@ jobs:
           # luminance operator (chroma.contrast and friends)
           grep -rq 'prototype\.luminance' dist --include='*.js' || \
             missing="$missing\n  - luminance op (.luminance() would not be a function)"
+          # lab interpolator (chroma.mix(..., 'lab'), used by Material You)
+          grep -rq 'default\.lab=' dist --include='*.js' || \
+            missing="$missing\n  - lab interpolator (chroma.mix(..., 'lab') would throw 'interpolation mode lab is not defined')"
           if [ -n "$missing" ]; then
             printf 'chroma-js registrations missing from the bundle:%b\n' "$missing"
             echo "Fix src/platform/chroma-formats.web.ts; see docs/web-build.md."
