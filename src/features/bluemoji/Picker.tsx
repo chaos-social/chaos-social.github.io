@@ -61,6 +61,65 @@ export function BluemojiPickerButton({
   )
 }
 
+/**
+ * The picker body on its own, for callers that already own a dialog (the
+ * reaction sheet). Closes nothing and inserts into the caller's state.
+ */
+export function BluemojiPickerList({
+  repo,
+  onSelect,
+}: {
+  repo?: string
+  onSelect: (item: BluemojiItem) => void
+}) {
+  const {t: l} = useLingui()
+  const {currentAccount} = useSession()
+  const [discover, setDiscover] = useState(false)
+  const [query, setQuery] = useState('')
+  const searching = query.trim().length > 0
+  const scope = repo ?? currentAccount?.did
+
+  return (
+    <View style={[a.gap_md]}>
+      <View style={[a.flex_row, a.gap_xs]}>
+        <Button
+          size="small"
+          color={discover ? 'secondary' : 'primary'}
+          label={l`My emoji`}
+          onPress={() => setDiscover(false)}>
+          <ButtonText>
+            <Trans>My emoji</Trans>
+          </ButtonText>
+        </Button>
+        <Button
+          size="small"
+          color={discover ? 'primary' : 'secondary'}
+          label={l`Discover`}
+          onPress={() => setDiscover(true)}>
+          <ButtonText>
+            <Trans>Discover</Trans>
+          </ButtonText>
+        </Button>
+      </View>
+      <TextField.Root>
+        <TextField.Input
+          label={l`Search custom emoji`}
+          placeholder={l`Search`}
+          defaultValue=""
+          onChangeText={setQuery}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+      </TextField.Root>
+      {searching || !discover ? (
+        <SearchGrid repo={scope} query={query} onInsert={onSelect} />
+      ) : (
+        <TrendingGrid onInsert={onSelect} />
+      )}
+    </View>
+  )
+}
+
 function PickerContent({
   onInsert,
 }: {

@@ -22,6 +22,7 @@ type Collection =
   | 'net.wafrn.feed.bite'
   | 'blue.poll.poll.poll'
   | 'blue.poll.poll.vote'
+  | 'blue.moji.feed.reaction'
 
 const headers = new Headers({
   Accept: 'application/json',

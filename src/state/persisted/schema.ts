@@ -357,6 +357,7 @@ const schema = z.object({
   seenPostsEnabled: z.boolean().optional(),
   deckLayoutEnabled: z.boolean().optional(),
   hideQuotesOfBlockedAccounts: z.boolean().optional(),
+  hideBluemojiReactions: z.boolean().optional(),
   pdsLabel: z
     .object({
       enabled: z.boolean(),
@@ -562,6 +563,7 @@ export const defaults: Schema = {
   seenPostsEnabled: false,
   deckLayoutEnabled: false,
   hideQuotesOfBlockedAccounts: false,
+  hideBluemojiReactions: false,
   pdsLabel: {
     enabled: true,
     hideBskyPds: true,
