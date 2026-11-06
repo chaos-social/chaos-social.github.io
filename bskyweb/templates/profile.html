@@ -2,9 +2,9 @@
 
 {% block head_title %}
 {%- if profileView -%}
-  @{{ profileView.Handle }} on Bluesky
+  @{{ profileView.Handle }} on {{ appName }}
 {%- else -%}
-  Bluesky
+  {{ appName }}
 {%- endif -%}
 {% endblock %}
 

@@ -2,9 +2,9 @@
 
 {% block head_title %}
 {%- if feedView -%}
-  {{ feedView.DisplayName }} by @{{ feedView.Creator.Handle }} | Bluesky Feed
+  {{ feedView.DisplayName }} by @{{ feedView.Creator.Handle }} | {{ appName }} Feed
 {%- else -%}
-  Bluesky
+  {{ appName }}
 {%- endif -%}
 {% endblock %}
 

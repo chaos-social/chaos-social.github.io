@@ -26,14 +26,18 @@ async function buildPwa() {
     JSON.stringify(manifest, null, 2) + '\n',
   )
   if (appName) {
+    const safeName = appName.replace(/[<&]/g, '')
     const indexPath = path.join(output, 'index.html')
     const html = await fs.readFile(indexPath, 'utf8')
     await fs.writeFile(
       indexPath,
-      html.replace(
-        /<title>[^<]*<\/title>/,
-        `<title>${appName.replace(/[<&]/g, '')}</title>`,
-      ),
+      html
+        .replace(/<title>[^<]*<\/title>/, `<title>${safeName}</title>`)
+        .replace(/<h1 lang="en">[^<]*<\/h1>/, `<h1 lang="en">${safeName}</h1>`)
+        .replace(
+          /Enable JavaScript to use [^.<]*\./,
+          `Enable JavaScript to use ${safeName}.`,
+        ),
     )
   }
   await fs.copyFile(

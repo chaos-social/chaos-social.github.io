@@ -5,6 +5,14 @@ import {registerRootComponent} from 'expo'
 
 import {chromaFormatsReady} from '#/platform/chroma-formats.web'
 import App from '#/App'
+import {APP_NAME} from '#/env'
+
+/*
+ * `public/index.html` carries the static title used before React mounts. Set
+ * it before registering so dev serves and non-built exports match the bundle,
+ * then let React Navigation take over with per-screen titles.
+ */
+document.title = APP_NAME
 
 /*
  * Referenced so tree shaking keeps chroma-js's format registrations; see that
