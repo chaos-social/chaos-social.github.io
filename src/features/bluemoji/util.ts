@@ -72,7 +72,7 @@ export function getBluemojiModeration(
   const labels = com.atproto.label.defs.selfLabels.$ifMatches(
     item.record.labels,
   )
-  const values = labels?.values.map(label => label.val) ?? []
+  const values = labels?.values.map((label: {val: string}) => label.val) ?? []
   if (item.record.adultOnly) values.push('porn')
   let result: 'ignore' | 'warn' | 'hide' = 'ignore'
   for (const value of values) {
