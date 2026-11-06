@@ -1,8 +1,13 @@
+import {Text} from 'react-native'
 import Svg, {Path, type PathProps, type SvgProps} from 'react-native-svg'
 
 import {usePalette} from '#/lib/hooks/usePalette'
+import {APP_NAME} from '#/env'
 
 const ratio = 22 / 110.3335
+
+/** The drawn letterforms spell this; any other name has to be set as text. */
+const DRAWN_NAME = 'Witchsky'
 
 export function Logotype({
   fill,
@@ -11,6 +16,24 @@ export function Logotype({
   const pal = usePalette('default')
   // @ts-expect-error it's fiiiiine
   const size = parseInt(rest.width || 32)
+
+  if (APP_NAME !== DRAWN_NAME) {
+    return (
+      <Text
+        accessibilityRole="text"
+        numberOfLines={1}
+        style={{
+          height: size * ratio,
+          color: typeof fill === 'string' ? fill : pal.text.color,
+          fontSize: size * 0.215,
+          lineHeight: size * ratio,
+          fontWeight: '600',
+          letterSpacing: -0.01 * size * 0.215,
+        }}>
+        {APP_NAME}
+      </Text>
+    )
+  }
 
   return (
     <Svg

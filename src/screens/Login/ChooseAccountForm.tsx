@@ -13,7 +13,7 @@ import {Button, ButtonText} from '#/components/Button'
 import * as TextField from '#/components/forms/TextField'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
-import {IS_WEB} from '#/env'
+import {APP_NAME, IS_WEB} from '#/env'
 import {FormContainer} from './FormContainer'
 
 export const ChooseAccountForm = ({
@@ -59,7 +59,7 @@ export const ChooseAccountForm = ({
       } catch (err) {
         if (err instanceof Error && err.name === 'OAuthSessionBusyError') {
           setError(
-            l`Sign-in is taking too long. Another Witchsky tab or window may be using this account’s session. Close that view, then try again.`,
+            l`Sign-in is taking too long. Another ${APP_NAME} tab or window may be using this account’s session. Close that view, then try again.`,
           )
           return
         }
