@@ -1,4 +1,4 @@
-import {DEFAULT_ACTIVE_THEME} from './catalog'
+import {WITCHSKY_ACTIVE_THEME} from './catalog'
 import {activeThemeToScheme} from './semanticTheme'
 import {
   getColorSet,
@@ -11,20 +11,20 @@ import {
 
 describe('Witchsky theme records', () => {
   it('keeps mode on each record and named variants inside it', () => {
-    const light = getColorSet(DEFAULT_ACTIVE_THEME.light.record, 'Moonmilk')
-    const dark = getColorSet(DEFAULT_ACTIVE_THEME.dark.record, 'Coven')
+    const light = getColorSet(WITCHSKY_ACTIVE_THEME.light.record, 'Moonmilk')
+    const dark = getColorSet(WITCHSKY_ACTIVE_THEME.dark.record, 'Coven')
 
-    expect(DEFAULT_ACTIVE_THEME.light.record.mode).toBe('light')
-    expect(DEFAULT_ACTIVE_THEME.dark.record.mode).toBe('dark')
+    expect(WITCHSKY_ACTIVE_THEME.light.record.mode).toBe('light')
+    expect(WITCHSKY_ACTIVE_THEME.dark.record.mode).toBe('dark')
     expect(light?.name).toBe('Moonmilk')
     expect(dark?.name).toBe('Coven')
-    expect(getColorSets(DEFAULT_ACTIVE_THEME.dark.record)).toEqual(
+    expect(getColorSets(WITCHSKY_ACTIVE_THEME.dark.record)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({name: 'Coven'}),
         expect.objectContaining({name: 'Midnight'}),
       ]),
     )
-    expect(DEFAULT_ACTIVE_THEME.dark.record.variants?.[0].colors).toEqual({
+    expect(WITCHSKY_ACTIVE_THEME.dark.record.variants?.[0].colors).toEqual({
       canvas: '#150b08',
       surface: '#2a1a15',
       positive: '#09b35e',
@@ -33,7 +33,7 @@ describe('Witchsky theme records', () => {
   })
 
   it('maps semantic roles into an ALF scheme without changing canvas or accent', () => {
-    const scheme = activeThemeToScheme(DEFAULT_ACTIVE_THEME)
+    const scheme = activeThemeToScheme(WITCHSKY_ACTIVE_THEME)
 
     expect(scheme?.light.atoms.bg.backgroundColor).toBe('#fefbfb')
     expect(scheme?.light.palette.contrast_200).toBe('#d0cbc9')
@@ -51,7 +51,7 @@ describe('Witchsky theme records', () => {
   })
 
   it('only treats color changes as theme updates', () => {
-    const current = DEFAULT_ACTIVE_THEME.light.record
+    const current = WITCHSKY_ACTIVE_THEME.light.record
     expect(
       themeColorsChanged(current, {
         ...current,
@@ -71,7 +71,7 @@ describe('Witchsky theme records', () => {
   })
 
   it('allows clients to hide unsupported special themes', () => {
-    const current = DEFAULT_ACTIVE_THEME.light.record
+    const current = WITCHSKY_ACTIVE_THEME.light.record
     expect(
       isSupportedTheme({
         ...current,
@@ -91,11 +91,11 @@ describe('Witchsky theme records', () => {
 
   it('hue-shifts only the active mode whose record opts in', () => {
     const scheme = activeThemeToScheme({
-      ...DEFAULT_ACTIVE_THEME,
+      ...WITCHSKY_ACTIVE_THEME,
       light: {
-        ...DEFAULT_ACTIVE_THEME.light,
+        ...WITCHSKY_ACTIVE_THEME.light,
         record: {
-          ...DEFAULT_ACTIVE_THEME.light.record,
+          ...WITCHSKY_ACTIVE_THEME.light.record,
           special: {$type: HUE_SPECIAL},
         },
         hue: 90,

@@ -17,6 +17,7 @@ import * as Layout from '#/components/Layout'
 import {Text} from '#/components/Typography'
 import {IS_WEB} from '#/env'
 import {useApplyTheme} from '#/features/themes/api'
+import {DEFAULT_ACTIVE_THEME} from '#/features/themes/catalog'
 import {
   materialYouColorSets,
   materialYouRecord,
@@ -69,7 +70,8 @@ export function AppearanceColorThemeSettingsScreen({}: Props) {
     }),
     [material3Accent, materialPalette, sourceTheme],
   )
-  const isActive = activeTheme?.[mode].uri === materialTheme.uri
+  const isActive =
+    (activeTheme ?? DEFAULT_ACTIVE_THEME)[mode].uri === materialTheme.uri
   const styleColorSets = useMemo(
     () =>
       MATERIAL3_STYLE_OPTIONS.map(({name, label}) => {

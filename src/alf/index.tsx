@@ -33,7 +33,6 @@ import {
   type Palette,
   reddwarfscheme,
   themes,
-  witchskyscheme,
   zeppelinscheme,
 } from '#/alf/themes'
 import {
@@ -186,37 +185,41 @@ export function useScheme(): SchemeType {
   const palette = useMaterialYouPalette()
 
   return useMemo(() => {
-    const recordScheme =
+    const supportedTheme =
       activeTheme &&
       isSupportedTheme(activeTheme.light.record) &&
-      isSupportedTheme(activeTheme.dark.record) &&
-      activeThemeToScheme({
-        light: {
-          ...activeTheme.light,
-          record: resolveMaterialYouRecord(
-            activeTheme.light.record,
-            palette,
-            material3Accent,
-            IS_WEB,
-          ),
-        },
-        dark: {
-          ...activeTheme.dark,
-          record: resolveMaterialYouRecord(
-            activeTheme.dark.record,
-            palette,
-            material3Accent,
-            IS_WEB,
-          ),
-        },
-      })
-    if (recordScheme) return recordScheme
+      isSupportedTheme(activeTheme.dark.record)
+        ? activeTheme
+        : DEFAULT_ACTIVE_THEME
+    const recordScheme = activeThemeToScheme({
+      light: {
+        ...supportedTheme.light,
+        record: resolveMaterialYouRecord(
+          supportedTheme.light.record,
+          palette,
+          material3Accent,
+          IS_WEB,
+        ),
+      },
+      dark: {
+        ...supportedTheme.dark,
+        record: resolveMaterialYouRecord(
+          supportedTheme.dark.record,
+          palette,
+          material3Accent,
+          IS_WEB,
+        ),
+      },
+    })
+    /*
+     * A stored theme wins. Without one, only the legacy colorScheme picker
+     * keeps its palette; the default is now the Material You theme.
+     */
+    if (recordScheme && (activeTheme || colorScheme === 'witchsky')) {
+      return recordScheme
+    }
     let currentScheme = themes
     switch (colorScheme) {
-      case 'witchsky':
-        currentScheme =
-          activeThemeToScheme(DEFAULT_ACTIVE_THEME) ?? witchskyscheme
-        break
       case 'bluesky':
         currentScheme = blueskyscheme
         break

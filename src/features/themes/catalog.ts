@@ -1,3 +1,4 @@
+import {materialYouRecord} from './materialYou'
 import {type ActiveTheme, type ThemeRecord, type ThemeView} from './types'
 
 const createdAt = '2026-08-18T00:00:00.000Z'
@@ -93,7 +94,31 @@ export const FEATURED_THEMES = [
   ),
 ]
 
-export const DEFAULT_ACTIVE_THEME: ActiveTheme = {
+export const WITCHSKY_ACTIVE_THEME: ActiveTheme = {
   light: {...FEATURED_THEMES[0], colorSet: 'Moonmilk'},
   dark: {...FEATURED_THEMES[1], colorSet: 'Coven'},
+}
+
+/**
+ * Material You default. Colors are regenerated from the accent (web) or the
+ * system palette (native) at runtime; the builtin cid keeps update polling
+ * from asking users to replace a locally generated record.
+ */
+export const DEFAULT_ACTIVE_THEME: ActiveTheme = {
+  light: {
+    ...fallback(
+      materialYouRecord('light'),
+      '3mug7d56nl22i',
+      'builtin-material-you',
+    ),
+    colorSet: 'Tonal Spot',
+  },
+  dark: {
+    ...fallback(
+      materialYouRecord('dark'),
+      '3mug7d56zc22i',
+      'builtin-material-you',
+    ),
+    colorSet: 'Tonal Spot',
+  },
 }
