@@ -1,5 +1,4 @@
-import chroma from 'chroma-js'
-
+import {chroma} from '#/platform/chroma-formats'
 import {useTheme} from '#/alf'
 
 /** Keep the theme's support hue while making small white labels readable. */

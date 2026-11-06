@@ -1,5 +1,6 @@
 import {type Theme} from '@bsky.app/alf'
-import chroma from 'chroma-js'
+
+import {chroma} from '#/platform/chroma-formats'
 
 // eslint-disable-next-line import/no-named-as-default-member -- Installed typings expose these methods only on the default export.
 const {valid, contrast} = chroma

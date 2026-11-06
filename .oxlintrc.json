@@ -414,6 +414,10 @@
               {
                 "name": "@sentry/react-native",
                 "message": "Import {Sentry} from '#/logger/sentry/lib' instead. Importing @sentry/react-native directly (especially as `import * as Sentry`) defeats Metro tree-shaking and pulls ~180KB of dead weight into the web bundle."
+              },
+              {
+                "name": "chroma-js",
+                "message": "Import {chroma} from '#/platform/chroma-formats' instead. Tree shaking drops chroma-js's format/operator/interpolator side effects, and the wrapper guarantees they are registered before the first call. See docs/web-build.md."
               }
             ],
             "patterns": [
@@ -453,6 +457,12 @@
         "src/logger/sentry/**/*.ts",
         "src/logger/__tests__/logger.test.ts"
       ],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    },
+    {
+      "files": ["src/platform/chroma-formats.ts", "src/platform/chroma-formats.web.ts"],
       "rules": {
         "no-restricted-imports": "off"
       }

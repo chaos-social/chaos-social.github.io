@@ -3,7 +3,6 @@ import '#/platform/polyfills'
 
 import {registerRootComponent} from 'expo'
 
-import {chromaFormatsReady} from '#/platform/chroma-formats.web'
 import App from '#/App'
 import {APP_NAME} from '#/env'
 
@@ -14,11 +13,7 @@ import {APP_NAME} from '#/env'
  */
 document.title = APP_NAME
 
-/*
- * Referenced so tree shaking keeps chroma-js's format registrations; see that
- * module. It is always true, so this branch is a no-op.
- */
-if (chromaFormatsReady) registerRootComponent(App)
+registerRootComponent(App)
 
 if (!__DEV__ && 'serviceWorker' in navigator) {
   const register = () => {

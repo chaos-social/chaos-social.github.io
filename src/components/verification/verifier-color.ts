@@ -1,5 +1,6 @@
 import {type Theme} from '@bsky.app/alf'
-import chroma from 'chroma-js'
+
+import {chroma} from '#/platform/chroma-formats'
 
 /** Stable hue across sessions and platforms, with tones adapted to the theme. */
 export function verifierColor(did: string, theme: Theme): string {

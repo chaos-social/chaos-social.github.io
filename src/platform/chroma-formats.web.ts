@@ -15,10 +15,13 @@
  * .luminance(), mix uses the mix generator, and so on), so a per-method list
  * breaks again the moment a new call site appears. The whole set is a few KB.
  *
- * A bare `import '...'` for side effects gets pruned too. The caller imports
- * the exported value below and uses it, which keeps this module alive.
+ * A bare `import '...'` for side effects gets pruned too. This module exports
+ * chroma itself and every consumer imports it from here, so the registrations
+ * are guaranteed to run first no matter how the bundler orders modules. The
+ * entry point's order is not enough: tree shaking reordered App ahead of this
+ * module, and a module-level chroma.mix() in the theme catalog then threw
+ * "interpolation mode rgb is not defined" only in deployed builds.
  */
-
 // Formats - each also registers an autodetect entry for input parsing.
 import 'chroma-js/src/io/cmyk/index.js'
 import 'chroma-js/src/io/css/index.js'
@@ -64,8 +67,11 @@ import 'chroma-js/src/interpolator/rgb.js'
 // Used by chroma.mix / chroma.scale.
 import 'chroma-js/src/generator/mix.js'
 
-/**
- * Import this once at web startup and reference the value; see the note above
- * on why a bare side-effect import is not enough.
+/*
+ * Imported last to keep the side-effect imports above first, as the import
+ * sort rule wants. Order is irrelevant: this is the same chroma singleton the
+ * imported modules registered onto.
  */
-export const chromaFormatsReady = true
+import chroma from 'chroma-js'
+
+export {chroma}

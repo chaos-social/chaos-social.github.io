@@ -12,8 +12,8 @@ import {
   type ThemeName,
   utils as baseUtils,
 } from '@bsky.app/alf'
-import chroma from 'chroma-js'
 
+import {chroma} from '#/platform/chroma-formats'
 import {useThemePrefs} from '#/state/shell/color-mode'
 import {
   computeFontScaleMultiplier,

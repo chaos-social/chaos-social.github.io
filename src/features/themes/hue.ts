@@ -1,5 +1,4 @@
-import chroma from 'chroma-js'
-
+import {chroma} from '#/platform/chroma-formats'
 import  {type SemanticColors, type ThemeRecord} from './types'
 import {isHueTheme} from './types'
 

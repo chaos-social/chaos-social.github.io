@@ -27,12 +27,16 @@ Under tree shaking all of that is dropped, and both failures are runtime-only:
 | interpolator registrations | `interpolation mode lab is not defined` |
 
 `src/platform/chroma-formats.web.ts` imports the **whole** io, ops and
-interpolator sets so all of them survive pruning, and `index.web.ts` references its exported value so the
-module itself is not pruned either - a bare side-effect import is dropped too.
-Registering the full set rather than only the methods currently called is
-deliberate: chroma reaches operators indirectly (`chroma.contrast` calls
-`.luminance()`, `chroma.mix` uses the mix generator), so a per-method list
-breaks again as soon as a new call site appears. The whole set is a few KB.
+interpolator sets so all of them survive pruning. It also exports `chroma`
+itself, and every call site imports chroma from `#/platform/chroma-formats`
+(the native sibling just re-exports the barrel). Importing the wrapper rather
+than the package is what keeps the registrations ahead of the first call:
+ordering modules in the entry file is not enough, because tree shaking may
+evaluate them in a different order. Registering the full set rather than only
+the methods currently called is deliberate: chroma reaches operators
+indirectly (`chroma.contrast` calls `.luminance()`, `chroma.mix` uses the mix
+generator), so a per-method list breaks again as soon as a new call site
+appears. The whole set is a few KB.
 
 To confirm a build is good, either run the deploy workflow's
 `Check chroma registrations survived tree shaking` step, or grep the bundle:

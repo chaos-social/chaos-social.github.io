@@ -1,7 +1,7 @@
 import {type MaterialYouPalette} from '@assembless/react-native-material-you'
 import {createThemes} from '@bsky.app/alf'
-import chroma from 'chroma-js'
 
+import {chroma} from '#/platform/chroma-formats'
 import {type Palette, STATIC_VALUES} from '../themes'
 import {getMaterialYouColor} from './materialYou'
 
