@@ -2,7 +2,7 @@ diff --git a/React/Fabric/Mounting/ComponentViews/Modal/RCTModalHostViewComponen
 index 2cd279590a30dd2f39e7f93a255106786e870cd5..7c09d9cf73ef5ae8e34969bc6759e4fccba1ce96 100644
 --- a/React/Fabric/Mounting/ComponentViews/Modal/RCTModalHostViewComponentView.mm
 +++ b/React/Fabric/Mounting/ComponentViews/Modal/RCTModalHostViewComponentView.mm
-@@ -158,7 +158,13 @@ - (void)dismissViewController:(UIViewController *)modalViewController
+@@ -158,7 +158,13 @@ static ModalHostViewEventEmitter::OnOrientationChange onOrientationChangeStruct(
                       animated:(BOOL)animated
                     completion:(void (^)(void))completion
  {
@@ -21,7 +21,7 @@ diff --git a/React/Fabric/Mounting/ComponentViews/ScrollView/RCTPullToRefreshVie
 index 60160efb163d91813fa2ca7ca758b51afcf261e1..fb646fe945ffe4aa4a386f80a1e42a90180691f1 100644
 --- a/React/Fabric/Mounting/ComponentViews/ScrollView/RCTPullToRefreshViewComponentView.mm
 +++ b/React/Fabric/Mounting/ComponentViews/ScrollView/RCTPullToRefreshViewComponentView.mm
-@@ -42,6 +42,32 @@ - (void)setRefreshing:(BOOL)refreshing
+@@ -42,6 +42,32 @@ using namespace facebook::react;
  @implementation RCTPullToRefreshViewComponentView {
    UIRefreshControl *_refreshControl;
    RCTScrollViewComponentView *__weak _scrollViewComponentView;
@@ -54,7 +54,7 @@ index 60160efb163d91813fa2ca7ca758b51afcf261e1..fb646fe945ffe4aa4a386f80a1e42a90
    // This variable keeps track of whether the view is recycled or not. Once the view is recycled, the component
    // creates a new instance of UIRefreshControl, resetting the native props to the default values.
    // However, when recycling, we are keeping around the old _props. The flag is used to force the application
-@@ -79,10 +105,25 @@ + (ComponentDescriptorProvider)componentDescriptorProvider
+@@ -79,10 +105,25 @@ using namespace facebook::react;
    return concreteComponentDescriptorProvider<PullToRefreshViewComponentDescriptor>();
  }
  
@@ -80,7 +80,7 @@ index 60160efb163d91813fa2ca7ca758b51afcf261e1..fb646fe945ffe4aa4a386f80a1e42a90
    [self _initializeUIRefreshControl];
    _recycled = YES;
  }
-@@ -93,7 +134,8 @@ - (void)updateProps:(const Props::Shared &)props oldProps:(const Props::Shared &
+@@ -93,7 +134,8 @@ using namespace facebook::react;
    const auto &newConcreteProps = static_cast<const PullToRefreshViewProps &>(*props);
  
    if (_recycled || newConcreteProps.tintColor != oldConcreteProps.tintColor) {
@@ -90,7 +90,7 @@ index 60160efb163d91813fa2ca7ca758b51afcf261e1..fb646fe945ffe4aa4a386f80a1e42a90
    }
  
    if (_recycled || newConcreteProps.progressViewOffset != oldConcreteProps.progressViewOffset) {
-@@ -141,11 +183,50 @@ - (void)handleUIControlEventValueChanged
+@@ -141,11 +183,50 @@ using namespace facebook::react;
  
  - (void)_updateProgressViewOffset:(Float)progressViewOffset
  {
@@ -142,7 +142,7 @@ index 60160efb163d91813fa2ca7ca758b51afcf261e1..fb646fe945ffe4aa4a386f80a1e42a90
  }
  
  - (void)_updateTitle
-@@ -153,7 +234,12 @@ - (void)_updateTitle
+@@ -153,7 +234,12 @@ using namespace facebook::react;
    const auto &concreteProps = static_cast<const PullToRefreshViewProps &>(*_props);
  
    if (concreteProps.title.empty()) {
@@ -156,7 +156,7 @@ index 60160efb163d91813fa2ca7ca758b51afcf261e1..fb646fe945ffe4aa4a386f80a1e42a90
      return;
    }
  
-@@ -172,6 +258,18 @@ - (void)layoutSubviews
+@@ -172,6 +258,18 @@ using namespace facebook::react;
  {
    [super layoutSubviews];
  
@@ -175,7 +175,7 @@ index 60160efb163d91813fa2ca7ca758b51afcf261e1..fb646fe945ffe4aa4a386f80a1e42a90
    // Attempts to begin refreshing before the initial layout are ignored by _refreshControl. So if the control is
    // refreshing when mounted, we need to call beginRefreshing in layoutSubviews or it won't work.
    if (self.window) {
-@@ -209,6 +307,15 @@ - (void)_attach
+@@ -209,6 +307,15 @@ using namespace facebook::react;
  
      // This ensures that layoutSubviews is called. Without this, recycled instances won't refresh on mount
      [self setNeedsLayout];
@@ -195,7 +195,7 @@ diff --git a/React/Fabric/Mounting/ComponentViews/ScrollView/RCTScrollViewCompon
 index 14a08b49cb7c93374a2625294bfb082226e6d933..21abb2d60e00aaaecb35c5579a77802c4ff4b233 100644
 --- a/React/Fabric/Mounting/ComponentViews/ScrollView/RCTScrollViewComponentView.mm
 +++ b/React/Fabric/Mounting/ComponentViews/ScrollView/RCTScrollViewComponentView.mm
-@@ -1157,6 +1157,11 @@ - (RCTVirtualViewContainerState *)virtualViewContainerState
+@@ -1157,6 +1157,11 @@ static inline UIViewAnimationOptions animationOptionsWithCurve(UIViewAnimationCu
    return _virtualViewContainerState;
  }
  
@@ -211,7 +211,7 @@ diff --git a/React/Fabric/Mounting/ComponentViews/TextInput/RCTTextInputComponen
 index 8f55121cd23d27577bab45716d91d6cdad878e41..8bbb6cfea2970fd13b41082767807dfecbb488cb 100644
 --- a/React/Fabric/Mounting/ComponentViews/TextInput/RCTTextInputComponentView.mm
 +++ b/React/Fabric/Mounting/ComponentViews/TextInput/RCTTextInputComponentView.mm
-@@ -381,6 +381,10 @@ - (void)updateLayoutMetrics:(const LayoutMetrics &)layoutMetrics
+@@ -381,6 +381,10 @@ static NSSet<NSNumber *> *returnKeyTypesSet;
      _previousContentSize = _backedTextInputView.contentSize;
      static_cast<const TextInputEventEmitter &>(*_eventEmitter).onContentSizeChange([self _textInputMetrics]);
    }
@@ -222,7 +222,7 @@ index 8f55121cd23d27577bab45716d91d6cdad878e41..8bbb6cfea2970fd13b41082767807dfe
  }
  
  - (void)prepareForRecycle
-@@ -843,6 +847,47 @@ - (void)scrollCursorIntoView
+@@ -843,6 +847,47 @@ static NSSet<NSNumber *> *returnKeyTypesSet;
    }
  }
  
@@ -293,6 +293,22 @@ index 0912c50fec13f41894b5351c7ff62b40bb8e3fad..376a554317fd355aadb733cf67b09e3f
      layer.contents = (id)image.CGImage;
      layer.contentsScale = image.scale;
  
+diff --git a/ReactAndroid/hermes-engine/build.gradle.kts b/ReactAndroid/hermes-engine/build.gradle.kts
+index 0a1ea2abc558505f734b584066feef723bb93c00..eb2cc80da9112ebaf0cd3f52d1030e05534771d1 100644
+--- a/ReactAndroid/hermes-engine/build.gradle.kts
++++ b/ReactAndroid/hermes-engine/build.gradle.kts
+@@ -119,9 +119,9 @@ val unzipHermes by
+       dependsOn(downloadHermes)
+       from(tarTree(downloadHermesDest)) {
+         eachFile {
+-          // We flatten the unzip as the tarball contains a `facebook-hermes-<SHA>`
++          // We flatten the unzip as the tarball contains a `meta-hermes-<SHA>`
+           // folder at the top level.
+-          if (this.path.startsWith("facebook-hermes-")) {
++          if (this.path.startsWith("meta-hermes-")) {
+             this.path = this.path.substringAfter("/")
+           }
+         }
 diff --git a/ReactAndroid/src/main/java/com/facebook/react/views/view/ReactViewGroup.kt b/ReactAndroid/src/main/java/com/facebook/react/views/view/ReactViewGroup.kt
 index ae2e36ca1ed64d9f6cb44e6c2519a17fcca3ca18..0eeeb63b1225a3c575abb257a79aaef609659e2f 100644
 --- a/ReactAndroid/src/main/java/com/facebook/react/views/view/ReactViewGroup.kt
@@ -605,7 +621,7 @@ index 5f9847a398faaef208c5b1ea3c507e8019c8803c..d10506fd32a93b338fc31ee265df8120
  }
  
  static NSLineBreakMode RCTNSLineBreakModeFromEllipsizeMode(EllipsizeMode ellipsizeMode)
-@@ -63,10 +185,67 @@ - (TextMeasurement)measureAttributedString:(AttributedString)attributedString
+@@ -63,10 +185,67 @@ static NSLineBreakMode RCTNSLineBreakModeFromEllipsizeMode(EllipsizeMode ellipsi
                               layoutContext:(TextLayoutContext)layoutContext
                           layoutConstraints:(LayoutConstraints)layoutConstraints
  {
@@ -677,7 +693,7 @@ index 5f9847a398faaef208c5b1ea3c507e8019c8803c..d10506fd32a93b338fc31ee265df8120
  }
  
  - (CGRect)drawingFrameForAttributedString:(AttributedString)attributedString
-@@ -132,10 +311,20 @@ - (void)drawAttributedString:(AttributedString)attributedString
+@@ -132,10 +311,20 @@ static NSLineBreakMode RCTNSLineBreakModeFromEllipsizeMode(EllipsizeMode ellipsi
                         frame:(CGRect)frame
             drawHighlightPath:(void (^_Nullable)(UIBezierPath *highlightPath))block
  {
@@ -727,7 +743,7 @@ diff --git a/ReactCommon/react/renderer/textlayoutmanager/platform/ios/react/ren
 index 82cad8fd2eed44f8567e5007a52a755996ac2c95..4f435b528aa43b4109f8d406d6d77fc7342dd9d2 100644
 --- a/ReactCommon/react/renderer/textlayoutmanager/platform/ios/react/renderer/textlayoutmanager/TextLayoutManager.mm
 +++ b/ReactCommon/react/renderer/textlayoutmanager/platform/ios/react/renderer/textlayoutmanager/TextLayoutManager.mm
-@@ -100,6 +100,17 @@
+@@ -100,6 +100,17 @@ TextMeasurement TextLayoutManager::measure(
    return measurement;
  }
  
