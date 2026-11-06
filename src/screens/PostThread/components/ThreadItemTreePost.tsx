@@ -51,6 +51,8 @@ import {RichText} from '#/components/RichText'
 import * as Skele from '#/components/Skeleton'
 import {SubtleHover} from '#/components/SubtleHover'
 import {Text} from '#/components/Typography'
+import {PostPoll} from '#/features/pollblue/components/PostPoll'
+import {pollPostParts} from '#/features/pollblue/parse'
 import {type app} from '#/lexicons'
 
 /**
@@ -378,6 +380,7 @@ const ThreadItemTreePostInner = memo(function ThreadItemTreePostInner({
                         enableTags
                         value={richText}
                         htmlSegments={htmlSegments}
+                        pollParts={pollPostParts(post.record)}
                         style={[a.flex_1, a.text_md]}
                         numberOfLines={limitLines ? MAX_POST_LINES : undefined}
                         authorHandle={post.author.handle}
@@ -408,6 +411,7 @@ const ThreadItemTreePostInner = memo(function ThreadItemTreePostInner({
                       value={postNumbering}
                     />
                   )}
+                  <PostPoll post={post} />
                   <TranslatedPost hideTranslateLink post={post} />
                   {post.embed && (
                     <View style={[a.pb_xs, userStyle('wsky-post__embed')]}>

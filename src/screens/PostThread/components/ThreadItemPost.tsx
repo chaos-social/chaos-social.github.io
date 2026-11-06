@@ -58,6 +58,8 @@ import * as Skele from '#/components/Skeleton'
 import {SubtleHover} from '#/components/SubtleHover'
 import {Text} from '#/components/Typography'
 import {useActorStatus} from '#/features/liveNow'
+import {PostPoll} from '#/features/pollblue/components/PostPoll'
+import {pollPostParts} from '#/features/pollblue/parse'
 import {type app} from '#/lexicons'
 
 export type ThreadItemPostProps = {
@@ -397,6 +399,7 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
                     enableTags
                     value={richText}
                     htmlSegments={htmlSegments}
+                    pollParts={pollPostParts(post.record)}
                     style={[a.flex_1, a.text_md]}
                     numberOfLines={limitLines ? MAX_POST_LINES : undefined}
                     authorHandle={post.author.handle}
@@ -424,6 +427,7 @@ const ThreadItemPostInner = memo(function ThreadItemPostInner({
               ) : (
                 <ThreadItemPostNumber inline={false} value={postNumbering} />
               )}
+              <PostPoll post={post} />
               <TranslatedPost hideTranslateLink post={post} />
               {post.embed && (
                 <View

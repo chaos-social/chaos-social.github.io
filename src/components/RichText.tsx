@@ -12,6 +12,8 @@ import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import {RichTextTag} from '#/components/RichTextTag'
 import {Text, type TextProps} from '#/components/Typography'
 import {IS_ANDROID, IS_NATIVE} from '#/env'
+import {stripPollLines} from '#/features/pollblue/parse'
+import {type PollPostParts} from '#/features/pollblue/types'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
@@ -60,6 +62,11 @@ export type RichTextProps = TextStyleProp &
      * profiles.
      */
     htmlSegments?: HtmlSegment[]
+    /**
+     * A poll.blue post's own option lines repeat what the poll card renders.
+     * Pass `pollPostParts(record)` to drop those lines and keep the question.
+     */
+    pollParts?: PollPostParts | null
   }
 
 export function RichText({
@@ -81,16 +88,32 @@ export function RichText({
   suffixOffset = 0,
   disableMentionFacetValidation,
   htmlSegments,
+  pollParts,
 }: RichTextProps) {
   const richText = useMemo(() => {
-    if (value instanceof RichTextAPI) {
-      return value
-    } else {
+    if (!pollParts) {
+      if (value instanceof RichTextAPI) {
+        return value
+      }
       const rt = new RichTextAPI({text: value})
       rt.detectFacetsWithoutResolution()
       return rt
     }
-  }, [value])
+    /*
+     * A poll post repeats its options as single-line facets. Keep the question
+     * only; the facets share the same byte offsets, so they stay aligned.
+     */
+    const base =
+      value instanceof RichTextAPI ? value : new RichTextAPI({text: value})
+    const text = stripPollLines(base.text, pollParts)
+    /*
+     * The option lines carried their own facets. Keep only the ones still
+     * inside the trimmed text so nothing points past the end of the string.
+     */
+    const maxBytes = new TextEncoder().encode(text).length
+    const facets = base.facets?.filter(facet => facet.index.byteEnd <= maxBytes)
+    return new RichTextAPI({text, facets})
+  }, [value, pollParts])
 
   const t = useTheme()
   const {facets} = richText

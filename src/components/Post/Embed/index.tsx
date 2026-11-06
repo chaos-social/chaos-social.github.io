@@ -49,6 +49,7 @@ import {SubtleHover} from '#/components/SubtleHover'
 import {IS_ANDROID, IS_WEB} from '#/env'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
+export {PostPoll} from '#/features/pollblue/components/PostPoll'
 import {
   type Embed as TEmbed,
   type EmbedType,

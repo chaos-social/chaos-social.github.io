@@ -39,6 +39,8 @@ import {PostControls} from '#/components/PostControls'
 import {PostTags} from '#/components/PostTags'
 import {RichText} from '#/components/RichText'
 import {SubtleHover} from '#/components/SubtleHover'
+import {PostPoll} from '#/features/pollblue/components/PostPoll'
+import {pollPostParts} from '#/features/pollblue/parse'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {AviFollowButton} from '../posts/AviFollowButton'
@@ -133,6 +135,7 @@ function PostInner({
     htmlSegments,
   )
   const itemUrip = new AtUri(post.uri)
+  const pollParts = pollPostParts(post.record)
   const itemHref = makeProfileLink(post.author, 'post', itemUrip.rkey)
   let replyAuthorDid = ''
   if (record.reply) {
@@ -250,6 +253,7 @@ function PostInner({
                     testID="postText"
                     value={richText}
                     htmlSegments={htmlSegments}
+                    pollParts={pollParts}
                     numberOfLines={limitLines ? MAX_POST_LINES : undefined}
                     style={[a.flex_1, a.text_md]}
                     authorHandle={post.author.handle}
@@ -263,6 +267,7 @@ function PostInner({
                   )}
                 </View>
               ) : undefined}
+              <PostPoll post={post} />
               <TranslatedPost hideTranslateLink post={post} />
               {post.embed ? (
                 <View

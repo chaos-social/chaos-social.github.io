@@ -60,6 +60,8 @@ import {SubtleHover} from '#/components/SubtleHover'
 import {Features, useAnalytics} from '#/analytics'
 import {IS_NATIVE, IS_WEB} from '#/env'
 import {useActorStatus} from '#/features/liveNow'
+import {PostPoll} from '#/features/pollblue/components/PostPoll'
+import {pollPostParts} from '#/features/pollblue/parse'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {AviFollowButton} from './AviFollowButton'
@@ -562,6 +564,7 @@ let PostContent = ({
         : undefined,
     [post],
   )
+  const pollParts = useMemo(() => pollPostParts(post.record), [post.record])
 
   return (
     <ContentHider
@@ -586,6 +589,7 @@ let PostContent = ({
             testID="postText"
             value={richText}
             htmlSegments={htmlSegments}
+            pollParts={pollParts}
             numberOfLines={limitLines ? MAX_POST_LINES : undefined}
             style={[isCarouselItem ? a.text_md : [a.flex_1, a.text_md]]}
             authorHandle={postAuthor.handle}
@@ -610,6 +614,7 @@ let PostContent = ({
       ) : (
         <ThreadItemPostNumber inline={false} value={postNumbering} />
       )}
+      <PostPoll post={post} />
       {record && <TranslatedPost hideTranslateLink post={post} />}
       {postEmbed ? (
         <View

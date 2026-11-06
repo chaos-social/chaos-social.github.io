@@ -38,6 +38,8 @@ import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import {RichText} from '#/components/RichText'
 import {SubtleHover} from '#/components/SubtleHover'
 import {Text} from '#/components/Typography'
+import {PostPoll} from '#/features/pollblue/components/PostPoll'
+import {pollPostParts} from '#/features/pollblue/parse'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {makePostLink} from '../links'
@@ -316,6 +318,7 @@ export function PostBody({post}: {post: PostView}) {
             value={richText}
             authorHandle={post.author.handle}
             shouldProxyLinks
+            pollParts={pollPostParts(post.record)}
             numberOfLines={limitLines ? MAX_POST_LINES : undefined}
             // No colour here: it would override the links' and mentions'
             style={[a.text_md, a.leading_snug]}
@@ -325,6 +328,7 @@ export function PostBody({post}: {post: PostView}) {
           )}
         </View>
       )}
+      <PostPoll post={post} />
       {post.embed && embedPreview && (
         /*
          * The row stacks its lines 4px apart, but an embed gets 8px from
