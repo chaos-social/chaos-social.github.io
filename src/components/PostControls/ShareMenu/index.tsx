@@ -6,7 +6,7 @@ import {msg} from '@lingui/core/macro'
 import {useLingui} from '@lingui/react'
 
 import {makeProfileLink} from '#/lib/routes/links'
-import {shareUrl} from '#/lib/sharing'
+import {copyUrl, shareUrl} from '#/lib/sharing'
 import {toShareUrl} from '#/lib/strings/url-helpers'
 import {type Shadow} from '#/state/cache/post-shadow'
 import {useFeedFeedbackContext} from '#/state/feed-feedback'
@@ -15,8 +15,10 @@ import {native} from '#/alf'
 import {ArrowShareRight_Stroke2_Corner2_Rounded as ArrowShareRightIcon} from '#/components/icons/ArrowShareRight'
 import * as Menu from '#/components/Menu'
 import {useMenuControl} from '#/components/Menu'
+import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
 import {type app} from '#/lexicons'
+import {useCopyShareLinks} from '#/storage/hooks/copy-share-links'
 import {PostControlButton, PostControlButtonIcon} from '../PostControlButton'
 import {ShareMenuItems} from './ShareMenuItems'
 
@@ -46,6 +48,7 @@ let ShareMenuButton = ({
   const ax = useAnalytics()
   const {_} = useLingui()
   const {feedDescriptor} = useFeedFeedbackContext()
+  const [copyLinks] = useCopyShareLinks()
 
   const menuControl = useMenuControl()
   const [hasBeenOpen, setHasBeenOpen] = useState(false)
@@ -79,11 +82,21 @@ let ShareMenuButton = ({
     ],
   )
 
-  const onNativeLongPress = () => {
-    ax.metric('share:press:nativeShare', {})
+  const onNativeLongPress = async () => {
     const urip = new AtUri(post.uri)
     const href = makeProfileLink(post.author, 'post', urip.rkey)
     const url = toShareUrl(href)
+    if (copyLinks) {
+      ax.metric('share:press:copyLink', {uri: post.uri})
+      try {
+        await copyUrl(url)
+        onShare()
+      } catch {
+        Toast.show(_(msg`Could not copy link`), {type: 'error'})
+      }
+      return
+    }
+    ax.metric('share:press:nativeShare', {})
     void shareUrl(url).then(result => {
       if (!result) return
       ax.metric('share:nativeShare:result', {

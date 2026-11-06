@@ -89,6 +89,10 @@ import {
   useReportableProfileLinks,
 } from '#/features/profileLinks'
 import {type app} from '#/lexicons'
+import {
+  getCopyShareLinks,
+  useCopyShareLinks,
+} from '#/storage/hooks/copy-share-links'
 import {useDevMode} from '#/storage/hooks/dev-mode'
 
 let ProfileMenu = ({
@@ -109,7 +113,7 @@ let ProfileMenu = ({
   const isFollowingBlockedAccount = isFollowing && isBlocked
   const isLabeler = !!profile.associated?.labeler
   const [devModeEnabled] = useDevMode()
-  const copyLinksRef = useRef(false)
+  const [copyLinks, setCopyLinks] = useCopyShareLinks()
   const profileWithDeerVerification = useDeerVerificationProfileOverlay(profile)
   const verification = useFullVerificationState({
     profile: profileWithDeerVerification,
@@ -466,7 +470,7 @@ let ProfileMenu = ({
                   label={l`Bluesky`}
                   onPress={() => {
                     shareOrWarn(() => {
-                      if (!IS_WEB && copyLinksRef.current) {
+                      if (!IS_WEB && getCopyShareLinks()) {
                         void onPressCopyBsky()
                       } else {
                         onPressShareBsky()
@@ -483,7 +487,7 @@ let ProfileMenu = ({
                   label={l`Repository`}
                   onPress={() => {
                     shareOrWarn(() => {
-                      if (IS_WEB || copyLinksRef.current) {
+                      if (IS_WEB || getCopyShareLinks()) {
                         void onPressCopyAtprotoExplorer(
                           atprotoExplorerRepositoryUrl,
                         )
@@ -508,10 +512,8 @@ let ProfileMenu = ({
                   <Menu.ContainerItem>
                     <CheckboxItemText
                       label={l`Copy instead of opening the share sheet`}
-                      initialValue={copyLinksRef.current}
-                      onChange={value => {
-                        copyLinksRef.current = value
-                      }}>
+                      value={copyLinks}
+                      onChange={setCopyLinks}>
                       <Trans>Copy</Trans>
                     </CheckboxItemText>
                   </Menu.ContainerItem>

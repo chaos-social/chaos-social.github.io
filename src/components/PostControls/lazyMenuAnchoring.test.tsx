@@ -1,8 +1,11 @@
-import {act, fireEvent, render} from '@testing-library/react-native'
+import {act, fireEvent, render, renderHook} from '@testing-library/react-native'
 
+import {copyUrl, shareUrl} from '#/lib/sharing'
 import * as Menu from '#/components/Menu'
 import {PostMenuButton} from '#/components/PostControls/PostMenu'
 import {ShareMenuButton} from '#/components/PostControls/ShareMenu'
+import {device} from '#/storage'
+import {useCopyShareLinks} from '#/storage/hooks/copy-share-links'
 
 jest.mock('#/components/Menu', () => {
   const {View} = require('react-native')
@@ -49,16 +52,19 @@ jest.mock('#/components/PostControls/PostControlButton', () => {
       children,
       label,
       onPress,
+      onLongPress,
       testID,
     }: React.PropsWithChildren<{
       label?: string
       onPress?: () => void
+      onLongPress?: () => void
       testID?: string
     }>) => (
       <Pressable
         accessibilityLabel={label}
         accessibilityHint=""
         onPress={onPress}
+        onLongPress={onLongPress}
         testID={testID}>
         {children}
       </Pressable>
@@ -93,9 +99,19 @@ jest.mock('#/analytics', () => ({
 jest.mock('#/state/feed-feedback', () => ({
   useFeedFeedbackContext: () => ({feedDescriptor: undefined}),
 }))
-jest.mock('#/lib/routes/links', () => ({makeProfileLink: jest.fn()}))
-jest.mock('#/lib/sharing', () => ({shareUrl: jest.fn()}))
-jest.mock('#/lib/strings/url-helpers', () => ({toShareUrl: jest.fn()}))
+jest.mock('#/lib/routes/links', () => ({
+  makeProfileLink: () => '/profile/test/post/test',
+}))
+jest.mock('#/lib/sharing', () => ({
+  copyUrl: jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined),
+  shareUrl: jest
+    .fn<Promise<undefined>, [string]>()
+    .mockResolvedValue(undefined),
+}))
+jest.mock('#/components/Toast', () => ({show: jest.fn()}))
+jest.mock('#/lib/strings/url-helpers', () => ({
+  toShareUrl: () => 'https://witchsky.app/profile/test/post/test',
+}))
 jest.mock('#/alf', () => ({native: (callback: () => void) => callback}))
 jest.mock('@lingui/react/macro', () => ({
   useLingui: () => ({t: (message: TemplateStringsArray) => message[0]}),
@@ -112,6 +128,7 @@ const post = {
 }
 
 afterEach(() => {
+  device.remove(['copyShareLinks'])
   jest.clearAllMocks()
   jest.useRealTimers()
 })
@@ -171,3 +188,37 @@ describe('lazy post menu anchoring', () => {
     expect(mockMenuOpen).toHaveBeenCalledWith({sourceViewTag: 42})
   })
 })
+
+it.each([false, true])(
+  'remembers copy mode %s after remount and uses it on long press',
+  async enabled => {
+    const preference = renderHook(() => useCopyShareLinks())
+    act(() => preference.result.current[1](enabled))
+    preference.unmount()
+
+    const restored = renderHook(() => useCopyShareLinks())
+    expect(restored.result.current[0]).toBe(enabled)
+    const onShare = jest.fn()
+    const screen = render(
+      <ShareMenuButton
+        testID="post"
+        post={post as never}
+        record={{} as never}
+        richText={{} as never}
+        timestamp="2026-09-27T00:00:00.000Z"
+        onShare={onShare}
+        logContext="Post"
+      />,
+    )
+    await act(async () => {
+      fireEvent(screen.getByTestId('postShareBtn'), 'longPress')
+      await Promise.resolve()
+    })
+    expect(enabled ? copyUrl : shareUrl).toHaveBeenCalledWith(
+      'https://witchsky.app/profile/test/post/test',
+    )
+    expect(enabled ? shareUrl : copyUrl).not.toHaveBeenCalled()
+    expect(onShare).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('lazy-share-menu-items')).toBeNull()
+  },
+)
