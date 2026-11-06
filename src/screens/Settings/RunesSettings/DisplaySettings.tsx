@@ -14,6 +14,8 @@ import {
   useReplyIconIndicators,
   useSetCompactPosts,
   useSetReplyIconIndicators,
+  useSetShowThreadPostNumbers,
+  useShowThreadPostNumbers,
 } from '#/state/preferences'
 import {
   useDownloadFormat,
@@ -55,6 +57,7 @@ import * as Toggle from '#/components/forms/Toggle'
 import {Celebrate_Stroke2_Corner0_Rounded as CelebrateIcon} from '#/components/icons/Celebrate'
 import {Heart2_Stroke2_Corner0_Rounded as HeartIcon} from '#/components/icons/Heart2'
 import {Image_Stroke1_Corner0_Rounded as ImageIcon} from '#/components/icons/Image'
+import {PageText_Stroke2_Corner0_Rounded as PageTextIcon} from '#/components/icons/Page'
 import {Pencil_Stroke2_Corner0_Rounded as PencilIcon} from '#/components/icons/Pencil'
 import {Tag_Stroke2_Corner2_Rounded as TagIcon} from '#/components/icons/Tag'
 import {UFO_Stroke2_Corner0_Rounded as UfoIcon} from '#/components/icons/UFO'
@@ -82,6 +85,8 @@ export function RunesDisplaySettingsScreen() {
   const setShowViaClient = useSetShowViaClient()
   const replyIconIndicators = useReplyIconIndicators()
   const setReplyIconIndicators = useSetReplyIconIndicators()
+  const showThreadPostNumbers = useShowThreadPostNumbers()
+  const setShowThreadPostNumbers = useSetShowThreadPostNumbers()
 
   const sixSevenCelebration = useSixSevenCelebration()
   const setSixSevenCelebration = useSetSixSevenCelebration()
@@ -167,6 +172,19 @@ export function RunesDisplaySettingsScreen() {
           <SettingsList.ItemIcon icon={getReplyIcon(3, false)} />
           <SettingsList.ItemText>
             <Trans>Reply icon indicators</Trans>
+          </SettingsList.ItemText>
+          <Toggle.Platform />
+        </SettingsList.Item>
+      </Toggle.Item>
+      <Toggle.Item
+        name="show_thread_post_numbers"
+        label={l`Thread post numbers`}
+        value={showThreadPostNumbers}
+        onChange={setShowThreadPostNumbers}>
+        <SettingsList.Item>
+          <SettingsList.ItemIcon icon={PageTextIcon} />
+          <SettingsList.ItemText>
+            <Trans>Thread post numbers</Trans>
           </SettingsList.ItemText>
           <Toggle.Platform />
         </SettingsList.Item>

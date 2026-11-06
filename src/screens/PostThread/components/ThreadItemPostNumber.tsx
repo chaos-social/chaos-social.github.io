@@ -2,6 +2,7 @@ import {Text, View} from 'react-native'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
+import {useShowThreadPostNumbers} from '#/state/preferences/show-thread-post-numbers'
 import {atoms as a, ios, platform, useTheme} from '#/alf'
 import {useNativeFontScale} from '#/alf/util/dimensions'
 import {type app} from '#/lexicons'
@@ -38,13 +39,20 @@ export type ThreadItemPostNumbering = Pick<
   'opThreadPostIndex' | 'opThreadPostCount'
 >
 
+/**
+ * Whether this post should show its numbered badge. Honors the
+ * `showThreadPostNumbers` pref, so callers that render the badge directly
+ * (rather than passing it as a `suffix`) can rely on this alone.
+ */
 export function useHasThreadItemPostNumber(
   value: ThreadItemPostNumbering | undefined,
 ) {
+  const showPostNumbers = useShowThreadPostNumbers()
   const index = value?.opThreadPostIndex
   const count = value?.opThreadPostCount
 
   return (
+    showPostNumbers &&
     index !== undefined &&
     count !== undefined &&
     index >= 1 &&

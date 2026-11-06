@@ -95,6 +95,7 @@ export const SYNCED_PREFS_KEYS = [
   'showViaClient',
   'hideDisplayNames',
   'replyIconIndicators',
+  'showThreadPostNumbers',
   'sixSevenCelebration',
   'deerVerification',
   'thumbnailFormat',

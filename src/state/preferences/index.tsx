@@ -67,6 +67,7 @@ import {Provider as ShowLinkInHandleProvider} from './show-link-in-handle'
 import {Provider as ShowLinkInHandleOnlyOnWorkingLinksProvider} from './show-link-in-handle-only-on-working-links'
 import {Provider as ShowPostTagsProvider} from './show-post-tags'
 import {Provider as ShowStandardLabelerProfileProvider} from './show-standard-labeler-profile'
+import {Provider as ShowThreadPostNumbersProvider} from './show-thread-post-numbers'
 import {Provider as ShowViaClientProvider} from './show-via-client'
 import {Provider as SixSevenCelebrationProvider} from './six-seven-celebration'
 import {Provider as SlingshotInstanceProvider} from './slingshot-instance'
@@ -175,6 +176,10 @@ export {
   useSetShowStandardLabelerProfile,
   useShowStandardLabelerProfile,
 } from './show-standard-labeler-profile'
+export {
+  useSetShowThreadPostNumbers,
+  useShowThreadPostNumbers,
+} from './show-thread-post-numbers'
 export {useSetSubtitlesEnabled, useSubtitlesEnabled} from './subtitles'
 export {useSetTidSuffix, useTidSuffix} from './tid-suffix'
 export {
@@ -266,9 +271,11 @@ export function Provider({children}: PropsWithChildren<{}>) {
                                                                                                                                                           <PasteToLinkEnabledProvider>
                                                                                                                                                             <TagSearchInstanceProvider>
                                                                                                                                                               <DeckLayoutProvider>
-                                                                                                                                                                {
-                                                                                                                                                                  children
-                                                                                                                                                                }
+                                                                                                                                                                <ShowThreadPostNumbersProvider>
+                                                                                                                                                                  {
+                                                                                                                                                                    children
+                                                                                                                                                                  }
+                                                                                                                                                                </ShowThreadPostNumbersProvider>
                                                                                                                                                               </DeckLayoutProvider>
                                                                                                                                                             </TagSearchInstanceProvider>
                                                                                                                                                           </PasteToLinkEnabledProvider>
