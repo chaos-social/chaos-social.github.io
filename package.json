@@ -53,7 +53,7 @@
   },
   "scripts": {
     "prepare": "is-ci || husky",
-    "postinstall": "pnpm lexicons:generate && pnpm intl:compile-if-needed",
+    "postinstall": "pnpm lexicons:generate && node scripts/fix-generated-lexicons.mjs && pnpm intl:compile-if-needed",
     "prebuild": "EXPO_NO_GIT_STATUS=1 expo prebuild --clean",
     "patch:react-native": "rm -rf node_modules/.patch-react-native && pnpm patch react-native@0.88.0 --ignore-existing --edit-dir node_modules/.patch-react-native && git apply --directory=node_modules/.patch-react-native patches/react-native/*.patch && pnpm patch-commit node_modules/.patch-react-native && pnpm update react-native --depth 0",
     "android": "expo run:android",
