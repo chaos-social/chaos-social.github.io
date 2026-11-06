@@ -20,6 +20,8 @@ type Collection =
   | 'app.bsky.graph.verification'
   | 'chat.bsky.actor.declaration'
   | 'net.wafrn.feed.bite'
+  | 'blue.poll.poll.poll'
+  | 'blue.poll.poll.vote'
 
 const headers = new Headers({
   Accept: 'application/json',

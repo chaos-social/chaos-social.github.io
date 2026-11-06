@@ -30,6 +30,8 @@ import {useBridgedHtmlSegments} from '#/components/Post/useBridgedHtmlSegments'
 import {PostTags} from '#/components/PostTags'
 import {RichText} from '#/components/RichText'
 import {Text} from '#/components/Typography'
+import {PostPoll} from '#/features/pollblue/components/PostPoll'
+import {pollPostParts} from '#/features/pollblue/parse'
 import {type app} from '#/lexicons'
 
 export type ThreadItemReaderSegmentProps = {
@@ -157,12 +159,14 @@ const ThreadItemReaderSegmentInner = memo(
                       selectable
                       value={richText}
                       htmlSegments={htmlSegments}
+                      pollParts={pollPostParts(post.record)}
                       style={[a.flex_1, a.text_lg]}
                       authorHandle={post.author.handle}
                       shouldProxyLinks={true}
                     />
                   </View>
                 ) : undefined}
+                <PostPoll post={post} />
                 <TranslatedPost
                   hideTranslateLink
                   post={post}

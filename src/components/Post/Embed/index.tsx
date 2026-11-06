@@ -57,6 +57,7 @@ import {EventEmbed} from '#/features/events/components/EventEmbed'
 import {parseEventUrl} from '#/features/events/url'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
+export {PostPoll} from '#/features/pollblue/components/PostPoll'
 import {
   type Embed as TEmbed,
   type EmbedType,
