@@ -1,6 +1,10 @@
 import {AtUri} from '@atproto/syntax'
 import {useLingui} from '@lingui/react/macro'
-import {type QueryClient, useMutation, useQueryClient} from '@tanstack/react-query'
+import {
+  type QueryClient,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import {useHaptics} from '#/lib/haptics'
 import {logger} from '#/logger'
@@ -129,7 +133,9 @@ export function useCreateReactionMutation() {
       void queryClient.invalidateQueries({
         queryKey: ['bluemoji-reactions', {uri: target.uri}],
       })
-      void queryClient.invalidateQueries({queryKey: ['bluemoji-viewer-reactions']})
+      void queryClient.invalidateQueries({
+        queryKey: ['bluemoji-viewer-reactions'],
+      })
     },
   })
 }
@@ -174,7 +180,9 @@ export function useDeleteReactionMutation() {
       void queryClient.invalidateQueries({
         queryKey: ['bluemoji-reactions', {uri: target.uri}],
       })
-      void queryClient.invalidateQueries({queryKey: ['bluemoji-viewer-reactions']})
+      void queryClient.invalidateQueries({
+        queryKey: ['bluemoji-viewer-reactions'],
+      })
     },
   })
 }

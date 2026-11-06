@@ -53,9 +53,7 @@ export function BluemojiPickerButton({
       </Button>
       <Dialog.Outer control={control}>
         <Dialog.Handle />
-        <PickerContent
-          onInsert={item => control.close(() => onInsert(item))}
-        />
+        <PickerContent onInsert={item => control.close(() => onInsert(item))} />
       </Dialog.Outer>
     </>
   )
@@ -120,11 +118,7 @@ export function BluemojiPickerList({
   )
 }
 
-function PickerContent({
-  onInsert,
-}: {
-  onInsert: (item: BluemojiItem) => void
-}) {
+function PickerContent({onInsert}: {onInsert: (item: BluemojiItem) => void}) {
   const {t: l} = useLingui()
   const {currentAccount} = useSession()
   const [discover, setDiscover] = useState(false)
@@ -132,7 +126,9 @@ function PickerContent({
   const searching = query.trim().length > 0
 
   return (
-    <Dialog.ScrollableInner label={l`Custom emoji`} style={web({maxWidth: 460})}>
+    <Dialog.ScrollableInner
+      label={l`Custom emoji`}
+      style={web({maxWidth: 460})}>
       <View style={[a.gap_md, a.pb_lg]}>
         <View style={[a.gap_2xs]}>
           <Text style={[a.text_xl, a.font_bold]}>
@@ -177,7 +173,11 @@ function PickerContent({
         </TextField.Root>
 
         {searching || !discover ? (
-          <SearchGrid repo={currentAccount?.did} query={query} onInsert={onInsert} />
+          <SearchGrid
+            repo={currentAccount?.did}
+            query={query}
+            onInsert={onInsert}
+          />
         ) : (
           <TrendingGrid onInsert={onInsert} />
         )}
@@ -357,7 +357,9 @@ function TrendingTile({
     <Tile
       label={l`Insert ${emoji.name}`}
       onPress={() => (item ? onInsert(item) : undefined)}
-      render={item ? undefined : () => <ReactionEmoji emoji={emoji} size={32} />}
+      render={
+        item ? undefined : () => <ReactionEmoji emoji={emoji} size={32} />
+      }
       imageUri={item ? getBluemojiImage(item) : undefined}
       alias={emoji.name}
     />

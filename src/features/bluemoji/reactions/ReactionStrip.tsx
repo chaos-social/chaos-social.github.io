@@ -9,9 +9,7 @@ import {atoms as a, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
 import {Text} from '#/components/Typography'
-import {
-  useConstellationReactionsQuery,
-} from '#/features/bluemoji/reactions/constellation'
+import {useConstellationReactionsQuery} from '#/features/bluemoji/reactions/constellation'
 import {
   useCreateReactionMutation,
   useDeleteReactionMutation,
@@ -91,7 +89,8 @@ export function ReactionStrip({
 
   return (
     <>
-      <View style={[a.flex_row, a.flex_wrap, a.align_center, a.gap_xs, a.pt_xs]}>
+      <View
+        style={[a.flex_row, a.flex_wrap, a.align_center, a.gap_xs, a.pt_xs]}>
         {visible.slice(0, MAX_PILLS).map(group => {
           const own = viewerReactions?.some(
             reaction => reaction.emoji.uri === group.emoji.uri,
@@ -112,7 +111,12 @@ export function ReactionStrip({
                 a.px_sm,
                 a.py_2xs,
                 a.rounded_full,
-                own ? [t.atoms.bg_contrast_25, a.border] : [t.atoms.bg_contrast_25],
+                t.atoms.bg_contrast_25,
+                /*
+                 * Outline, not a fill: the strip sits directly under post text,
+                 * and a stronger background would read as selected text.
+                 */
+                own ? [a.border, t.atoms.border_contrast_high] : null,
               ]}>
               <ReactionEmoji emoji={group.emoji} size={16} />
               <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
@@ -121,13 +125,13 @@ export function ReactionStrip({
             </Button>
           )
         })}
-        {groups.length > MAX_PILLS ? (
+        {visible.length > MAX_PILLS ? (
           <Button
-            label={l`Show ${groups.length - MAX_PILLS} more reactions`}
+            label={l`Show ${visible.length - MAX_PILLS} more reactions`}
             onPress={open}
             style={[a.px_sm, a.py_2xs, a.rounded_full, t.atoms.bg_contrast_25]}>
             <Text style={[a.text_sm, t.atoms.text_contrast_medium]}>
-              +{groups.length - MAX_PILLS}
+              +{visible.length - MAX_PILLS}
             </Text>
           </Button>
         ) : null}

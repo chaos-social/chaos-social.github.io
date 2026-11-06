@@ -4,7 +4,9 @@ import {fetchReactionCounts} from '#/features/bluemoji/reactions/queries'
 
 jest.unmock('multiformats/cid')
 
-jest.mock('#/state/queries', () => ({STALE: {MINUTES: {ONE: 60000, FIVE: 300000}}}))
+jest.mock('#/state/queries', () => ({
+  STALE: {MINUTES: {ONE: 60000, FIVE: 300000}},
+}))
 jest.mock('#/state/queries/util', () => ({
   createQueryKey: (root: string, args: unknown) => [root, args],
 }))

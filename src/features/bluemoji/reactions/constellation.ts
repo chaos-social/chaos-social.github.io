@@ -37,7 +37,9 @@ async function readReaction(link: ConstellationLink) {
     return ((await res.json()) as {value?: unknown}).value
   })
   const record = blue.moji.feed.reaction.main.$ifMatches(value)
-  return record ? {did: link.did, emoji: record.emoji, createdAt: record.createdAt} : null
+  return record
+    ? {did: link.did, emoji: record.emoji, createdAt: record.createdAt}
+    : null
 }
 
 /**
@@ -54,9 +56,9 @@ async function verifyReactions(reactions: ConstellationReaction[]) {
     if (!items.has(uri)) {
       items.set(
         uri,
-        fetchBluemojiItem(uri).then(item =>
-          item ? reaction.emoji : null,
-        ).catch(() => null),
+        fetchBluemojiItem(uri)
+          .then(item => (item ? reaction.emoji : null))
+          .catch(() => null),
       )
     }
   }

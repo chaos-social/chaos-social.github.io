@@ -38,20 +38,28 @@ async function flushCounts() {
   pending.clear()
   const results = new Map<string, ReactionGroup[]>()
   await Promise.all(
-    Array.from({length: Math.ceil(uris.length / REACTION_COUNT_BATCH)}, (_, i) => {
-      const chunk = uris.slice(i * REACTION_COUNT_BATCH, (i + 1) * REACTION_COUNT_BATCH)
-      return client
-        .call(
-          blue.moji.feed.getReactionCounts,
-          {uris: chunk as AtUriString[]},
-          {validateResponse: false},
+    Array.from(
+      {length: Math.ceil(uris.length / REACTION_COUNT_BATCH)},
+      (_, i) => {
+        const chunk = uris.slice(
+          i * REACTION_COUNT_BATCH,
+          (i + 1) * REACTION_COUNT_BATCH,
         )
-        .then(result => parseCounts(result))
-        .then(counts => counts.forEach((groups, uri) => results.set(uri, groups)))
-        .catch(() => {
-          /* A failed batch resolves as no reactions; readers retry on refetch. */
-        })
-    }),
+        return client
+          .call(
+            blue.moji.feed.getReactionCounts,
+            {uris: chunk as AtUriString[]},
+            {validateResponse: false},
+          )
+          .then(result => parseCounts(result))
+          .then(counts =>
+            counts.forEach((groups, uri) => results.set(uri, groups)),
+          )
+          .catch(() => {
+            /* A failed batch resolves as no reactions; readers retry on refetch. */
+          })
+      },
+    ),
   )
   for (const [uri, resolve] of waiters) resolve(results.get(uri) ?? [])
 }
@@ -187,7 +195,11 @@ export function useViewerReactionsQuery() {
         for (const record of page.records) {
           const value = blue.moji.feed.reaction.main.$ifMatches(record.value)
           if (!value) continue
-          out.push({uri: record.uri, subject: value.subject, emoji: value.emoji})
+          out.push({
+            uri: record.uri,
+            subject: value.subject,
+            emoji: value.emoji,
+          })
         }
         cursor = page.cursor
       } while (cursor && out.length < 500)
