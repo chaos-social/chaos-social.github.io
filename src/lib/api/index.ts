@@ -44,9 +44,9 @@ import {
   type ThreadDraft,
 } from '#/view/com/composer/state/composer'
 import {IS_IOS, IS_WEB} from '#/env'
-import {makeEventUrl} from '#/features/events/url'
 import {fetchBluemojiItemQuery} from '#/features/bluemoji/queries'
 import {detectBluemojiFacets} from '#/features/bluemoji/util'
+import {makeEventUrl} from '#/features/events/url'
 import {app, chat, com} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 import {createGIFDescription} from '../gif-alt-text'

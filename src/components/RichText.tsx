@@ -370,7 +370,10 @@ export function RichText({
       {suffix}
     </Text>
   )
-  if (!IS_NATIVE || !facets.some(facet => facet.features.some(getBluemojiFacet)))
+  if (
+    !IS_NATIVE ||
+    !facets?.some(facet => facet.features.some(getBluemojiFacet))
+  )
     return content
 
   /*

@@ -8,7 +8,7 @@ import {atoms as a, useTheme} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
 import * as TextField from '#/components/forms/TextField'
-import {EmojiStarEyes_Stroke2_Corner0_Rounded as EmojiStarEyesIcon} from '#/components/icons/Emoji'
+import {EmojiHeartEyes_Stroke2_Corner0_Rounded as EmojiHeartEyesIcon} from '#/components/icons/Emoji'
 import {Text} from '#/components/Typography'
 import {InlineBluemoji} from '#/features/bluemoji/InlineBluemoji'
 import {
@@ -36,7 +36,7 @@ export function BluemojiPickerButton({
         shape={enableSquareButtons ? 'square' : 'round'}
         style={a.p_sm}
         onPress={control.open}>
-        <EmojiStarEyesIcon size="lg" />
+        <EmojiHeartEyesIcon size="lg" />
       </Button>
       <Dialog.Outer control={control}>
         <Dialog.Handle />

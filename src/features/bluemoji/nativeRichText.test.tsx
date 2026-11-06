@@ -14,6 +14,7 @@ jest.mock('#/alf', () => ({
     jest.requireActual<typeof import('react-native')>('react-native').StyleSheet
       .flatten,
   useAlf: () => ({fonts: {scaleMultiplier: 1.25}}),
+  useTheme: () => ({atoms: {text_contrast_medium: {}}}),
 }))
 jest.mock('#/alf/util/dimensions', () => ({useNativeFontScale: () => 1.4}))
 jest.mock('#/components/Link', () => ({InlineLinkText: () => null}))
