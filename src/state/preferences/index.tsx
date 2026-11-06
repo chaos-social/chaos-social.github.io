@@ -30,6 +30,7 @@ import {Provider as FaviconServiceProvider} from './favicon-service'
 import {Provider as FullsizeFormatProvider} from './fullsize-format'
 import {Provider as GoLinksProvider} from './go-links-enabled'
 import {Provider as HiddenPostsProvider} from './hidden-posts'
+import {Provider as HideBluemojiReactionsProvider} from './hide-bluemoji-reactions'
 import {Provider as HideDisplayNamesProvider} from './hide-display-names'
 import {Provider as HideFeedsPromoTabProvider} from './hide-feeds-promo-tab'
 import {Provider as HideQuotesOfBlockedAccountsProvider} from './hide-quotes-of-blocked-accounts'
@@ -242,6 +243,7 @@ export function Provider({children}: PropsWithChildren<{}>) {
                                                                                                                                       <TidSuffixProvider>
                                                                                                                                         <SlingshotInstanceProvider>
                                                                                                                                           <DisableInfiniteScrollProvider>
+                                                                                                                                            <HideBluemojiReactionsProvider>
                                                                                                                                             <HideQuotesOfBlockedAccountsProvider>
                                                                                                                                               <ReplyIconIndicatorsProvider>
                                                                                                                                                 <ShowPostTagsProvider>
@@ -255,6 +257,7 @@ export function Provider({children}: PropsWithChildren<{}>) {
                                                                                                                                                 </ShowPostTagsProvider>
                                                                                                                                               </ReplyIconIndicatorsProvider>
                                                                                                                                             </HideQuotesOfBlockedAccountsProvider>
+                                                                                                                                            </HideBluemojiReactionsProvider>
                                                                                                                                           </DisableInfiniteScrollProvider>
                                                                                                                                         </SlingshotInstanceProvider>
                                                                                                                                       </TidSuffixProvider>

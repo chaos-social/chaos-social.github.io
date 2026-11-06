@@ -24,6 +24,10 @@ import {
   useSetFullsizeFormat,
 } from '#/state/preferences/fullsize-format'
 import {
+  useHideBluemojiReactions,
+  useSetHideBluemojiReactions,
+} from '#/state/preferences/hide-bluemoji-reactions'
+import {
   useLoadAsPngs,
   useSetLoadAsPngs,
 } from '#/state/preferences/load-small-pngs'
@@ -53,6 +57,7 @@ import {Button, ButtonText} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
 import * as Toggle from '#/components/forms/Toggle'
 import {Celebrate_Stroke2_Corner0_Rounded as CelebrateIcon} from '#/components/icons/Celebrate'
+import {EmojiSmile_Stroke2_Corner0_Rounded as EmojiIcon} from '#/components/icons/Emoji'
 import {Heart2_Stroke2_Corner0_Rounded as HeartIcon} from '#/components/icons/Heart2'
 import {Image_Stroke1_Corner0_Rounded as ImageIcon} from '#/components/icons/Image'
 import {Pencil_Stroke2_Corner0_Rounded as PencilIcon} from '#/components/icons/Pencil'
@@ -77,6 +82,8 @@ export function RunesDisplaySettingsScreen() {
 
   const showPostTags = useShowPostTags()
   const setShowPostTags = useSetShowPostTags()
+  const hideBluemojiReactions = useHideBluemojiReactions()
+  const setHideBluemojiReactions = useSetHideBluemojiReactions()
 
   const showViaClient = useShowViaClient()
   const setShowViaClient = useSetShowViaClient()
@@ -141,6 +148,20 @@ export function RunesDisplaySettingsScreen() {
           <SettingsList.ItemIcon icon={TagIcon} />
           <SettingsList.ItemText>
             <Trans>Show tags beneath posts</Trans>
+          </SettingsList.ItemText>
+          <Toggle.Platform />
+        </SettingsList.Item>
+      </Toggle.Item>
+      <Toggle.Item
+        testID="hideBluemojiReactionsToggle"
+        name="hide_bluemoji_reactions"
+        label={l`Hide custom emoji reactions`}
+        value={hideBluemojiReactions}
+        onChange={setHideBluemojiReactions}>
+        <SettingsList.Item>
+          <SettingsList.ItemIcon icon={EmojiIcon} />
+          <SettingsList.ItemText>
+            <Trans>Hide custom emoji reactions</Trans>
           </SettingsList.ItemText>
           <Toggle.Platform />
         </SettingsList.Item>

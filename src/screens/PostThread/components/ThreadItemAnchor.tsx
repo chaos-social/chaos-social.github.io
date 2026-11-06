@@ -76,6 +76,7 @@ import {TranslatedPost} from '#/components/Post/Translated'
 import {useBridgedHtmlSegments} from '#/components/Post/useBridgedHtmlSegments'
 import {PostControls, PostControlsSkeleton} from '#/components/PostControls'
 import {PostTags} from '#/components/PostTags'
+import {ReactionStrip} from '#/features/bluemoji/reactions/ReactionStrip'
 import {ProfileBadges} from '#/components/ProfileBadges'
 import {ProfileHoverCard} from '#/components/ProfileHoverCard'
 import * as Prompt from '#/components/Prompt'
@@ -599,6 +600,7 @@ const ThreadItemAnchorInner = memo(function ThreadItemAnchorInner({
                   </View>
                 )}
                 <PostTags post={post} style={[a.pb_0]} />
+                <ReactionStrip post={post} showAdd />
               </ContentHider>
               {!inReader && (
                 <>

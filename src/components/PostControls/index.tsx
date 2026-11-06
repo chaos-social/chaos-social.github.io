@@ -51,6 +51,7 @@ import {
   PostControlButtonText,
 } from './PostControlButton'
 import {PostMenuButton} from './PostMenu'
+import {ReactionButton} from './ReactionButton'
 import {useReplyIcon} from './ReplyIcon'
 import {RepostButton} from './RepostButton'
 import {ShareMenuButton} from './ShareMenu'
@@ -602,6 +603,16 @@ function PostControlsInner({
         </View>
         <View
           style={[a.flex_row, a.justify_end, secondaryControlSpacingStyles]}>
+          {/*
+            Reactions live with the secondary actions: the left cluster is
+            capped at 320px with three flex slots, and a fourth would squeeze
+            reply/repost/like.
+          */}
+          <ReactionButton
+            post={post}
+            big={big}
+            hitSlop={{right: secondaryControlSpacingStyles.gap / 2}}
+          />
           {hasAlternateAccounts && currentAccount ? (
             <EphemeralAccountSwitcherFromScope
               selectedDid={currentAccount.did}

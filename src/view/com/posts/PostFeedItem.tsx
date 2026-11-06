@@ -55,6 +55,7 @@ import {usePostTextLimit} from '#/components/Post/usePostTextLimit'
 import {PostControls} from '#/components/PostControls'
 import {DiscoverDebug} from '#/components/PostControls/DiscoverDebug'
 import {PostTags} from '#/components/PostTags'
+import {ReactionStrip} from '#/features/bluemoji/reactions/ReactionStrip'
 import {RichText} from '#/components/RichText'
 import {SubtleHover} from '#/components/SubtleHover'
 import {Features, useAnalytics} from '#/analytics'
@@ -642,6 +643,7 @@ let PostContent = ({
         </View>
       ) : null}
       <PostTags post={post} style={[a.pb_2xs]} />
+      <ReactionStrip post={post} />
     </ContentHider>
   )
 }
