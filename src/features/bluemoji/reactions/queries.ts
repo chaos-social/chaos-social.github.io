@@ -211,13 +211,14 @@ export function useViewerReactionForPost(uri: string | undefined) {
 /** AppView-wide trending, used as the Discover tab's default content. */
 export function useTrendingEmojiQuery() {
   return useQuery({
-    queryKey: createQueryKey(trendingRoot, {period: 'week'}),
+    // Month: reactions are still sparse, and a week window is often empty.
+    queryKey: createQueryKey(trendingRoot, {period: 'month'}),
     staleTime: STALE.MINUTES.FIVE,
     retry: false,
     queryFn: async (): Promise<ReactionGroup[]> => {
       const result: unknown = await client.call(
         blue.moji.feed.getTrending,
-        {period: 'week', limit: 60},
+        {period: 'month', limit: 60},
         {validateResponse: false},
       )
       const items =
