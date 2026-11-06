@@ -47,6 +47,8 @@ import {RichText} from '#/components/RichText'
 import {Embed as StarterPackCard} from '#/components/StarterPack/StarterPackCard'
 import {SubtleHover} from '#/components/SubtleHover'
 import {IS_ANDROID, IS_WEB} from '#/env'
+import {TokimekiPollEmbed} from '#/features/tokimeki/components/TokimekiPollEmbed'
+import {parseTokimekiPollUrl} from '#/features/tokimeki/parse'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 export {PostPoll} from '#/features/pollblue/components/PostPoll'
@@ -170,6 +172,21 @@ function MediaEmbed({
             modui={rest.moderation?.ui('contentMedia')}
             activeStyle={[a.mt_sm]}>
             <ThemeEmbed view={embed.view.external} onOpen={rest.onOpen} />
+          </ContentHider>
+        )
+      }
+      const tokimekiRef = parseTokimekiPollUrl(embed.view.external.uri)
+      if (tokimekiRef) {
+        return (
+          <ContentHider
+            modui={rest.moderation?.ui('contentMedia')}
+            activeStyle={[a.mt_sm]}>
+            <TokimekiPollEmbed
+              ref={tokimekiRef}
+              link={embed.view.external}
+              onOpen={rest.onOpen}
+              style={[a.mt_sm, rest.style]}
+            />
           </ContentHider>
         )
       }
