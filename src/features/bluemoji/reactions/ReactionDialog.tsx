@@ -10,9 +10,7 @@ import * as Dialog from '#/components/Dialog'
 import * as Skeleton from '#/components/Skeleton'
 import {Text} from '#/components/Typography'
 import {BluemojiPickerList} from '#/features/bluemoji/Picker'
-import {
-  useConstellationReactionsQuery,
-} from '#/features/bluemoji/reactions/constellation'
+import {useConstellationReactionsQuery} from '#/features/bluemoji/reactions/constellation'
 import {
   useCreateReactionMutation,
   useDeleteReactionMutation,
@@ -81,9 +79,7 @@ export function ReactionDialog({post}: {post: app.bsky.feed.defs.PostView}) {
   }
 
   return (
-    <Dialog.ScrollableInner
-      label={l`Reactions`}
-      style={[web({maxWidth: 460})]}>
+    <Dialog.ScrollableInner label={l`Reactions`} style={[web({maxWidth: 460})]}>
       <View style={[a.gap_lg, a.pb_lg]}>
         <View style={[a.gap_2xs]}>
           <Text style={[a.text_xl, a.font_bold]}>
@@ -131,11 +127,7 @@ export function ReactionDialog({post}: {post: app.bsky.feed.defs.PostView}) {
                         ]
                       : [t.atoms.bg_contrast_25],
                   ]}>
-                  <ReactionEmoji
-                    emoji={group.emoji}
-                    size={20}
-                    accessible
-                  />
+                  <ReactionEmoji emoji={group.emoji} size={20} accessible />
                   <Text style={[a.text_md, a.font_bold]}>{group.count}</Text>
                 </Button>
               )
@@ -181,9 +173,7 @@ function ActorsList({
         <Trans>Who reacted</Trans>
       </Text>
       {reactions.map(reaction => (
-        <View
-          key={reaction.uri}
-          style={[a.flex_row, a.align_center, a.gap_sm]}>
+        <View key={reaction.uri} style={[a.flex_row, a.align_center, a.gap_sm]}>
           <ReactionEmoji emoji={reaction.emoji} size={20} accessible />
           <Text numberOfLines={1} style={[a.flex_1, a.text_sm]}>
             {reaction.actor.displayName?.trim() || `@${reaction.actor.handle}`}
@@ -205,11 +195,7 @@ function ActorsList({
           </ButtonText>
         </Button>
       ) : null}
-      <Button
-        size="small"
-        color="secondary"
-        label={l`Close`}
-        onPress={onClose}>
+      <Button size="small" color="secondary" label={l`Close`} onPress={onClose}>
         <ButtonText>
           <Trans>Close</Trans>
         </ButtonText>
