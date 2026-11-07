@@ -3,7 +3,7 @@ import {Image, type ImageProps} from 'expo-image'
 
 export function InlineImage({
   size,
-  baselineOffset: _baselineOffset,
+  baselineOffset = 0,
   ...props
 }: {size: number; baselineOffset?: number} & Omit<ImageProps, 'style'>) {
   return (
@@ -23,14 +23,19 @@ export function InlineImage({
         style={{fontFamily: 'inherit', fontSize: size, opacity: 0}}>
         🟦
       </EmojiMetricsText>
+      {/*
+        Sized to the glyph box, not the line box: filling the parent would make
+        the image the height of the line (leading included) and read larger than
+        the emoji glyph beside it.
+      */}
       <Image
         {...props}
         style={{
           position: 'absolute',
-          top: 0,
           left: 0,
-          width: '100%',
-          height: '100%',
+          bottom: -baselineOffset,
+          width: size,
+          height: size,
         }}
       />
     </span>

@@ -2,7 +2,9 @@ import {useState} from 'react'
 import {View} from 'react-native'
 import {Image} from 'expo-image'
 
+import {useBluemojiInstance} from '#/state/preferences/bluemoji-instance'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
+import {usePdsServiceUrl} from '#/state/session'
 import {atoms as a, useTheme, type ViewStyleProp} from '#/alf'
 import {Text} from '#/components/Typography'
 import {useBluemojiItemQuery} from '#/features/bluemoji/queries'
@@ -13,7 +15,11 @@ import {
   getReactionEmojiModeration,
   type ReactionEmoji as ReactionEmojiRef,
 } from '#/features/bluemoji/reactions/util'
-import {getBluemojiImage, getBluemojiModeration} from '#/features/bluemoji/util'
+import {
+  getBluemojiImage,
+  getBluemojiModeration,
+  getBluemojiPdsImage,
+} from '#/features/bluemoji/util'
 
 /**
  * One reaction glyph. Renders the alias instead of the image when the viewer's
@@ -34,6 +40,9 @@ export function ReactionEmoji({
   const t = useTheme()
   const moderationOpts = useModerationOpts()
   const [failed, setFailed] = useState(false)
+  const [fallbackUri, setFallbackUri] = useState<string>()
+  const pdsUrl = usePdsServiceUrl()
+  const instance = useBluemojiInstance()
   /*
    * Other clients write reactions whose `formats` is empty, so fall back to
    * the item record on its owner's PDS. Cached per item across every pill.
@@ -44,7 +53,8 @@ export function ReactionEmoji({
     record: {uri: emoji.uri, cid: emoji.cid},
   })
   const uri =
-    getReactionEmojiImage(emoji) ?? (item ? getBluemojiImage(item) : undefined)
+    getReactionEmojiImage(emoji, instance) ??
+    (item ? getBluemojiImage(item, instance) : undefined)
   const visible =
     uri &&
     (item
@@ -56,7 +66,8 @@ export function ReactionEmoji({
    * in that gap is what makes every pill flash text before the picture lands,
    * so hold an empty box of the right size instead.
    */
-  const resolving = itemPending && getReactionEmojiImage(emoji) === undefined
+  const resolving =
+    itemPending && getReactionEmojiImage(emoji, instance) === undefined
   if (!visible && !resolving) {
     return (
       <Text
@@ -79,7 +90,8 @@ export function ReactionEmoji({
       <View style={{width: size, height: size}}>
         {visible && !failed ? (
           <Image
-            source={{uri}}
+            // moji.blue's CDN 404s until the blob is indexed; the PDS has it.
+            source={{uri: fallbackUri ?? uri}}
             contentFit="contain"
             style={{width: size, height: size}}
             cachePolicy="memory-disk"
@@ -87,7 +99,15 @@ export function ReactionEmoji({
             // transition reads as a flicker rather than an entrance.
             transition={0}
             accessibilityIgnoresInvertColors
-            onError={() => setFailed(true)}
+            onError={() => {
+              if (fallbackUri || !item || !pdsUrl) {
+                setFailed(true)
+                return
+              }
+              const next = getBluemojiPdsImage(item, pdsUrl)
+              if (next) setFallbackUri(next)
+              else setFailed(true)
+            }}
           />
         ) : null}
       </View>

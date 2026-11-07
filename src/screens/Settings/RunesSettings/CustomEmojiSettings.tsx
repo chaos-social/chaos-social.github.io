@@ -11,10 +11,10 @@ import * as Dialog from '#/components/Dialog'
 import * as TextField from '#/components/forms/TextField'
 import * as Toggle from '#/components/forms/Toggle'
 import {Text} from '#/components/Typography'
+import {BluemojiImage} from '#/features/bluemoji/BluemojiImage'
 import {useCreateEmojiMutation} from '#/features/bluemoji/collection/mutations'
 import {useOwnCollectionQuery} from '#/features/bluemoji/collection/queries'
 import {NewEmojiTile, TileGrid} from '#/features/bluemoji/Picker'
-import {getBluemojiImage} from '#/features/bluemoji/util'
 import {RunesScreenLayout} from './components/RunesScreenLayout'
 
 /**
@@ -41,19 +41,11 @@ export function CustomEmojiSettingsScreen() {
           </Trans>
         </Text>
         <TileGrid>
-          {items.map(item => {
-            const uri = getBluemojiImage(item)
-            return uri ? (
-              <Image
-                key={item.uri}
-                source={{uri}}
-                contentFit="contain"
-                style={[a.rounded_sm, {width: 44, height: 44}]}
-                accessibilityLabel={item.record.name}
-                accessibilityHint={undefined}
-              />
-            ) : null
-          })}
+          {items.map(item => (
+            <View key={item.uri} style={[a.rounded_sm, a.overflow_hidden]}>
+              <BluemojiImage item={item} size={44} label={item.record.name} />
+            </View>
+          ))}
           <NewEmojiTile onPress={control.open} />
         </TileGrid>
       </View>

@@ -8,18 +8,20 @@ import {
 
 import {useDebouncedValue} from '#/lib/hooks/useDebouncedValue'
 import {useDeferredEnable} from '#/lib/hooks/useDeferredEnable'
+import {
+  readBluemojiInstance,
+  useBluemojiInstance,
+} from '#/state/preferences/bluemoji-instance'
 import {STALE} from '#/state/queries'
 import {resolvePdsServiceUrl} from '#/state/queries/resolve-identity'
 import {createQueryKey} from '#/state/queries/util'
 import {
-  BLUEMOJI_SERVICE,
   type BluemojiItem,
   type BluemojiRef,
   getBluemojiRefUri,
 } from '#/features/bluemoji/util'
 import {blue, com} from '#/lexicons'
 
-const bluemojiClient = new Client(BLUEMOJI_SERVICE)
 const bluemojiItemQueryKey = (uri: string, cid?: string) =>
   createQueryKey('useBluemojiItemQuery', {uri, cid})
 
@@ -102,8 +104,10 @@ export function useBluemojiSearchQuery({
   enabled?: boolean
 }) {
   const q = useDebouncedValue(query.trim().slice(0, 100), 300)
+  const instance = useBluemojiInstance()
   return useInfiniteQuery({
-    queryKey: createQueryKey('useBluemojiSearchQuery', {repo, q}),
+    // The key carries the AppView so switching instances starts a fresh page.
+    queryKey: createQueryKey('useBluemojiSearchQuery', {repo, q, instance}),
     staleTime: STALE.MINUTES.ONE,
     initialPageParam: undefined as string | undefined,
     async queryFn({pageParam, signal}) {
@@ -128,6 +132,7 @@ export async function fetchBluemojiSuggestions(
       repo,
       q,
       autocomplete: true,
+      instance: readBluemojiInstance(),
     }),
     staleTime: STALE.MINUTES.ONE,
     retry: false,
@@ -167,17 +172,14 @@ export async function fetchBluemojiDiscoveryPage({
 }) {
   const params = {repo: repo as AtIdentifierString | undefined, limit, cursor}
   const options = {signal, validateResponse: false}
+  const client = new Client(readBluemojiInstance())
   const result: unknown = q
-    ? await bluemojiClient.call(
+    ? await client.call(
         blue.moji.collection.searchItems,
         {...params, q},
         options,
       )
-    : await bluemojiClient.call(
-        blue.moji.collection.listCollection,
-        params,
-        options,
-      )
+    : await client.call(blue.moji.collection.listCollection, params, options)
   if (
     !result ||
     typeof result !== 'object' ||

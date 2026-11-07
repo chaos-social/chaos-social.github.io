@@ -26,6 +26,8 @@ jest.mock('#/state/preferences/constellation-instance', () => ({
   useConstellationInstance: () => undefined,
 }))
 
+const INSTANCE = 'https://moji.example'
+
 const call = jest.spyOn(Client.prototype, 'call')
 
 const emoji = {
@@ -57,9 +59,9 @@ it('coalesces concurrent lookups into one request and resolves each subject', as
   )
 
   const [a, b, c] = await Promise.all([
-    fetchReactionCounts('at://post/a'),
-    fetchReactionCounts('at://post/b'),
-    fetchReactionCounts('at://post/c'),
+    fetchReactionCounts(INSTANCE, 'at://post/a'),
+    fetchReactionCounts(INSTANCE, 'at://post/b'),
+    fetchReactionCounts(INSTANCE, 'at://post/c'),
   ])
 
   expect(call).toHaveBeenCalledTimes(1)
@@ -74,13 +76,17 @@ it('coalesces concurrent lookups into one request and resolves each subject', as
 it('treats a failed batch as no reactions rather than hanging', async () => {
   call.mockRejectedValue(new Error('offline'))
 
-  await expect(fetchReactionCounts('at://post/a')).resolves.toEqual([])
+  await expect(fetchReactionCounts(INSTANCE, 'at://post/a')).resolves.toEqual(
+    [],
+  )
 })
 
 it('drops groups with a zero count', async () => {
   call.mockResolvedValue({counts: [counts('at://post/a', 0)]})
 
-  await expect(fetchReactionCounts('at://post/a')).resolves.toEqual([])
+  await expect(fetchReactionCounts(INSTANCE, 'at://post/a')).resolves.toEqual(
+    [],
+  )
 })
 
 /*

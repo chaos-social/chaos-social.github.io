@@ -1,6 +1,5 @@
 import {useState} from 'react'
 import {View} from 'react-native'
-import {Image} from 'expo-image'
 import {Trans, useLingui} from '@lingui/react/macro'
 
 import {getShapeStyle} from '#/lib/shapes'
@@ -16,6 +15,7 @@ import {EmojiHeartEyes_Stroke2_Corner0_Rounded as BluemojiIcon} from '#/componen
 import {PlusLarge_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
 import * as Skeleton from '#/components/Skeleton'
 import {Text} from '#/components/Typography'
+import {BluemojiImage} from '#/features/bluemoji/BluemojiImage'
 import {useOwnCollectionQuery} from '#/features/bluemoji/collection/queries'
 import {
   useBluemojiItemQuery,
@@ -197,7 +197,7 @@ function SearchGrid({
                 key={item.uri}
                 label={item.record.name}
                 onPress={() => onSelect(item)}
-                imageUri={getBluemojiImage(item)}
+                item={item}
                 selected={chosen?.includes(item.uri)}
               />
             ))
@@ -258,7 +258,7 @@ function SearchTile({
     <Tile
       label={verified.record.name}
       onPress={() => onSelect(verified)}
-      imageUri={getBluemojiImage(verified)}
+      item={verified}
       selected={selected}
     />
   )
@@ -298,13 +298,14 @@ function TrendingGrid({onSelect}: {onSelect: (item: BluemojiItem) => void}) {
 export function Tile({
   label,
   onPress,
-  imageUri,
+  item,
   render,
   selected,
 }: {
   label: string
   onPress?: () => void
-  imageUri?: string
+  /** Verified item to draw. Falls back to the PDS for a fresh upload. */
+  item?: BluemojiItem
   render?: () => React.ReactElement
   selected?: boolean
 }) {
@@ -331,13 +332,8 @@ export function Tile({
       ]}>
       {render ? (
         render()
-      ) : imageUri ? (
-        <Image
-          source={{uri: imageUri}}
-          contentFit="contain"
-          style={{width: TILE - 12, height: TILE - 12}}
-          accessibilityIgnoresInvertColors
-        />
+      ) : item ? (
+        <BluemojiImage item={item} size={TILE - 12} />
       ) : (
         <Skeleton.Block
           style={{width: TILE - 12, height: TILE - 12, opacity: 0.4}}

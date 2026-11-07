@@ -8,6 +8,7 @@ import {Provider as AtprotoExplorerProvider} from './atproto-explorer'
 import {Provider as AutoCompactAccountSwitcherProvider} from './auto-compact-account-switcher'
 import {Provider as AutoLikeOnRepostProvider} from './auto-like-on-repost'
 import {Provider as AutoplayProvider} from './autoplay'
+import {Provider as BluemojiInstanceProvider} from './bluemoji-instance'
 import {Provider as CompactAccountSwitcherProvider} from './compact-account-switcher'
 import {Provider as CompactPostsProvider} from './compact-posts'
 import {Provider as ConfirmFollowProvider} from './confirm-follow'
@@ -207,6 +208,7 @@ export function Provider({children}: PropsWithChildren<{}>) {
                         <SeeThroughBlocksProvider>
                           <ConstellationProvider>
                             <ConstellationInstanceProvider>
+                              <BluemojiInstanceProvider>
                               <DeerVerificationProvider>
                                 <FaviconServiceProvider>
                                   <PdsLabelProvider>
@@ -344,6 +346,7 @@ export function Provider({children}: PropsWithChildren<{}>) {
                                   </PdsLabelProvider>
                                 </FaviconServiceProvider>
                               </DeerVerificationProvider>
+                              </BluemojiInstanceProvider>
                             </ConstellationInstanceProvider>
                           </ConstellationProvider>
                         </SeeThroughBlocksProvider>

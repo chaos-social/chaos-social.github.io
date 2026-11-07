@@ -7,10 +7,9 @@ import {
   isEscapedFacetSyntax,
   isInsideEscapedFacetSyntax,
 } from '#/lib/strings/rich-text-manip'
+import {readBluemojiInstance} from '#/state/preferences/bluemoji-instance'
 import {aliasToRkey} from '#/features/bluemoji/alias'
 import {blue, com} from '#/lexicons'
-
-export const BLUEMOJI_SERVICE = 'https://moji.blue'
 
 export type BluemojiItem = {
   uri: string
@@ -53,14 +52,39 @@ function blobCid(blob: unknown) {
 }
 
 /** Only the source record determines which asset may be displayed. */
-export function getBluemojiImage(item: BluemojiItem) {
+export function getBluemojiImage(item: BluemojiItem, instance?: string) {
+  return getBluemojiRendition(item, instance)?.url
+}
+
+/**
+ * A rendition URL that skips moji.blue's CDN.
+ *
+ * Its `/img` proxy only serves blobs it has indexed (or the viewer's own, for a
+ * session we don't hold), so an emoji uploaded a moment ago 404s there until
+ * the firehose catches up. The owning PDS has the blob immediately, so this is
+ * the fallback for one we just wrote.
+ */
+export function getBluemojiPdsImage(item: BluemojiItem, pdsUrl: string) {
+  const rendition = getBluemojiRendition(item)
+  if (!rendition) return
+  const url = new URL('/xrpc/com.atproto.sync.getBlob', pdsUrl)
+  url.searchParams.set('did', item.did)
+  url.searchParams.set('cid', rendition.cid)
+  return url.toString()
+}
+
+function getBluemojiRendition(item: BluemojiItem, instance?: string) {
   const formats = item.record.formats
   const slots = ['webp_128', 'gif_128', 'apng_128', 'png_128']
   for (const slot of slots) {
     const blob = (formats as Record<string, unknown>)[slot]
     const cid = blobCid(blob)
-    if (cid)
-      return `${BLUEMOJI_SERVICE}/img/${encodeURIComponent(item.did)}/${encodeURIComponent(cid)}`
+    if (cid) {
+      return {
+        cid,
+        url: `${instance ?? readBluemojiInstance()}/img/${encodeURIComponent(item.did)}/${encodeURIComponent(cid)}`,
+      }
+    }
   }
   return undefined
 }

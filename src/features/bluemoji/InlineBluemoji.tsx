@@ -3,6 +3,7 @@ import {Pressable} from 'react-native'
 import {useLingui} from '@lingui/react/macro'
 
 import {useAutoplayDisabled} from '#/state/preferences'
+import {useBluemojiInstance} from '#/state/preferences/bluemoji-instance'
 import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {web} from '#/alf'
 import {Button} from '#/components/Button'
@@ -38,10 +39,11 @@ export function InlineBluemoji({
   const {data: item} = useBluemojiItemQuery(claim)
   const opts = useModerationOpts()
   const autoplayDisabled = useAutoplayDisabled()
+  const instance = useBluemojiInstance()
   const [failedUri, setFailedUri] = useState<string>()
   const uri =
     item && getBluemojiModeration(item, opts) === 'ignore'
-      ? getBluemojiImage(item)
+      ? getBluemojiImage(item, instance)
       : undefined
   if (!uri || uri === failedUri || !item) return fallbackText
   const alt = item.record.alt?.trim() || item.record.name

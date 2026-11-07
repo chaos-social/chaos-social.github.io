@@ -8,9 +8,13 @@ import {useModerationOpts} from '#/state/preferences/moderation-opts'
 import {useRequireAuth} from '#/state/session'
 import {atoms as a, useBreakpoints, useTheme} from '#/alf'
 import {Button} from '#/components/Button'
+import {EmojiSmile_Stroke2_Corner0_Rounded as SmileIcon} from '#/components/icons/Emoji'
 import {PlusSmall_Stroke2_Corner0_Rounded as PlusIcon} from '#/components/icons/Plus'
 import * as Menu from '#/components/Menu'
-import {PostControlButton} from '#/components/PostControls/PostControlButton'
+import {
+  PostControlButton,
+  PostControlButtonIcon,
+} from '#/components/PostControls/PostControlButton'
 import {Text} from '#/components/Typography'
 import {useConstellationReactionsQuery} from '#/features/bluemoji/reactions/constellation'
 import {
@@ -188,8 +192,20 @@ export function ReactionBar({
               big={big}
               label={props.accessibilityLabel}
               hitSlop={hitSlop}
-              style={[a.px_2xs, {height: PILL_HEIGHT}]}>
-              <PlusIcon size="sm" />
+              /*
+               * Repeats PostControlButton's own `bg_transparent`: passing a
+               * `style` replaces its base array, and without it the ghost
+               * variant's background shows on the pill until hover.
+               */
+              style={[a.bg_transparent, a.px_2xs, {height: PILL_HEIGHT}]}>
+              {/*
+                PostControlButtonIcon takes its colour from the button context,
+                so the icon matches the other post actions. A plain icon would
+                fall back to the accent colour the picker icons use.
+              */}
+              <PostControlButtonIcon
+                icon={visible.length === 0 ? SmileIcon : PlusIcon}
+              />
             </PostControlButton>
           )}
         </Menu.Trigger>
