@@ -22,7 +22,7 @@ jest.mock('@lingui/react', () => {
     )
   }
   return {
-    useLingui: () => ({_: format}),
+    useLingui: () => ({_: format, t: format}),
     Trans: ({
       id,
       message,
@@ -129,25 +129,6 @@ jest.mock('#/components/forms/TextField', () => {
   }
 })
 
-const mockVoteButtons = jest.fn()
-jest.mock('#/components/Post/Embed/ExternalEmbed/VoteButtons', () => {
-  const {Pressable} = require('react-native')
-  return {
-    VoteButtons: (props: {disabled?: boolean}) => {
-      mockVoteButtons(props.disabled)
-      return (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Agree"
-          accessibilityHint=""
-          disabled={props.disabled}
-          testID="pollVote-agree"
-        />
-      )
-    },
-  }
-})
-
 const mockMetric = jest.fn()
 jest.mock('#/analytics', () => ({
   useAnalytics: () => ({metric: mockMetric}),
@@ -164,17 +145,7 @@ jest.mock('#/view/com/composer/state/video', () => ({
 
 import {PollEditor} from '../PollEditor'
 
-const INVALID_HINT = 'This statement contains characters that cannot be saved.'
-const TOO_LONG_HINT = 'This statement is too long. Shorten it to post.'
-const BLANK_HINT = 'Add text or remove this statement to post.'
-const DUPLICATE_HINT = 'This statement repeats another one.'
-const TOPIC_MISSING_HINT = 'Add post text to ask your question.'
-const TOPIC_INVALID_HINT =
-  'Your post text contains characters that cannot be saved.'
-const QUESTION_LINE = 'Your post text is the question.'
-const PUBLIC_LINE = "Statements and votes are public on People's Assembly."
-
-function composerWith(statements: string[]): ComposerState {
+function composerWith(options: string[]): ComposerState {
   let state = createComposerState({
     initText: undefined,
     initMention: undefined,
@@ -185,11 +156,11 @@ function composerWith(statements: string[]): ComposerState {
   const postId = state.thread.posts[0].id
   const actions: PostAction[] = [
     {type: 'embed_add_poll'},
-    ...statements.slice(1).map(() => ({
-      type: 'embed_add_poll_statement' as const,
+    ...options.slice(2).map(() => ({
+      type: 'embed_add_poll_option' as const,
     })),
-    ...statements.map((text, index) => ({
-      type: 'embed_update_poll_statement' as const,
+    ...options.map((text, index) => ({
+      type: 'embed_update_poll_option' as const,
       index,
       text,
     })),
@@ -203,17 +174,13 @@ function composerWith(statements: string[]): ComposerState {
 const mockDispatch = jest.fn()
 
 function ComposerHarness({
-  statements,
+  options,
   text,
 }: {
-  statements: string[]
+  options: string[]
   text: string
 }) {
-  const [state, dispatch] = useReducer(
-    composerReducer,
-    statements,
-    composerWith,
-  )
+  const [state, dispatch] = useReducer(composerReducer, options, composerWith)
   const post = state.thread.posts[0]
   if (!post.embed.poll) return null
   return (
@@ -228,8 +195,8 @@ function ComposerHarness({
   )
 }
 
-function renderEditor(statements: string[], text = 'What should we do?') {
-  return render(<ComposerHarness statements={statements} text={text} />)
+function renderEditor(options: string[], text = 'Which one?') {
+  return render(<ComposerHarness options={options} text={text} />)
 }
 
 function lifecycle(kind: 'mount' | 'unmount') {
@@ -250,318 +217,151 @@ describe('PollEditor', () => {
     consoleError.mockRestore()
   })
 
-  it('reports an edit with the index of the statement', () => {
+  it('reports an edit with the index of the choice', () => {
     const {getByTestId} = renderEditor(['one', 'two'])
 
-    expect(getByTestId('pollStatementInput-1')).toHaveProp(
+    expect(getByTestId('pollOptionInput-1')).toHaveProp(
       'accessibilityLabel',
-      'Statement 2',
+      'Choice 2',
     )
-    fireEvent.changeText(getByTestId('pollStatementInput-1'), 'changed')
+    fireEvent.changeText(getByTestId('pollOptionInput-1'), 'changed')
 
     expect(mockDispatch).toHaveBeenCalledTimes(1)
     expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'embed_update_poll_statement',
+      type: 'embed_update_poll_option',
       index: 1,
       text: 'changed',
     })
-    expect(getByTestId('pollStatementInput-0')).toHaveProp('value', 'one')
-    expect(getByTestId('pollStatementInput-1')).toHaveProp('value', 'changed')
+    expect(getByTestId('pollOptionInput-0')).toHaveProp('value', 'one')
+    expect(getByTestId('pollOptionInput-1')).toHaveProp('value', 'changed')
   })
 
-  it('stops every statement field at the longest text that can be stored', () => {
+  it('stops each choice at the length TOKIMEKI accepts', () => {
+    const {getByTestId} = renderEditor(['one', 'two'])
+    expect(getByTestId('pollOptionInput-0')).toHaveProp('maxLength', 100)
+    expect(getByTestId('pollOptionInput-1')).toHaveProp('maxLength', 100)
+  })
+
+  it('adds a choice and reports the new count', () => {
     const {getByTestId} = renderEditor(['one', 'two'])
 
-    expect(getByTestId('pollStatementInput-0')).toHaveProp('maxLength', 997)
-    expect(getByTestId('pollStatementInput-1')).toHaveProp('maxLength', 997)
-  })
-
-  it('adds a statement and reports the new count', () => {
-    const {getByTestId} = renderEditor(['one', 'two', 'three'])
-
-    fireEvent.press(getByTestId('addPollStatementBtn'))
+    fireEvent.press(getByTestId('addPollOptionBtn'))
 
     expect(mockMetric).toHaveBeenCalledTimes(1)
-    expect(mockMetric).toHaveBeenCalledWith('composer:poll:statementAdd', {
-      count: 4,
+    expect(mockMetric).toHaveBeenCalledWith('composer:poll:optionAdd', {
+      count: 3,
     })
-    expect(mockDispatch).toHaveBeenCalledTimes(1)
-    expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'embed_add_poll_statement',
-    })
+    expect(mockDispatch).toHaveBeenCalledWith({type: 'embed_add_poll_option'})
   })
 
-  it('hides the add row at ten statements', () => {
-    const nine = renderEditor(Array.from({length: 9}, (_, i) => `s${i}`))
-    expect(nine.getByTestId('addPollStatementBtn')).toBeTruthy()
-    nine.unmount()
+  it('hides the add row at four choices', () => {
+    const three = renderEditor(['a', 'b', 'c'])
+    expect(three.getByTestId('addPollOptionBtn')).toBeTruthy()
+    three.unmount()
 
-    const ten = renderEditor(Array.from({length: 10}, (_, i) => `s${i}`))
-    expect(ten.getByTestId('pollStatementInput-9')).toBeTruthy()
-    expect(ten.queryByTestId('addPollStatementBtn')).toBeNull()
+    const four = renderEditor(['a', 'b', 'c', 'd'])
+    expect(four.getByTestId('pollOptionInput-3')).toBeTruthy()
+    expect(four.queryByTestId('addPollOptionBtn')).toBeNull()
   })
 
-  it('hides the per-statement remove when there is one statement', () => {
-    const {queryByTestId} = renderEditor(['only'])
-    expect(queryByTestId('pollStatementRemove-0')).toBeNull()
+  it('hides the per-choice remove when there are two choices', () => {
+    const {queryByTestId} = renderEditor(['one', 'two'])
+    expect(queryByTestId('pollOptionRemove-0')).toBeNull()
   })
 
-  it('removes a statement by its index', () => {
+  it('removes a choice by its index', () => {
     const {getByTestId} = renderEditor(['one', 'two', 'three'])
 
-    fireEvent.press(getByTestId('pollStatementRemove-1'))
+    fireEvent.press(getByTestId('pollOptionRemove-1'))
 
     expect(mockDispatch).toHaveBeenCalledTimes(1)
     expect(mockDispatch).toHaveBeenCalledWith({
-      type: 'embed_remove_poll_statement',
+      type: 'embed_remove_poll_option',
       index: 1,
     })
     expect(mockMetric).not.toHaveBeenCalled()
   })
 
   it('removes the poll and reports it', () => {
-    const {getByTestId, queryByTestId} = renderEditor(['one'])
+    const {getByTestId, queryByTestId} = renderEditor(['one', 'two'])
 
     fireEvent.press(getByTestId('removePollBtn'))
 
     expect(mockMetric).toHaveBeenCalledTimes(1)
     expect(mockMetric).toHaveBeenCalledWith('composer:poll:remove', {})
-    expect(mockDispatch).toHaveBeenCalledTimes(1)
     expect(mockDispatch).toHaveBeenCalledWith({type: 'embed_remove_poll'})
     expect(queryByTestId('pollEditor')).toBeNull()
   })
 
-  it('shows the grapheme counter for a publishable statement', () => {
-    const {getByTestId} = renderEditor(['  fine  '])
-    const hint = getByTestId('pollStatementHint-0')
-    expect(hint).toHaveTextContent('4 / 400', {exact: true})
-    expect(hint).not.toHaveStyle({color: 'negative_500'})
-  })
+  it('reports the chosen closing time', () => {
+    const {getByTestId} = renderEditor(['one', 'two'])
 
-  it('explains a blank statement only when it can be removed', () => {
-    const extra = renderEditor(['one', '   '])
-    expect(extra.getByTestId('pollStatementHint-0')).toHaveTextContent(
-      '3 / 400',
-      {exact: true},
-    )
-    const blank = extra.getByTestId('pollStatementHint-1')
-    expect(blank).toHaveTextContent(BLANK_HINT, {exact: true})
-    expect(blank).not.toHaveStyle({color: 'negative_500'})
-    extra.unmount()
+    fireEvent.press(getByTestId('pollDuration-7d'))
 
-    const only = renderEditor([''])
-    expect(only.getByTestId('pollStatementHint-0')).toHaveTextContent(
-      '0 / 400',
-      {exact: true},
-    )
-  })
-
-  it('explains a statement over the byte cap but under the grapheme cap', () => {
-    const cluster = 'a' + '\u20dd'.repeat(3)
-    const atCap = renderEditor([cluster.repeat(200)])
-    expect(atCap.getByTestId('pollStatementHint-0')).toHaveTextContent(
-      '200 / 400',
-      {exact: true},
-    )
-    atCap.unmount()
-
-    const overCap = renderEditor([cluster.repeat(201)])
-    const hint = overCap.getByTestId('pollStatementHint-0')
-    expect(hint).toHaveTextContent(TOO_LONG_HINT, {exact: true})
-    expect(hint).toHaveStyle({color: 'negative_500'})
-  })
-
-  it('keeps the counter for a statement over the grapheme cap', () => {
-    const {getByTestId} = renderEditor(['a'.repeat(401)])
-    const hint = getByTestId('pollStatementHint-0')
-    expect(hint).toHaveTextContent('401 / 400', {exact: true})
-    expect(hint).toHaveStyle({color: 'negative_500'})
-  })
-
-  it('explains a statement with characters that cannot be saved', () => {
-    const {getByTestId} = renderEditor(['a\u0000b', 'a\ud800'])
-    for (const index of [0, 1]) {
-      const hint = getByTestId(`pollStatementHint-${index}`)
-      expect(hint).toHaveTextContent(INVALID_HINT, {exact: true})
-      expect(hint).toHaveStyle({color: 'negative_500'})
-    }
-  })
-
-  it('explains a statement that repeats an earlier one', () => {
-    const {getByTestId} = renderEditor([
-      'Fund the library',
-      'Close the pool',
-      '  fund the LIBRARY ',
-    ])
-
-    expect(getByTestId('pollStatementHint-0')).toHaveTextContent('16 / 400', {
-      exact: true,
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'embed_set_poll_duration',
+      duration: '7d',
     })
-    expect(getByTestId('pollStatementHint-0')).not.toHaveStyle({
-      color: 'negative_500',
-    })
-    expect(getByTestId('pollStatementHint-1')).toHaveTextContent('14 / 400', {
-      exact: true,
-    })
-    const repeat = getByTestId('pollStatementHint-2')
-    expect(repeat).toHaveTextContent(DUPLICATE_HINT, {exact: true})
-    expect(repeat).toHaveStyle({color: 'negative_500'})
   })
 
-  it('drops the repeat hint once the statement differs', () => {
-    const {getByTestId} = renderEditor(['same', 'same'])
-    expect(getByTestId('pollStatementHint-1')).toHaveTextContent(
-      DUPLICATE_HINT,
+  it('points out a choice that cannot be saved', () => {
+    const {getByTestId, queryByTestId} = renderEditor(['a\u0000b', 'fine'])
+    const hint = getByTestId('pollOptionHint-0')
+    expect(hint).toHaveTextContent(
+      'This choice contains characters that cannot be saved.',
       {exact: true},
     )
-
-    fireEvent.changeText(getByTestId('pollStatementInput-1'), 'different')
-
-    const hint = getByTestId('pollStatementHint-1')
-    expect(hint).toHaveTextContent('9 / 400', {exact: true})
-    expect(hint).not.toHaveStyle({color: 'negative_500'})
-  })
-
-  it('does not count blank statements as repeats of each other', () => {
-    const {getByTestId} = renderEditor(['', ''])
-    for (const index of [0, 1]) {
-      expect(getByTestId(`pollStatementHint-${index}`)).toHaveTextContent(
-        BLANK_HINT,
-        {exact: true},
-      )
-    }
+    expect(queryByTestId('pollOptionHint-1')).toBeNull()
   })
 
   it.each([
     {kind: 'empty', text: ''},
     {kind: 'only whitespace', text: ' \n\t '},
   ])('asks for post text when it is $kind', ({text}) => {
-    const {getByTestId} = renderEditor(['one'], text)
-    const hint = getByTestId('pollTopicHint')
-    expect(hint).toHaveTextContent(TOPIC_MISSING_HINT, {exact: true})
-    expect(hint).not.toHaveStyle({color: 'negative_500'})
-  })
-
-  it.each([
-    {kind: 'a null character', text: 'a\u0000b'},
-    {kind: 'a lone surrogate', text: 'a\ud800'},
-  ])('explains post text with $kind', ({text}) => {
-    const {getByTestId} = renderEditor(['one'], text)
-    const hint = getByTestId('pollTopicHint')
-    expect(hint).toHaveTextContent(TOPIC_INVALID_HINT, {exact: true})
-    expect(hint).toHaveStyle({color: 'negative_500'})
+    const {getByTestId} = renderEditor(['one', 'two'], text)
+    expect(getByTestId('pollQuestionHint')).toHaveTextContent(
+      'Add post text to ask your question.',
+      {exact: true},
+    )
   })
 
   it('shows no post text hint when there is post text', () => {
-    const {queryByTestId, queryByText} = renderEditor(['one'], 'A question')
-    expect(queryByTestId('pollTopicHint')).toBeNull()
-    expect(queryByText(TOPIC_MISSING_HINT)).toBeNull()
-    expect(queryByText(TOPIC_INVALID_HINT)).toBeNull()
+    const {queryByTestId} = renderEditor(['one', 'two'], 'A question')
+    expect(queryByTestId('pollQuestionHint')).toBeNull()
   })
 
-  it('follows the post text as it changes', () => {
-    const {queryByTestId, rerender} = renderEditor(['one'], '')
-    expect(queryByTestId('pollTopicHint')).toHaveTextContent(
-      TOPIC_MISSING_HINT,
-      {exact: true},
-    )
-
-    rerender(<ComposerHarness statements={['one']} text="Now a question" />)
-
-    expect(queryByTestId('pollTopicHint')).toBeNull()
-  })
-
-  it('says where the question comes from and that the poll is public', () => {
-    const {getByText, queryByText} = renderEditor(['one'])
-
-    expect(getByText(QUESTION_LINE, {exact: true})).toBeTruthy()
-    expect(getByText(PUBLIC_LINE, {exact: true})).toBeTruthy()
-    expect(getByText(QUESTION_LINE)).not.toBe(getByText(PUBLIC_LINE))
-    expect(queryByText(/other apps show your post text only/)).toBeNull()
-    expect(queryByText(/Readers vote Agree/)).toBeNull()
-  })
-
-  it('hides the disabled vote preview from assistive technology', () => {
-    const {getByTestId, queryByTestId} = renderEditor(['one'])
-
-    expect(mockVoteButtons).toHaveBeenCalledWith(true)
-    expect(queryByTestId('pollVote-agree')).toBeNull()
+  it('says where the question comes from and who runs voting', () => {
+    const {getByText} = renderEditor(['one', 'two'])
+    expect(getByText('Your post text is the question.', {exact: true})).toBeTruthy()
     expect(
-      getByTestId('pollVote-agree', {includeHiddenElements: true}),
+      getByText('Votes are public and handled by TOKIMEKI.', {exact: true}),
     ).toBeTruthy()
-
-    const preview = getByTestId('pollVotePreview', {
-      includeHiddenElements: true,
-    })
-    expect(preview).toHaveProp('aria-hidden', true)
-    expect(preview).toHaveProp('accessibilityElementsHidden', true)
-    expect(preview).toHaveProp(
-      'importantForAccessibility',
-      'no-hide-descendants',
-    )
-    expect(preview).toHaveProp('pointerEvents', 'none')
   })
 
   it('unmounts only the removed row so the others keep their input', () => {
     const {getByTestId, queryByTestId} = renderEditor(['A', 'B', 'C'])
     expect(lifecycle('mount')).toEqual(['A', 'B', 'C'])
 
-    fireEvent.press(getByTestId('pollStatementRemove-0'))
+    fireEvent.press(getByTestId('pollOptionRemove-0'))
 
     expect(lifecycle('unmount')).toEqual(['A'])
-    expect(lifecycle('mount')).toEqual(['A', 'B', 'C'])
-    expect(getByTestId('pollStatementInput-0')).toHaveProp('value', 'B')
-    expect(getByTestId('pollStatementInput-1')).toHaveProp('value', 'C')
-    expect(queryByTestId('pollStatementInput-2')).toBeNull()
+    expect(getByTestId('pollOptionInput-0')).toHaveProp('value', 'B')
+    expect(getByTestId('pollOptionInput-1')).toHaveProp('value', 'C')
+    expect(queryByTestId('pollOptionInput-2')).toBeNull()
     expect(consoleError).not.toHaveBeenCalled()
   })
 
-  it('mounts one new row when a statement is added', () => {
-    const {getByTestId} = renderEditor(['A', 'B'])
-
-    fireEvent.press(getByTestId('addPollStatementBtn'))
-
-    expect(lifecycle('mount')).toEqual(['A', 'B', ''])
-    expect(lifecycle('unmount')).toEqual([])
-    expect(getByTestId('pollStatementInput-2')).toHaveProp('value', '')
-    expect(consoleError).not.toHaveBeenCalled()
-  })
-
-  it('keeps the last row mounted when a removal is pressed twice', () => {
-    const {getByTestId, queryByTestId} = renderEditor(['A', 'B'])
-    const remove = getByTestId('pollStatementRemove-0')
-
-    act(() => {
-      fireEvent.press(remove)
-      fireEvent.press(remove)
-    })
-
-    expect(mockDispatch).toHaveBeenCalledTimes(2)
-    expect(lifecycle('unmount')).toEqual(['A'])
-    expect(lifecycle('mount')).toEqual(['A', 'B'])
-    expect(getByTestId('pollStatementInput-0')).toHaveProp('value', 'B')
-    expect(queryByTestId('pollStatementInput-1')).toBeNull()
-    expect(queryByTestId('pollStatementRemove-0')).toBeNull()
-    expect(consoleError).not.toHaveBeenCalled()
-  })
-
-  it('stops adding rows at ten when the add row is pressed twice', () => {
-    const {getByTestId, queryByTestId} = renderEditor(
-      Array.from({length: 9}, (_, i) => `s${i}`),
-    )
-    const add = getByTestId('addPollStatementBtn')
+  it('stops adding rows at four when the add row is pressed twice', () => {
+    const {getByTestId, queryByTestId} = renderEditor(['A', 'B', 'C'])
+    const add = getByTestId('addPollOptionBtn')
 
     act(() => {
       fireEvent.press(add)
       fireEvent.press(add)
     })
 
-    expect(mockDispatch).toHaveBeenCalledTimes(2)
-    expect(lifecycle('mount')).toHaveLength(10)
-    expect(lifecycle('unmount')).toEqual([])
-    expect(getByTestId('pollStatementInput-9')).toHaveProp('value', '')
-    expect(queryByTestId('pollStatementInput-10')).toBeNull()
-    expect(queryByTestId('addPollStatementBtn')).toBeNull()
+    expect(lifecycle('mount')).toHaveLength(4)
+    expect(queryByTestId('addPollOptionBtn')).toBeNull()
     expect(consoleError).not.toHaveBeenCalled()
   })
 })

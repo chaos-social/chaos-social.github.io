@@ -1,6 +1,5 @@
 import {RichText} from '@bsky/sdk/richtext'
 
-import {type AssemblyRef} from '#/lib/api/poll'
 import {
   type ComposerState,
   type PostDraft,
@@ -42,18 +41,6 @@ jest.mock('#/view/com/composer/state/composer', () => ({
 }))
 
 const POLL_KEY = 'communityBlackskyPoll'
-
-const pendingRef: AssemblyRef = {
-  rkey: '3kassembly',
-  createdAt: '2026-09-27T12:00:00.000Z',
-  fingerprint: '["question",["first","second"]]',
-}
-
-const createdRef: AssemblyRef = {
-  ...pendingRef,
-  conversationId: '7abcde',
-  reportId: 'r7abcde',
-}
 
 function savedPoll(draft: app.bsky.draft.defs.Draft, index = 0): unknown {
   return (draft.posts[index] as unknown as Record<string, unknown>)[POLL_KEY]
@@ -100,145 +87,99 @@ function draftOf(posts: app.bsky.draft.defs.DraftPost[]): app.bsky.draft.defs.Dr
 }
 
 describe('draft polls', () => {
-  it('serialises the poll as an extra property on the draft post', async () => {
-    const {draft} = await composerStateToDraft(CLIENTS, 
-      state([post({poll: {statements: ['one', '']}}, 'question')]),
+  it('serialises the choices and duration as an extra property', async () => {
+    const {draft} = await composerStateToDraft(
+      CLIENTS,
+      state([post({poll: {options: ['one', ''], duration: '3d'}}, 'question')]),
     )
-    expect(savedPoll(draft)).toStrictEqual({statements: ['one', '']})
+    expect(savedPoll(draft)).toStrictEqual({options: ['one', ''], duration: '3d'})
   })
 
-  it('serialises the assembly reference with the statements', async () => {
-    const {draft} = await composerStateToDraft(CLIENTS, 
+  it('leaves the record key out, since it belongs to a publish attempt', async () => {
+    const {draft} = await composerStateToDraft(
+      CLIENTS,
       state([
         post(
-          {poll: {statements: ['first', 'second'], assembly: createdRef}},
+          {poll: {options: ['one', 'two'], duration: '1d', rkey: '3mpoll'}},
           'question',
         ),
       ]),
     )
     expect(savedPoll(draft)).toStrictEqual({
-      statements: ['first', 'second'],
-      assembly: {
-        rkey: '3kassembly',
-        createdAt: '2026-09-27T12:00:00.000Z',
-        fingerprint: '["question",["first","second"]]',
-        conversationId: '7abcde',
-        reportId: 'r7abcde',
-      },
-    })
-  })
-
-  it('serialises the poll of the post that has one', async () => {
-    const {draft} = await composerStateToDraft(CLIENTS, 
-      state([
-        post({}, 'lead'),
-        post({poll: {statements: ['first'], assembly: pendingRef}}, 'question'),
-      ]),
-    )
-    expect(POLL_KEY in draft.posts[0]).toBe(false)
-    expect(savedPoll(draft, 1)).toStrictEqual({
-      statements: ['first'],
-      assembly: pendingRef,
+      options: ['one', 'two'],
+      duration: '1d',
     })
   })
 
   it('omits the property when there is no poll', async () => {
-    const {draft} = await composerStateToDraft(CLIENTS, state([post({}, 'text only')]))
+    const {draft} = await composerStateToDraft(
+      CLIENTS,
+      state([post({}, 'text only')]),
+    )
     expect(POLL_KEY in draft.posts[0]).toBe(false)
   })
 
-  it('restores a poll, including unfinished and oversized statements', async () => {
-    const oversized = 'a' + '\u0301'.repeat(2000)
+  it('restores a poll, including unfinished choices', async () => {
     const {posts} = await draftToComposerPosts(
-      draftOf([draftPost({[POLL_KEY]: {statements: ['', oversized]}})]),
+      draftOf([
+        draftPost({[POLL_KEY]: {options: ['', 'a'.repeat(150)], duration: '1h'}}),
+      ]),
       new Map(),
     )
-    expect(posts[0].embed.poll).toEqual({statements: ['', oversized]})
+    expect(posts[0].embed.poll).toEqual({
+      options: ['', 'a'.repeat(150)],
+      duration: '1h',
+    })
   })
 
   it('round-trips a poll through save and restore', async () => {
-    const {draft} = await composerStateToDraft(CLIENTS, 
-      state([post({poll: {statements: ['first', 'second']}}, 'question')]),
-    )
-    const {posts} = await draftToComposerPosts(asStored(draft), new Map())
-    expect(posts[0].embed.poll).toEqual({statements: ['first', 'second']})
-    expect(posts[0].embed.poll?.assembly).toBeUndefined()
-    expect(posts[0].richtext.text).toBe('question')
-  })
-
-  it.each([
-    {kind: 'an assembly that was created', assembly: createdRef},
-    {kind: 'an assembly that is still being created', assembly: pendingRef},
-  ])('round-trips the reference to $kind', async ({assembly}) => {
-    const {draft} = await composerStateToDraft(CLIENTS, 
-      state([
-        post({poll: {statements: ['first', 'second'], assembly}}, 'question'),
-      ]),
-    )
-    const {posts} = await draftToComposerPosts(asStored(draft), new Map())
-
-    expect(posts[0].embed.poll).toEqual({
-      statements: ['first', 'second'],
-      assembly,
-    })
-    expect(posts[0].embed.poll?.assembly?.conversationId).toBe(
-      assembly.conversationId,
-    )
-    expect(posts[0].embed.poll?.assembly?.reportId).toBe(assembly.reportId)
-  })
-
-  it('round-trips a saved reference through a second save', async () => {
-    const first = await composerStateToDraft(CLIENTS, 
+    const {draft} = await composerStateToDraft(
+      CLIENTS,
       state([
         post(
-          {poll: {statements: ['first', 'second'], assembly: pendingRef}},
+          {poll: {options: ['first', 'second'], duration: '1d', rkey: '3mpoll'}},
           'question',
         ),
       ]),
     )
-    const restored = await draftToComposerPosts(
-      asStored(first.draft),
-      new Map(),
-    )
-    const second = await composerStateToDraft(CLIENTS, state(restored.posts))
-
-    expect(asStored(second.draft).posts[0]).toHaveProperty(POLL_KEY, {
-      statements: ['first', 'second'],
-      assembly: pendingRef,
+    const {posts} = await draftToComposerPosts(asStored(draft), new Map())
+    expect(posts[0].embed.poll).toEqual({
+      options: ['first', 'second'],
+      duration: '1d',
     })
+    expect(posts[0].richtext.text).toBe('question')
   })
 
-  it('restores the statements when the reference is malformed', async () => {
+  it('restores a poll saved as statements before the switch', async () => {
     const {posts} = await draftToComposerPosts(
       draftOf([
         draftPost({
           [POLL_KEY]: {
-            statements: ['a'],
-            assembly: {rkey: '3kassembly', createdAt: 42},
+            statements: ['first', 'second', 'third'],
+            assembly: {rkey: '3k', createdAt: '2026-09-27T12:00:00.000Z'},
           },
         }),
-        draftPost({[POLL_KEY]: {statements: ['b'], assembly: 'nope'}}),
       ]),
       new Map(),
     )
-    expect(posts.map(p => p.embed.poll)).toEqual([
-      {statements: ['a']},
-      {statements: ['b']},
-    ])
-    expect(posts[0].embed.poll?.assembly).toBeUndefined()
-    expect(posts[1].embed.poll?.assembly).toBeUndefined()
+    expect(posts[0].embed.poll).toEqual({
+      options: ['first', 'second', 'third'],
+      duration: '1d',
+    })
   })
 
   it('ignores a malformed poll property', async () => {
     const {posts} = await draftToComposerPosts(
       draftOf([
-        draftPost({[POLL_KEY]: {statements: null}}),
-        draftPost({[POLL_KEY]: {statements: [42]}}),
+        draftPost({[POLL_KEY]: {options: null}}),
+        draftPost({[POLL_KEY]: {options: [42, 'b']}}),
         draftPost({[POLL_KEY]: 'nope'}),
+        draftPost({[POLL_KEY]: {options: ['a', 'b', 'c', 'd', 'e']}}),
       ]),
       new Map(),
     )
     expect(posts.map(p => p.embed.poll)).toEqual([
+      undefined,
       undefined,
       undefined,
       undefined,
@@ -249,7 +190,7 @@ describe('draft polls', () => {
     const {posts} = await draftToComposerPosts(
       draftOf([
         draftPost({
-          [POLL_KEY]: {statements: ['a'], assembly: createdRef},
+          [POLL_KEY]: {options: ['a', 'b']},
           embedExternals: [
             {uri: 'https://media.tenor.com/abc/clip.gif?hh=100&ww=200&alt=hi'},
           ],
@@ -265,7 +206,7 @@ describe('draft polls', () => {
     const {posts} = await draftToComposerPosts(
       draftOf([
         draftPost({
-          [POLL_KEY]: {statements: ['a']},
+          [POLL_KEY]: {options: ['a', 'b']},
           embedRecords: [
             {
               record: {
@@ -286,7 +227,7 @@ describe('draft polls', () => {
     const {posts} = await draftToComposerPosts(
       draftOf([
         draftPost({
-          [POLL_KEY]: {statements: ['a']},
+          [POLL_KEY]: {options: ['a', 'b']},
           embedExternals: [{uri: 'https://example.com/article'}],
         }),
       ]),
@@ -301,7 +242,7 @@ describe('draft polls', () => {
     const {posts, restoredVideos} = await draftToComposerPosts(
       draftOf([
         draftPost({
-          [POLL_KEY]: {statements: ['a']},
+          [POLL_KEY]: {options: ['a', 'b']},
           embedVideos: [{localRef: {path}}],
         }),
       ]),
@@ -312,23 +253,6 @@ describe('draft polls', () => {
     expect(posts[0].embed.poll).toBeUndefined()
   })
 
-  it('saves a poll draft whatever its size', async () => {
-    const text = '\u4e2d'.repeat(1000)
-    const statements = [...Array(10).keys()].map(index =>
-      String(index).repeat(400),
-    )
-    const {draft} = await composerStateToDraft(CLIENTS, 
-      state([
-        post({poll: {statements, assembly: createdRef}}, 'question'),
-        ...Array.from({length: 31}, () => post({}, text)),
-      ]),
-    )
-
-    expect(draft.posts).toHaveLength(32)
-    expect(Buffer.byteLength(JSON.stringify(draft))).toBeGreaterThan(90_000)
-    expect(savedPoll(draft)).toStrictEqual({statements, assembly: createdRef})
-  })
-
   it('includes the poll in the draft list summary', () => {
     const summary = draftViewToSummary({
       view: {
@@ -336,17 +260,15 @@ describe('draft polls', () => {
         createdAt: '2026-09-27T00:00:00.000Z',
         updatedAt: '2026-09-27T00:00:00.000Z',
         draft: draftOf([
-          draftPost({
-            [POLL_KEY]: {statements: ['shown', ''], assembly: createdRef},
-          }),
+          draftPost({[POLL_KEY]: {options: ['shown', ''], duration: '6h'}}),
           draftPost({}),
         ]),
       },
       analytics: {logger: {warn: jest.fn()}} as never,
     })
     expect(summary.posts[0].poll).toEqual({
-      statements: ['shown', ''],
-      assembly: createdRef,
+      options: ['shown', ''],
+      duration: '6h',
     })
     expect(summary.posts[1].poll).toBeUndefined()
   })

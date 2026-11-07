@@ -10,11 +10,12 @@ import {
   isEventDraftPublishable,
 } from '#/lib/api/event'
 import {
-  type AssemblyRef,
+  DEFAULT_POLL_DURATION,
   isPollDraftPublishable,
-  isPollTopicPublishable,
-  POLL_MAX_STATEMENTS,
+  POLL_MAX_OPTIONS,
+  POLL_MIN_OPTIONS,
   type PollDraft,
+  type PollDuration,
 } from '#/lib/api/poll'
 import {MAX_TAGS} from '#/lib/constants'
 import {type VideoTelemetry} from '#/lib/media/video/telemetry'
@@ -115,7 +116,7 @@ export type PostAction =
       asset: ImagePickerAsset
       abortController: AbortController
       telemetry: VideoTelemetry
-    }| {type: 'embed_remove_video'}| {type: 'embed_update_video'; videoAction: VideoAction}| {type: 'embed_add_uri'; uri: UriString}| {type: 'embed_remove_quote'}| {type: 'embed_remove_link'}| {type: 'embed_add_gif'; gif: Gif}| {type: 'embed_update_gif'; alt: string}| {type: 'embed_remove_gif'}| {type: 'embed_add_poll'}| {type: 'embed_update_poll_statement'; index: number; text: string}| {type: 'embed_add_poll_statement'}| {type: 'embed_remove_poll_statement'; index: number}| {type: 'embed_set_poll_assembly'; assembly: AssemblyRef}| {type: 'embed_remove_poll'}| {type: 'embed_add_event'}| {type: 'embed_update_event'; patch: Partial<EventDraft>}| {type: 'embed_set_event_record'; record: {uri: string; cid: string}}| {type: 'embed_remove_event'}
+    }| {type: 'embed_remove_video'}| {type: 'embed_update_video'; videoAction: VideoAction}| {type: 'embed_add_uri'; uri: UriString}| {type: 'embed_remove_quote'}| {type: 'embed_remove_link'}| {type: 'embed_add_gif'; gif: Gif}| {type: 'embed_update_gif'; alt: string}| {type: 'embed_remove_gif'}| {type: 'embed_add_poll'}| {}| {type: 'embed_remove_poll'}| {type: 'embed_add_event'}| {type: 'embed_update_event'; patch: Partial<EventDraft>}| {type: 'embed_set_event_record'; record: {uri: string; cid: string}}| {type: 'embed_update_poll_option'; index: number; text: string}| {type: 'embed_add_poll_option'}| {type: 'embed_remove_poll_option'; index: number}| {type: 'embed_set_poll_duration'; duration: PollDuration}| {type: 'embed_set_poll_rkey'; rkey: string}| {type: 'embed_remove_event'}
 
 export function postHasAttachment(post: PostDraft): boolean {
   return Boolean(
@@ -135,7 +136,7 @@ export function isPollPostable(post: PostDraft): boolean {
   const poll = post.embed.poll
   if (!poll) return true
   return (
-    isPollTopicPublishable(post.richtext.text) &&
+    post.richtext.text.trim().length > 0 &&
     isPollDraftPublishable(poll) &&
     !post.embed.media &&
     !post.embed.link &&
@@ -792,13 +793,16 @@ function postReducer(state: PostDraft, action: PostAction): PostDraft {
         ...state,
         embed: {
           ...state.embed,
-          poll: {statements: ['']},
+          poll: {
+            options: ['', ''],
+            duration: DEFAULT_POLL_DURATION,
+          },
         },
       }
     }
-    case 'embed_update_poll_statement': {
+    case 'embed_update_poll_option': {
       const poll = state.embed.poll
-      if (!poll || action.index < 0 || action.index >= poll.statements.length) {
+      if (!poll || action.index < 0 || action.index >= poll.options.length) {
         return state
       }
       return {
@@ -807,29 +811,29 @@ function postReducer(state: PostDraft, action: PostAction): PostDraft {
           ...state.embed,
           poll: {
             ...poll,
-            statements: poll.statements.map((text, i) =>
+            options: poll.options.map((text, i) =>
               i === action.index ? action.text : text,
             ),
           },
         },
       }
     }
-    case 'embed_add_poll_statement': {
+    case 'embed_add_poll_option': {
       const poll = state.embed.poll
-      if (!poll || poll.statements.length >= POLL_MAX_STATEMENTS) {
+      if (!poll || poll.options.length >= POLL_MAX_OPTIONS) {
         return state
       }
       return {
         ...state,
         embed: {
           ...state.embed,
-          poll: {...poll, statements: [...poll.statements, '']},
+          poll: {...poll, options: [...poll.options, '']},
         },
       }
     }
-    case 'embed_remove_poll_statement': {
+    case 'embed_remove_poll_option': {
       const poll = state.embed.poll
-      if (!poll || poll.statements.length <= 1) {
+      if (!poll || poll.options.length <= POLL_MIN_OPTIONS) {
         return state
       }
       return {
@@ -838,12 +842,12 @@ function postReducer(state: PostDraft, action: PostAction): PostDraft {
           ...state.embed,
           poll: {
             ...poll,
-            statements: poll.statements.filter((_, i) => i !== action.index),
+            options: poll.options.filter((_, i) => i !== action.index),
           },
         },
       }
     }
-    case 'embed_set_poll_assembly': {
+    case 'embed_set_poll_duration': {
       const poll = state.embed.poll
       if (!poll) {
         return state
@@ -852,7 +856,20 @@ function postReducer(state: PostDraft, action: PostAction): PostDraft {
         ...state,
         embed: {
           ...state.embed,
-          poll: {...poll, assembly: action.assembly},
+          poll: {...poll, duration: action.duration},
+        },
+      }
+    }
+    case 'embed_set_poll_rkey': {
+      const poll = state.embed.poll
+      if (!poll) {
+        return state
+      }
+      return {
+        ...state,
+        embed: {
+          ...state.embed,
+          poll: {...poll, rkey: action.rkey},
         },
       }
     }

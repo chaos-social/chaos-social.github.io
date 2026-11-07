@@ -189,10 +189,10 @@ async function postDraftToServerPost(
   }
 
   if (post.embed.poll) {
-    const {statements, assembly} = post.embed.poll
-    ;(draftPost as DraftPostWithPoll)[DRAFT_POLL_KEY] = assembly
-      ? {statements, assembly}
-      : {statements}
+    // The record key is assigned per publish attempt; a saved draft starts
+    // fresh so a stale record is never mistaken for this one.
+    const {options, duration} = post.embed.poll
+    ;(draftPost as DraftPostWithPoll)[DRAFT_POLL_KEY] = {options, duration}
   }
 
   if (post.embed.event) {

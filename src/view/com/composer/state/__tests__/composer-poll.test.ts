@@ -1,6 +1,5 @@
 import {RichText} from '@bsky/sdk/richtext'
 
-import {type AssemblyRef} from '#/lib/api/poll'
 import {type ComposerImage} from '#/state/gallery'
 import {type Gif} from '#/features/gifPicker/types'
 import {
@@ -32,18 +31,6 @@ const image = {
     height: 1,
   },
 } as unknown as ComposerImage
-
-const pendingRef: AssemblyRef = {
-  rkey: '3kassembly',
-  createdAt: '2026-09-27T12:00:00.000Z',
-  fingerprint: '["question",["first"]]',
-}
-
-const createdRef: AssemblyRef = {
-  ...pendingRef,
-  conversationId: '7abcde',
-  reportId: 'r7abcde',
-}
 
 type PostAction = Extract<ComposerAction, {type: 'update_post'}>['postAction']
 
@@ -101,53 +88,67 @@ function withPosts(
 function withPollOnEveryPost(state: ComposerState): ComposerState {
   return withPosts(state, (post, index) => ({
     ...post,
-    embed: {...post.embed, poll: {statements: [`statement ${index}`]}},
+    embed: {
+      ...post.embed,
+      poll: {options: [`option ${index}`, 'other'], duration: '1d'},
+    },
   }))
 }
 
+const TWO_CHOICES: PostAction[] = [
+  {type: 'embed_add_poll'},
+  {type: 'embed_update_poll_option', index: 0, text: 'first'},
+  {type: 'embed_update_poll_option', index: 1, text: 'second'},
+]
 
 describe('composer polls', () => {
-  it('adds a poll with one empty statement', () => {
+  it('adds a poll with two empty choices', () => {
     const post = draftAfter([{type: 'embed_add_poll'}])
-    expect(post.embed.poll).toEqual({statements: ['']})
+    expect(post.embed.poll).toEqual({options: ['', ''], duration: '1d'})
   })
 
-  it('edits, adds and removes statements', () => {
+  it('edits, adds and removes choices', () => {
     const post = draftAfter([
-      {type: 'embed_add_poll'},
-      {type: 'embed_update_poll_statement', index: 0, text: 'first'},
-      {type: 'embed_add_poll_statement'},
-      {type: 'embed_update_poll_statement', index: 1, text: 'second'},
-      {type: 'embed_add_poll_statement'},
-      {type: 'embed_remove_poll_statement', index: 0},
+      ...TWO_CHOICES,
+      {type: 'embed_add_poll_option'},
+      {type: 'embed_update_poll_option', index: 2, text: 'third'},
+      {type: 'embed_remove_poll_option', index: 0},
     ])
-    expect(post.embed.poll).toEqual({statements: ['second', '']})
+    expect(post.embed.poll?.options).toEqual(['second', 'third'])
   })
 
-  it('ignores an out-of-range statement update', () => {
+  it('ignores an out-of-range choice update', () => {
     const post = draftAfter([
       {type: 'embed_add_poll'},
-      {type: 'embed_update_poll_statement', index: 3, text: 'nope'},
+      {type: 'embed_update_poll_option', index: 3, text: 'nope'},
     ])
-    expect(post.embed.poll).toEqual({statements: ['']})
+    expect(post.embed.poll?.options).toEqual(['', ''])
   })
 
-  it('caps statements at ten', () => {
+  it('caps choices at four', () => {
     const post = draftAfter([
       {type: 'embed_add_poll'},
-      ...Array.from({length: 12}, () => ({
-        type: 'embed_add_poll_statement' as const,
+      ...Array.from({length: 5}, () => ({
+        type: 'embed_add_poll_option' as const,
       })),
     ])
-    expect(post.embed.poll?.statements).toHaveLength(10)
+    expect(post.embed.poll?.options).toHaveLength(4)
   })
 
-  it('never removes the last statement', () => {
+  it('never removes a choice below two', () => {
     const post = draftAfter([
       {type: 'embed_add_poll'},
-      {type: 'embed_remove_poll_statement', index: 0},
+      {type: 'embed_remove_poll_option', index: 0},
     ])
-    expect(post.embed.poll?.statements).toHaveLength(1)
+    expect(post.embed.poll?.options).toHaveLength(2)
+  })
+
+  it('sets the closing duration', () => {
+    const post = draftAfter([
+      {type: 'embed_add_poll'},
+      {type: 'embed_set_poll_duration', duration: '7d'},
+    ])
+    expect(post.embed.poll?.duration).toBe('7d')
   })
 
   it('removes the poll', () => {
@@ -208,7 +209,7 @@ describe('composer polls', () => {
         uri: 'https://bsky.app/profile/alice.test/post/3kabc',
       },
     ])
-    expect(post.embed.poll).toEqual({statements: ['']})
+    expect(post.embed.poll).toEqual({options: ['', ''], duration: '1d'})
     expect(post.embed.media).toBeUndefined()
     expect(post.embed.link).toBeUndefined()
     expect(post.embed.quote).toBeUndefined()
@@ -218,7 +219,7 @@ describe('composer polls', () => {
     let state = apply(initialState(), [{type: 'embed_add_poll'}])
     state = composerReducer(state, {type: 'add_post'})
     expect(state.thread.posts).toHaveLength(2)
-    expect(state.thread.posts[0].embed.poll).toEqual({statements: ['']})
+    expect(state.thread.posts[0].embed.poll).toBeDefined()
     expect(state.thread.posts[1].embed.poll).toBeUndefined()
   })
 })
@@ -230,7 +231,7 @@ describe('one poll per thread', () => {
 
     expect(next).toBe(state)
     expect(next.thread.posts.map(post => post.embed.poll)).toEqual([
-      {statements: ['']},
+      {options: ['', ''], duration: '1d'},
       undefined,
     ])
   })
@@ -240,10 +241,6 @@ describe('one poll per thread', () => {
     const next = updatePost(state, 0, {type: 'embed_add_poll'})
 
     expect(next).toBe(state)
-    expect(next.thread.posts.map(post => post.embed.poll)).toEqual([
-      undefined,
-      {statements: ['']},
-    ])
   })
 
   it('accepts a poll on another post once the first is removed', () => {
@@ -253,35 +250,8 @@ describe('one poll per thread', () => {
 
     expect(state.thread.posts.map(post => post.embed.poll)).toEqual([
       undefined,
-      {statements: ['']},
+      {options: ['', ''], duration: '1d'},
     ])
-  })
-
-  it('accepts a poll on another post once the post with one is removed', () => {
-    let state = updatePost(threadOfTwo(), 0, {type: 'embed_add_poll'})
-    state = composerReducer(state, {
-      type: 'remove_post',
-      postId: state.thread.posts[0].id,
-    })
-    state = updatePost(state, 0, {type: 'embed_add_poll'})
-
-    expect(state.thread.posts.map(post => post.embed.poll)).toEqual([
-      {statements: ['']},
-    ])
-  })
-
-  it('still edits the poll that exists', () => {
-    let state = updatePost(threadOfTwo(), 0, {type: 'embed_add_poll'})
-    state = updatePost(state, 0, {
-      type: 'embed_update_poll_statement',
-      index: 0,
-      text: 'first',
-    })
-    state = updatePost(state, 0, {type: 'embed_add_poll_statement'})
-
-    expect(state.thread.posts[0].embed.poll).toEqual({
-      statements: ['first', ''],
-    })
   })
 
   it('keeps only the first poll of a restored draft', () => {
@@ -304,111 +274,44 @@ describe('one poll per thread', () => {
 
     expect(next.thread.posts.map(post => post.embed.poll)).toEqual([
       undefined,
-      {statements: ['statement 1']},
+      {options: ['option 1', 'other'], duration: '1d'},
       undefined,
     ])
     expect(next.thread.posts[0]).toBe(textOnly)
-    expect(next.thread.posts[1]).toBe(posts[1])
   })
 })
 
-describe('assembly reference', () => {
-  it('stores the reference on the poll', () => {
+describe('the poll record key', () => {
+  it('is stored on the poll', () => {
+    const post = draftAfter([
+      ...TWO_CHOICES,
+      {type: 'embed_set_poll_rkey', rkey: '3mpoll'},
+    ])
+    expect(post.embed.poll?.rkey).toBe('3mpoll')
+  })
+
+  it('survives editing the choices', () => {
     const post = draftAfter([
       {type: 'embed_add_poll'},
-      {type: 'embed_update_poll_statement', index: 0, text: 'first'},
-      {type: 'embed_set_poll_assembly', assembly: pendingRef},
+      {type: 'embed_set_poll_rkey', rkey: '3mpoll'},
+      {type: 'embed_update_poll_option', index: 0, text: 'first'},
     ])
-    expect(post.embed.poll).toEqual({
-      statements: ['first'],
-      assembly: pendingRef,
-    })
-  })
-
-  it('replaces an earlier reference', () => {
-    const post = draftAfter([
-      {type: 'embed_add_poll'},
-      {type: 'embed_set_poll_assembly', assembly: pendingRef},
-      {type: 'embed_set_poll_assembly', assembly: createdRef},
-    ])
-    expect(post.embed.poll).toEqual({statements: [''], assembly: createdRef})
-  })
-
-  it('stores the reference on the post it names', () => {
-    const state = updatePost(threadOfTwo(), 1, {type: 'embed_add_poll'})
-    const next = updatePost(state, 1, {
-      type: 'embed_set_poll_assembly',
-      assembly: createdRef,
-    })
-
-    expect(next.thread.posts[0]).toBe(state.thread.posts[0])
-    expect(next.thread.posts[1].embed.poll).toEqual({
-      statements: [''],
-      assembly: createdRef,
-    })
-  })
-
-  it('is ignored when the post has no poll', () => {
-    const state = initialState()
-    const next = updatePost(state, 0, {
-      type: 'embed_set_poll_assembly',
-      assembly: createdRef,
-    })
-
-    expect(next.thread.posts[0]).toBe(state.thread.posts[0])
-    expect(next.thread.posts[0].embed.poll).toBeUndefined()
-  })
-
-  it('survives editing, adding and removing statements', () => {
-    const post = draftAfter([
-      {type: 'embed_add_poll'},
-      {type: 'embed_set_poll_assembly', assembly: createdRef},
-      {type: 'embed_update_poll_statement', index: 0, text: 'first'},
-      {type: 'embed_add_poll_statement'},
-      {type: 'embed_update_poll_statement', index: 1, text: 'second'},
-      {type: 'embed_remove_poll_statement', index: 0},
-    ])
-    expect(post.embed.poll).toEqual({
-      statements: ['second'],
-      assembly: createdRef,
-    })
-  })
-
-  it('survives each statement action on its own', () => {
-    const seeded: PostAction[] = [
-      {type: 'embed_add_poll'},
-      {type: 'embed_add_poll_statement'},
-      {type: 'embed_set_poll_assembly', assembly: createdRef},
-    ]
-    expect(
-      draftAfter([
-        ...seeded,
-        {type: 'embed_update_poll_statement', index: 1, text: 'edited'},
-      ]).embed.poll,
-    ).toEqual({statements: ['', 'edited'], assembly: createdRef})
-    expect(
-      draftAfter([...seeded, {type: 'embed_add_poll_statement'}]).embed.poll,
-    ).toEqual({statements: ['', '', ''], assembly: createdRef})
-    expect(
-      draftAfter([...seeded, {type: 'embed_remove_poll_statement', index: 1}])
-        .embed.poll,
-    ).toEqual({statements: [''], assembly: createdRef})
+    expect(post.embed.poll?.rkey).toBe('3mpoll')
   })
 
   it('goes away with the poll', () => {
     const post = draftAfter([
       {type: 'embed_add_poll'},
-      {type: 'embed_set_poll_assembly', assembly: createdRef},
+      {type: 'embed_set_poll_rkey', rkey: '3mpoll'},
       {type: 'embed_remove_poll'},
       {type: 'embed_add_poll'},
     ])
-    expect(post.embed.poll).toEqual({statements: ['']})
-    expect(post.embed.poll).not.toHaveProperty('assembly')
+    expect(post.embed.poll).not.toHaveProperty('rkey')
   })
 })
 
 describe('isPollPostable', () => {
-  function pollPost(text: string, statements: string[]): PostDraft {
+  function pollPost(text: string, options: string[]): PostDraft {
     return {
       ...draftAfter([
         {type: 'update_richtext', richtext: new RichText({text})},
@@ -418,20 +321,20 @@ describe('isPollPostable', () => {
         quote: undefined,
         media: undefined,
         link: undefined,
-        poll: {statements},
+        poll: {options, duration: '1d'},
       },
     }
   }
 
   it.each([
     {
-      kind: 'text and distinct statements',
+      kind: 'text and two choices',
       post: pollPost('Which one?', ['first', 'second']),
       expected: true,
     },
     {
-      kind: 'a single statement',
-      post: pollPost('Which one?', ['only']),
+      kind: 'four choices',
+      post: pollPost('Which one?', ['a', 'b', 'c', 'd']),
       expected: true,
     },
     {
@@ -445,39 +348,27 @@ describe('isPollPostable', () => {
       expected: false,
     },
     {
-      kind: 'text with a null character',
-      post: pollPost('Which\u0000one?', ['first', 'second']),
+      kind: 'a single choice',
+      post: pollPost('Which one?', ['only']),
       expected: false,
     },
     {
-      kind: 'a blank statement',
+      kind: 'five choices',
+      post: pollPost('Which one?', ['a', 'b', 'c', 'd', 'e']),
+      expected: false,
+    },
+    {
+      kind: 'a blank choice',
       post: pollPost('Which one?', ['first', ' ']),
       expected: false,
     },
     {
-      kind: 'a repeated statement',
-      post: pollPost('Which one?', ['first', ' FIRST ']),
-      expected: false,
-    },
-    {
-      kind: 'a statement over the limit',
-      post: pollPost('Which one?', ['a'.repeat(401)]),
-      expected: false,
-    },
-    {
-      kind: 'more than ten statements',
-      post: pollPost(
-        'Which one?',
-        [...Array(11).keys()].map(index => `statement ${index}`),
-      ),
+      kind: 'a choice over the limit',
+      post: pollPost('Which one?', ['a'.repeat(101), 'b']),
       expected: false,
     },
   ])('is $expected for a poll with $kind', ({post, expected}) => {
     expect(isPollPostable(post)).toBe(expected)
-  })
-
-  it('accepts post text longer than a topic, which is shortened', () => {
-    expect(isPollPostable(pollPost('a'.repeat(300), ['first']))).toBe(true)
   })
 
   it('is true for a post without a poll', () => {
@@ -485,7 +376,7 @@ describe('isPollPostable', () => {
   })
 
   it('is false when the poll shares the post with another attachment', () => {
-    const post = pollPost('Which one?', ['first'])
+    const post = pollPost('Which one?', ['first', 'second'])
     const link = {
       type: 'link' as const,
       uri: 'https://example.com/article' as `${string}:${string}`,

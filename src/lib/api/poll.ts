@@ -1,29 +1,50 @@
 import {countGraphemes, graphemeSegments} from 'unicode-segmenter/grapheme'
 
-export const POLL_MAX_STATEMENTS = 10
-export const POLL_STATEMENT_MAX_GRAPHEMES = 400
-export const POLL_STATEMENT_MAX_BYTES = 2000
-export const POLL_STATEMENT_MAX_CHARS = 997
-export const POLL_TOPIC_MAX_GRAPHEMES = 200
-export const POLL_TOPIC_MAX_BYTES = 1000
+/** TOKIMEKI's composer lets a poll have two to four choices. */
+export const POLL_MIN_OPTIONS = 2
+export const POLL_MAX_OPTIONS = 4
+/** Length cap of TOKIMEKI's own option field. */
+export const POLL_OPTION_MAX_CHARS = 100
 
+/** Values on a People's Assembly statement vote; kept for old conversations. */
 export const POLL_VOTE_VALUES = ['agree', 'disagree', 'pass'] as const
 export type PollVoteValue = (typeof POLL_VOTE_VALUES)[number]
 
-export type AssemblyRef = {
-  rkey: string
-  createdAt: string
-  fingerprint: string
-  conversationId?: string
-  reportId?: string
+export const POLL_DURATIONS = ['1h', '6h', '12h', '1d', '3d', '7d'] as const
+export type PollDuration = (typeof POLL_DURATIONS)[number]
+export const DEFAULT_POLL_DURATION: PollDuration = '1d'
+
+const POLL_DURATION_MS: Record<PollDuration, number> = {
+  '1h': 60 * 60e3,
+  '6h': 6 * 60 * 60e3,
+  '12h': 12 * 60 * 60e3,
+  '1d': 24 * 60 * 60e3,
+  '3d': 3 * 24 * 60 * 60e3,
+  '7d': 7 * 24 * 60 * 60e3,
 }
 
+/** The poll's closing time, as `tech.tokimeki.poll.poll` stores it. */
+export function pollEndsAt(duration: PollDuration, now: Date): string {
+  return new Date(now.getTime() + POLL_DURATION_MS[duration]).toISOString()
+}
+
+/**
+ * The choices and closing time of a poll being composed. The post text is the
+ * question; it is not stored on the poll record.
+ */
 export type PollDraft = {
-  statements: string[]
-  assembly?: AssemblyRef
+  options: string[]
+  duration: PollDuration
+  /** Record key assigned while publishing; never stored on a draft. */
+  rkey?: string
 }
 
-export type PollStatementIssue = 'empty' | 'too_long' | 'invalid' | 'duplicate'
+export type PollOptionIssue = 'empty' | 'too_long' | 'invalid'
+
+// Kept for the People's Assembly card, which shows the topic the post text
+// asked so the two do not repeat each other.
+export const POLL_TOPIC_MAX_GRAPHEMES = 200
+export const POLL_TOPIC_MAX_BYTES = 1000
 
 const TRUNCATION_MARK = '…'
 
@@ -69,45 +90,42 @@ export function normalizePollText(text: string): string {
   return text.trim().normalize('NFC')
 }
 
-export function getStatementIssue(text: string): PollStatementIssue | null {
-  const statement = normalizePollText(text)
-  if (statement.length === 0) return 'empty'
-  const {bytes, wellFormed, hasNul} = inspectText(statement)
+export function normalizePollOption(text: string): string {
+  return normalizePollText(text)
+}
+
+export function getOptionIssue(text: string): PollOptionIssue | null {
+  const option = normalizePollOption(text)
+  if (option.length === 0) return 'empty'
+  const {wellFormed, hasNul} = inspectText(option)
   if (!wellFormed || hasNul) return 'invalid'
-  if (
-    bytes > POLL_STATEMENT_MAX_BYTES ||
-    statement.length > POLL_STATEMENT_MAX_CHARS ||
-    countGraphemes(statement) > POLL_STATEMENT_MAX_GRAPHEMES
-  ) {
-    return 'too_long'
-  }
+  if (option.length > POLL_OPTION_MAX_CHARS) return 'too_long'
   return null
 }
 
-export function getStatementIssues(
-  statements: string[],
-): (PollStatementIssue | null)[] {
-  const seen = new Set<string>()
-  return statements.map(text => {
-    const issue = getStatementIssue(text)
-    if (issue) return issue
-    const key = normalizePollText(text).toLowerCase()
-    if (seen.has(key)) return 'duplicate'
-    seen.add(key)
-    return null
-  })
+export function getOptionIssues(
+  options: string[],
+): (PollOptionIssue | null)[] {
+  return options.map(getOptionIssue)
 }
 
 export function isPollDraftPublishable(draft: PollDraft): boolean {
   return (
-    draft.statements.length >= 1 &&
-    draft.statements.length <= POLL_MAX_STATEMENTS &&
-    getStatementIssues(draft.statements).every(issue => issue === null)
+    draft.options.length >= POLL_MIN_OPTIONS &&
+    draft.options.length <= POLL_MAX_OPTIONS &&
+    getOptionIssues(draft.options).every(issue => issue === null)
   )
 }
 
-export function pollStatementsForPublish(draft: PollDraft): string[] {
-  return draft.statements.map(normalizePollText)
+export function pollOptionsForPublish(draft: PollDraft): string[] {
+  return draft.options.map(normalizePollOption)
+}
+
+export function isPollDuration(value: unknown): value is PollDuration {
+  return (
+    typeof value === 'string' &&
+    (POLL_DURATIONS as readonly string[]).includes(value)
+  )
 }
 
 export function pollTopicFromText(text: string): string {
@@ -137,43 +155,28 @@ export function pollTopicFromText(text: string): string {
   return kept.trimEnd() + TRUNCATION_MARK
 }
 
-export function isPollTopicPublishable(text: string): boolean {
-  const topic = pollTopicFromText(text)
-  if (topic.length === 0 || topic === TRUNCATION_MARK) return false
-  const {wellFormed, hasNul} = inspectText(topic)
-  return wellFormed && !hasNul
-}
-
-function decodeAssemblyRef(value: unknown): AssemblyRef | undefined {
+export function decodePollDraft(value: unknown): PollDraft | undefined {
   if (!isObject(value)) return undefined
-  const {rkey, createdAt, fingerprint, conversationId, reportId} = value
+  const {options, duration, statements} = value
+  /*
+   * Drafts saved before the TOKIMEKI switch carried `statements`; keep the
+   * first few so an in-progress poll is not silently lost.
+   */
+  const list = Array.isArray(options)
+    ? options
+    : Array.isArray(statements)
+      ? statements.slice(0, POLL_MAX_OPTIONS)
+      : undefined
   if (
-    typeof rkey !== 'string' ||
-    typeof createdAt !== 'string' ||
-    typeof fingerprint !== 'string'
+    !list ||
+    list.length < 1 ||
+    list.length > POLL_MAX_OPTIONS ||
+    !list.every(option => typeof option === 'string')
   ) {
     return undefined
   }
   return {
-    rkey,
-    createdAt,
-    fingerprint,
-    conversationId:
-      typeof conversationId === 'string' ? conversationId : undefined,
-    reportId: typeof reportId === 'string' ? reportId : undefined,
+    options: list,
+    duration: isPollDuration(duration) ? duration : DEFAULT_POLL_DURATION,
   }
-}
-
-export function decodePollDraft(value: unknown): PollDraft | undefined {
-  if (!isObject(value)) return undefined
-  const {statements, assembly} = value
-  if (
-    !Array.isArray(statements) ||
-    statements.length < 1 ||
-    statements.length > POLL_MAX_STATEMENTS ||
-    !statements.every(s => typeof s === 'string')
-  ) {
-    return undefined
-  }
-  return {statements, assembly: decodeAssemblyRef(assembly)}
 }

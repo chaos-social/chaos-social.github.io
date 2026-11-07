@@ -320,10 +320,10 @@ type LoadedImage = {
   alt: string
 }
 
-function DraftPollPreview({poll}: {poll: {statements: string[]}}) {
+function DraftPollPreview({poll}: {poll: {options: string[]}}) {
   const t = useTheme()
   const {t: l} = useLingui()
-  const statements = poll.statements.filter(s => s.trim().length > 0)
+  const choices = poll.options.filter(option => option.trim().length > 0)
   return (
     <View
       style={[
@@ -342,13 +342,13 @@ function DraftPollPreview({poll}: {poll: {statements: string[]}}) {
           })}
         </Text>
       </View>
-      {statements.map((statement, index) => (
+      {choices.map((choice, index) => (
         <Text
           emoji
           key={index}
           style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_high]}
           numberOfLines={2}>
-          {statement}
+          {choice}
         </Text>
       ))}
     </View>

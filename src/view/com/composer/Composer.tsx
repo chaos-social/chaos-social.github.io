@@ -59,9 +59,7 @@ import {useNavigation} from '@react-navigation/native'
 import {useQueries, useQueryClient} from '@tanstack/react-query'
 
 import {generateAltText} from '#/lib/ai/generateAltText'
-import {AssemblyError, type AssemblyErrorCode} from '#/lib/api/assembly'
 import * as apilib from '#/lib/api/index'
-import {type AssemblyRef} from '#/lib/api/poll'
 import {EmbeddingDisabledError} from '#/lib/api/resolve'
 import {useAppState} from '#/lib/appState'
 import {retry} from '#/lib/async/retry'
@@ -1299,30 +1297,6 @@ export const ComposePost = ({
   const canAddPoll = !threadHasPoll(thread)
   const canAddEvent = !threadHasEvent(thread)
 
-  const getAssemblyErrorMessage = useCallback(
-    (code: AssemblyErrorCode): string => {
-      switch (code) {
-        case 'not_eligible':
-          return l`Polls are not available for your account yet.`
-        case 'quota':
-          return l`You have started the maximum number of polls for today. Try again tomorrow.`
-        case 'busy':
-          return l`People's Assembly is busy. Wait a few seconds and post again.`
-        case 'invalid':
-          return l`This poll could not be created. Check the statements and try again.`
-        case 'conflict':
-          return l`This poll changed while it was being created. Please try again.`
-        case 'removed':
-          return l`This poll was removed and cannot be posted.`
-        case 'auth':
-        case 'network':
-        case 'unavailable':
-          return l`Could not reach People's Assembly. Your post was not sent.`
-      }
-    },
-    [l],
-  )
-
   const canPost =
     !(forceAltTextEnabled && missingAltError) &&
     !hasUnavailableChatInvite &&
@@ -1481,11 +1455,11 @@ export const ComposePost = ({
         thread: postingThread,
         replyTo: replyTo?.uri,
         onStateChange: setPublishingStage,
-        onAssembly: (postId: string, assembly: AssemblyRef) => {
+        onPollRkey: (postId: string, rkey: string) => {
           composerDispatch({
             type: 'update_post',
             postId,
-            postAction: {type: 'embed_set_poll_assembly', assembly},
+            postAction: {type: 'embed_set_poll_rkey', rkey},
           })
         },
         onEvent: (postId: string, record: {uri: string; cid: string}) => {
@@ -1503,11 +1477,9 @@ export const ComposePost = ({
         tidSuffix,
       })
       postUri = result.uris[0]
-      if (result.assembly) {
-        ax.metric('assembly:create', {
-          conversationId: result.assembly.conversationId,
-          statementCount: result.assembly.statementCount,
-          isReplay: result.assembly.isReplay,
+      if (result.poll) {
+        ax.metric('composer:poll:publish', {
+          optionCount: result.poll.optionCount,
         })
       }
 
@@ -1594,9 +1566,6 @@ export const ComposePost = ({
         err = l`We're sorry! The post you are replying to has been deleted.`
       } else if (e instanceof EmbeddingDisabledError) {
         err = l`This post's author has disabled quote posts.`
-      } else if (e instanceof AssemblyError) {
-        err = getAssemblyErrorMessage(e.code)
-        ax.metric('assembly:create:error', {stage: e.stage, code: e.code})
       }
       setError(err)
       setIsPublishing(false)
@@ -1621,7 +1590,7 @@ export const ComposePost = ({
             hasLink: !!post.embed.link,
             hasQuote: !!post.embed.quote,
             hasPoll: !!post.embed.poll,
-            pollStatementCount: post.embed.poll?.statements.length ?? 0,
+            pollOptionCount: post.embed.poll?.options.length ?? 0,
             hasEvent: !!post.embed.event,
             langs: fromPostLanguages(currentLanguages),
             logContext: 'Composer',
@@ -1748,7 +1717,6 @@ export const ComposePost = ({
     getFilteredThread,
     currentDid,
     i18n,
-    getAssemblyErrorMessage,
     linkQueries,
     setLangPrefs,
     accounts,
