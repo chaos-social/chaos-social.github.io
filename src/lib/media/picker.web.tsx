@@ -3,7 +3,11 @@ import {type OpenCropperOptions} from '@bsky.app/expo-image-crop-tool'
 
 import {type PickerImage} from './picker.shared'
 
-export {openPicker, openUnifiedPicker} from './picker.shared'
+export {
+  openMultiplePicker,
+  openPicker,
+  openUnifiedPicker,
+} from './picker.shared'
 
 export function openCamera(
   _opts: ImagePickerOptions,

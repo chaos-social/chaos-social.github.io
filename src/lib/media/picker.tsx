@@ -5,6 +5,7 @@ import ExpoImageCropTool, {
 import {t} from '@lingui/core/macro'
 
 export {
+  openMultiplePicker,
   openPicker,
   openUnifiedPicker,
   type PickerImage as RNImage,

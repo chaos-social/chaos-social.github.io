@@ -1,4 +1,4 @@
-import {aliasToRkey} from '#/features/bluemoji/alias'
+import {aliasFromFileName, aliasToRkey} from '#/features/bluemoji/alias'
 
 it.each([
   [':Blob_Cat.v2:', 'blob_cat.v2'],
@@ -23,4 +23,17 @@ it.each([
   'x'.repeat(65),
 ])('rejects invalid alias %s', alias => {
   expect(() => aliasToRkey(alias)).toThrow()
+})
+
+it.each([
+  ['blobcat.png', 'blobcat'],
+  ['Blob Cat.JPG', 'blob_cat'],
+  ['party.heart.gif', 'party.heart'],
+])('derives a bulk-upload alias from %s', (fileName, alias) => {
+  expect(aliasFromFileName(fileName)).toBe(alias)
+})
+
+it('keeps a file name that would not be a valid alias, so the write fails loudly', () => {
+  // Rewriting this to `blob-cat` would silently create a differently named emoji.
+  expect(() => aliasToRkey(aliasFromFileName('blob:cat.png'))).toThrow()
 })

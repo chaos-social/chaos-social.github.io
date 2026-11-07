@@ -110,6 +110,22 @@ export function normalizeAlias(raw: string): string {
   return alias
 }
 
+/**
+ * Derive an alias from an image file name, for bulk uploads: drop the extension,
+ * collapse whitespace to underscores, lowercase.
+ *
+ * Deliberately conservative. Anything else the alias grammar rejects is left in
+ * place so `aliasToRkey` throws and the user renames it, rather than the file
+ * name being quietly mangled into a different emoji.
+ */
+export function aliasFromFileName(fileName: string) {
+  return fileName
+    .replace(/\.[^.]*$/, '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .toLowerCase()
+}
+
 /** Derive the record key for an alias (or colon-wrapped name). RFC 0005. */
 export function aliasToRkey(aliasOrName: string): string {
   const alias = normalizeAlias(aliasOrName)
