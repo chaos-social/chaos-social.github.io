@@ -10,18 +10,13 @@ import {RichText} from '@bsky/sdk/richtext'
 import {t} from '@lingui/core/macro'
 import {type QueryClient} from '@tanstack/react-query'
 
+import {type PollDraft, pollOptionsForPublish} from '#/lib/api/poll'
 import {
-  assemblyThumbUrl,
-  buildAssemblyExternal,
-  ensureAssembly,
-} from '#/lib/api/assembly'
-import {
-  type AssemblyRef,
-  type PollDraft,
-  pollStatementsForPublish,
-  pollTopicFromText,
-} from '#/lib/api/poll'
-import {imageToThumb, type LinkResolvers} from '#/lib/api/resolve'
+  buildPollExternal,
+  createPoll,
+  deletePoll,
+} from '#/lib/api/poll-publish'
+import {type LinkResolvers} from '#/lib/api/resolve'
 import {withCreator} from '#/lib/at-card'
 import {IMAGE_SIZE_CONFIG_POSTS, MAX_TAGS} from '#/lib/constants'
 import {IFRAME_HOST} from '#/lib/strings/embed-player'
@@ -74,8 +69,6 @@ import {uploadBlob} from './upload-blob'
 
 export {uploadBlob}
 
-const ASSEMBLY_THUMB_TIMEOUT_MS = 5e3
-
 function refusePollWithAttachments(draft: PostDraft) {
   if (
     draft.embed.poll &&
@@ -127,7 +120,7 @@ interface PostOpts {
   thread: ThreadDraft
   replyTo?: string
   onStateChange?: (state: string) => void
-  onAssembly?: (postId: string, ref: AssemblyRef) => void
+  onPollRkey?: (postId: string, rkey: string) => void
   onEvent?: (postId: string, record: {uri: string; cid: string}) => void
   langs?: string[]
   /*
@@ -153,11 +146,7 @@ interface PostOpts {
 
 export type PostResult = {
   uris: string[]
-  assembly?: {
-    conversationId: string
-    statementCount: number
-    isReplay: boolean
-  }
+  poll?: {rkey: string; optionCount: number}
   event?: {uri: string; cid: string}
 }
 
@@ -188,33 +177,36 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
     replyPromise = resolveReply(opts.appviewClient, opts.replyTo)
   }
 
-  let assembly: PostResult['assembly']
-  const poll = pollPost?.embed.poll
-  if (pollPost && poll) {
-    // An assembly is public and cannot be withdrawn, so a reply whose parent
-    // is gone has to fail before one is started.
+  /*
+   * The poll record has to name the post it belongs to by CID, so the post is
+   * built and hashed first and the poll is written just before the post. Its
+   * record key is assigned here because the post's link card needs it, and it
+   * is kept on the draft so a retry overwrites the same record.
+   */
+  let poll: PostResult['poll']
+  const pollDraft = pollPost?.embed.poll
+  let freshPollRkey: string | undefined
+  if (pollPost && pollDraft) {
+    if (!pollDraft.rkey) {
+      freshPollRkey = TID.nextStr()
+      opts.onPollRkey?.(pollPost.id, freshPollRkey)
+      thread = {
+        ...thread,
+        posts: thread.posts.map(p =>
+          p === pollPost
+            ? {
+                ...p,
+                embed: {
+                  ...p.embed,
+                  poll: {...pollDraft, rkey: freshPollRkey},
+                },
+              }
+            : p,
+        ),
+      }
+    }
+    // A reply whose parent is gone should fail before a poll is created.
     await replyPromise
-    opts.onStateChange?.(t`Starting poll...`)
-    const statements = pollStatementsForPublish(poll)
-    const {ref, isReplay} = await ensureAssembly(opts.pdsClient, {
-      topic: pollTopicFromText(pollPost.richtext.text),
-      statements,
-      ref: poll.assembly,
-      onRef: next => opts.onAssembly?.(pollPost.id, next),
-    })
-    assembly = {
-      conversationId: ref.conversationId,
-      statementCount: statements.length,
-      isReplay,
-    }
-    thread = {
-      ...thread,
-      posts: thread.posts.map(p =>
-        p === pollPost
-          ? {...p, embed: {...p.embed, poll: {...poll, assembly: ref}}}
-          : p,
-      ),
-    }
   }
 
   // The event record has to exist before the post so the link card can point
@@ -260,6 +252,7 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
   let now = new Date()
   let tid: TID | undefined
   let eventPostRef: {uri: string; cid: string} | undefined
+  let pollPostRef: {uri: string; cid: string} | undefined
 
   for (let i = 0; i < thread.posts.length; i++) {
     const draft = thread.posts[i]
@@ -360,10 +353,27 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
     if (draft.embed.event) {
       eventPostRef = ref
     }
+    if (draft.embed.poll) {
+      pollPostRef = ref
+    }
     replyPromise = {
       root: reply?.root ?? ref,
       parent: ref,
     }
+  }
+
+  /*
+   * The poll record names the post by CID, so it can only be written once the
+   * post is built. It goes to the PDS on its own rather than in the batch: the
+   * TOKIMEKI lexicon is not bundled, and `applyWrites` validates records.
+   */
+  let createdPoll = false
+  const pollToWrite = thread.posts.find(p => p.embed.poll)?.embed.poll
+  if (pollPostRef && pollToWrite?.rkey) {
+    opts.onStateChange?.(t`Creating poll...`)
+    await createPoll(opts.pdsClient, pollToWrite, pollPostRef, now)
+    createdPoll = true
+    poll = {rkey: pollToWrite.rkey, optionCount: pollToWrite.options.length}
   }
 
   try {
@@ -384,6 +394,11 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
      */
     if (createdEvent && eventRef && !isNetworkError(e)) {
       await deleteEvent(opts.pdsClient, eventRef)
+    }
+    // Same rule for the poll: keep it after an ambiguous failure so a post
+    // that did land still has its record.
+    if (createdPoll && pollToWrite?.rkey && !isNetworkError(e)) {
+      await deletePoll(opts.pdsClient, pollToWrite.rkey)
     }
     if (isNetworkError(e)) {
       throw new Error(
@@ -406,7 +421,11 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
     await rsvpSelfGoing(opts.pdsClient, eventRef)
   }
 
-  return {uris, assembly, ...(eventRef ? {event: eventRef} : {})}
+  return {
+    uris,
+    ...(poll ? {poll} : {}),
+    ...(eventRef ? {event: eventRef} : {}),
+  }
 }
 
 async function resolveRT(
@@ -501,7 +520,7 @@ export async function resolveEmbed(
     return resolveEvent(pdsClient, draft, draft.embed.event)
   }
   if (draft.embed.poll) {
-    return resolveAssembly(pdsClient, draft, draft.embed.poll, onStateChange)
+    return resolvePoll(pdsClient, draft, draft.embed.poll)
   }
   if (draft.embed.quote) {
     const [resolvedMedia, resolvedQuote] = await Promise.all([
@@ -590,59 +609,27 @@ function resolveEvent(
   }
 }
 
-async function resolveAssembly(
+/**
+ * The post's link card for a poll it created. The record key is on the draft
+ * before the post is built, so the card is known here; TOKIMEKI's service
+ * reads the record from the URL and serves its own card elsewhere.
+ */
+function resolvePoll(
   pdsClient: Client,
   draft: PostDraft,
   poll: PollDraft,
-  onStateChange: ((state: string) => void) | undefined,
-): Promise<$Typed<app.bsky.embed.external.Main>> {
+): $Typed<app.bsky.embed.external.Main> {
   refusePollWithAttachments(draft)
-  const conversationId = poll.assembly?.conversationId
-  if (!conversationId) {
-    throw new Error('A poll cannot be posted before its assembly exists')
+  if (!poll.rkey) {
+    throw new Error('A poll cannot be posted without its record key')
   }
   return {
     $type: 'app.bsky.embed.external',
-    external: {
-      ...buildAssemblyExternal({
-        conversationId,
-        topic: pollTopicFromText(draft.richtext.text),
-        statements: pollStatementsForPublish(poll),
-      }),
-      thumb: await uploadAssemblyThumb(
-        pdsClient,
-        conversationId,
-        onStateChange,
-      ),
-    },
-  }
-}
-
-async function uploadAssemblyThumb(
-  pdsClient: Client,
-  conversationId: string,
-  onStateChange: ((state: string) => void) | undefined,
-): Promise<app.bsky.embed.external.External['thumb']> {
-  let timer: ReturnType<typeof setTimeout> | undefined
-  try {
-    const thumb = await Promise.race([
-      imageToThumb(assemblyThumbUrl(conversationId)),
-      new Promise<undefined>(resolve => {
-        timer = setTimeout(() => resolve(undefined), ASSEMBLY_THUMB_TIMEOUT_MS)
-      }),
-    ])
-    if (!thumb) throw new Error('The image could not be read in time')
-    onStateChange?.(t`Uploading link thumbnail...`)
-    const {path, mime} = thumb.source
-    const response = await uploadBlob(pdsClient, path, mime)
-    return response.blob
-  } catch (e) {
-    logger.warn(`Failed to attach the poll thumbnail`, {
-      safeMessage: e instanceof Error ? e.message : String(e),
-    })
-    return undefined
-  } finally {
-    clearTimeout(timer)
+    external: buildPollExternal({
+      did: pdsClient.assertDid,
+      rkey: poll.rkey,
+      options: pollOptionsForPublish(poll),
+    }),
   }
 }
 

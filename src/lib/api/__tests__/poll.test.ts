@@ -1,239 +1,154 @@
-import {countGraphemes} from 'unicode-segmenter/grapheme'
-
 import {
   decodePollDraft,
-  getStatementIssue,
-  getStatementIssues,
-  inspectText,
+  DEFAULT_POLL_DURATION,
+  getOptionIssue,
+  getOptionIssues,
   isPollDraftPublishable,
-  isPollTopicPublishable,
-  normalizePollText,
-  POLL_MAX_STATEMENTS,
-  POLL_STATEMENT_MAX_BYTES,
-  POLL_STATEMENT_MAX_CHARS,
-  POLL_STATEMENT_MAX_GRAPHEMES,
-  POLL_TOPIC_MAX_BYTES,
-  POLL_TOPIC_MAX_GRAPHEMES,
-  pollStatementsForPublish,
+  isPollDuration,
+  POLL_MAX_OPTIONS,
+  POLL_OPTION_MAX_CHARS,
+  pollEndsAt,
+  pollOptionsForPublish,
   pollTopicFromText,
 } from '#/lib/api/poll'
 
-const ASTRAL = '\u{10348}'
-const COMBINING_ACUTE = '́'
-
-describe('inspectText', () => {
-  it('counts UTF-8 bytes for every code point width', () => {
-    expect(inspectText('a').bytes).toBe(1)
-    expect(inspectText('é').bytes).toBe(2)
-    expect(inspectText('€').bytes).toBe(3)
-    expect(inspectText(ASTRAL).bytes).toBe(4)
-    expect(inspectText(`aé€${ASTRAL}`).bytes).toBe(10)
-  })
-
-  it('reports lone surrogates as not well formed', () => {
-    expect(inspectText(ASTRAL).wellFormed).toBe(true)
-    expect(inspectText('\ud800').wellFormed).toBe(false)
-    expect(inspectText('\udc00').wellFormed).toBe(false)
-    expect(inspectText('a\ud800b').wellFormed).toBe(false)
-  })
-
-  it('reports NUL characters', () => {
-    expect(inspectText('a\u0000b').hasNul).toBe(true)
-    expect(inspectText('ab').hasNul).toBe(false)
-  })
-})
-
-describe('normalizePollText', () => {
-  it('trims and composes to NFC', () => {
-    expect(normalizePollText(`  cafe${COMBINING_ACUTE}  `)).toBe('café')
-  })
-})
-
-describe('getStatementIssue', () => {
+describe('getOptionIssue', () => {
   it('accepts ordinary text', () => {
-    expect(getStatementIssue('Reposts should show who boosted them')).toBeNull()
+    expect(getOptionIssue('Fund the library')).toBeNull()
   })
 
   it('treats blank text as empty', () => {
-    expect(getStatementIssue('')).toBe('empty')
-    expect(getStatementIssue('   \n ')).toBe('empty')
+    expect(getOptionIssue('')).toBe('empty')
+    expect(getOptionIssue('   \n ')).toBe('empty')
   })
 
-  it('enforces the grapheme limit', () => {
-    expect(
-      getStatementIssue('a'.repeat(POLL_STATEMENT_MAX_GRAPHEMES)),
-    ).toBeNull()
-    expect(
-      getStatementIssue('a'.repeat(POLL_STATEMENT_MAX_GRAPHEMES + 1)),
-    ).toBe('too_long')
-  })
-
-  it('enforces the byte limit on its own', () => {
-    const cluster = '\u20ac\u20dd'
-    const fits = cluster.repeat(333)
-    expect(inspectText(fits).bytes).toBe(1998)
-    expect(getStatementIssue(fits)).toBeNull()
-    const over = cluster.repeat(334)
-    expect(inspectText(over).bytes).toBe(POLL_STATEMENT_MAX_BYTES + 4)
-    expect(over.length).toBe(668)
-    expect(countGraphemes(over)).toBe(334)
-    expect(getStatementIssue(over)).toBe('too_long')
-  })
-
-  it('enforces the character limit of the statement column on its own', () => {
-    const cluster = 'x\u0336\u0336'
-    const fits = cluster.repeat(332)
-    expect(fits.normalize('NFC').length).toBe(996)
-    expect(getStatementIssue(fits)).toBeNull()
-    const over = cluster.repeat(333)
-    expect(over.normalize('NFC').length).toBe(POLL_STATEMENT_MAX_CHARS + 2)
-    expect(inspectText(over).bytes).toBe(1665)
-    expect(countGraphemes(over)).toBe(333)
-    expect(getStatementIssue(over)).toBe('too_long')
+  it('stops at the length TOKIMEKI accepts', () => {
+    expect(getOptionIssue('a'.repeat(POLL_OPTION_MAX_CHARS))).toBeNull()
+    expect(getOptionIssue('a'.repeat(POLL_OPTION_MAX_CHARS + 1))).toBe(
+      'too_long',
+    )
   })
 
   it('rejects text that cannot be stored', () => {
-    expect(getStatementIssue('a\u0000b')).toBe('invalid')
-    expect(getStatementIssue('a\ud800b')).toBe('invalid')
+    expect(getOptionIssue('a\u0000b')).toBe('invalid')
+    expect(getOptionIssue('a\ud800b')).toBe('invalid')
   })
 })
 
-describe('getStatementIssues', () => {
-  it('marks the later of two equal statements as a duplicate', () => {
-    expect(getStatementIssues(['One', 'Two', 'One'])).toEqual([
-      null,
-      null,
-      'duplicate',
-    ])
-  })
-
-  it('compares after trimming, composing and lower-casing', () => {
-    expect(getStatementIssues(['Café', `  cafe${COMBINING_ACUTE} `])).toEqual([
-      null,
-      'duplicate',
-    ])
-  })
-
-  it('reports the statement problem before the duplicate', () => {
-    expect(getStatementIssues(['', ''])).toEqual(['empty', 'empty'])
+describe('getOptionIssues', () => {
+  it('reports each choice on its own', () => {
+    expect(getOptionIssues(['One', 'Two', ''])).toEqual([null, null, 'empty'])
   })
 })
 
 describe('isPollDraftPublishable', () => {
-  it('needs between one and ten valid, distinct statements', () => {
-    expect(isPollDraftPublishable({statements: ['One']})).toBe(true)
-    expect(isPollDraftPublishable({statements: []})).toBe(false)
-    expect(isPollDraftPublishable({statements: ['One', '']})).toBe(false)
-    expect(isPollDraftPublishable({statements: ['One', 'one']})).toBe(false)
-    const ten = Array.from(Array(POLL_MAX_STATEMENTS).keys(), i => `S${i}`)
-    expect(isPollDraftPublishable({statements: ten})).toBe(true)
-    expect(isPollDraftPublishable({statements: [...ten, 'S10']})).toBe(false)
+  it('needs two to four filled choices', () => {
+    expect(
+      isPollDraftPublishable({options: ['One'], duration: '1d'}),
+    ).toBe(false)
+    expect(
+      isPollDraftPublishable({options: ['One', 'Two'], duration: '1d'}),
+    ).toBe(true)
+    expect(
+      isPollDraftPublishable({
+        options: ['One', 'Two', 'Three', 'Four'],
+        duration: '1d',
+      }),
+    ).toBe(true)
+    expect(
+      isPollDraftPublishable({
+        options: ['One', 'Two', 'Three', 'Four', 'Five'],
+        duration: '1d',
+      }),
+    ).toBe(false)
+  })
+
+  it('refuses a blank choice', () => {
+    expect(
+      isPollDraftPublishable({options: ['One', ''], duration: '1d'}),
+    ).toBe(false)
   })
 })
 
-describe('pollStatementsForPublish', () => {
-  it('returns normalized statements in order', () => {
+describe('pollOptionsForPublish', () => {
+  it('trims each choice in order', () => {
     expect(
-      pollStatementsForPublish({statements: ['  First ', 'Second']}),
+      pollOptionsForPublish({options: ['  First ', 'Second'], duration: '1d'}),
     ).toEqual(['First', 'Second'])
   })
 })
 
+describe('pollEndsAt', () => {
+  const now = new Date('2026-11-07T12:00:00.000Z')
+
+  it.each([
+    ['1h', '2026-11-07T13:00:00.000Z'],
+    ['6h', '2026-11-07T18:00:00.000Z'],
+    ['12h', '2026-11-08T00:00:00.000Z'],
+    ['1d', '2026-11-08T12:00:00.000Z'],
+    ['3d', '2026-11-10T12:00:00.000Z'],
+    ['7d', '2026-11-14T12:00:00.000Z'],
+  ])('closes a %s poll at %s', (duration, expected) => {
+    expect(pollEndsAt(duration as '1d', now)).toBe(expected)
+  })
+})
+
 describe('pollTopicFromText', () => {
-  it('uses short post text as it is, with whitespace collapsed', () => {
+  it('collapses whitespace', () => {
     expect(pollTopicFromText('  What should we\n\nbuild   next?  ')).toBe(
       'What should we build next?',
     )
   })
-
-  it('keeps text of exactly the limit', () => {
-    const text = 'a'.repeat(POLL_TOPIC_MAX_GRAPHEMES)
-    expect(pollTopicFromText(text)).toBe(text)
-  })
-
-  it('shortens longer text to the grapheme limit with a mark', () => {
-    const topic = pollTopicFromText('a'.repeat(POLL_TOPIC_MAX_GRAPHEMES + 1))
-    expect(topic).toBe('a'.repeat(POLL_TOPIC_MAX_GRAPHEMES - 1) + '…')
-    expect(countGraphemes(topic)).toBe(POLL_TOPIC_MAX_GRAPHEMES)
-  })
-
-  it('shortens to the byte limit when that is reached first', () => {
-    const cluster = ASTRAL + '̀'
-    const text = cluster.repeat(POLL_TOPIC_MAX_GRAPHEMES)
-    expect(inspectText(text).bytes).toBe(1200)
-    const topic = pollTopicFromText(text)
-    expect(inspectText(topic).bytes).toBeLessThanOrEqual(POLL_TOPIC_MAX_BYTES)
-    expect(topic).toBe(cluster.repeat(166) + '…')
-    expect(inspectText(topic).bytes).toBe(999)
-  })
-
-  it('does not end on a space before the mark', () => {
-    const text = 'a'.repeat(198) + ' ' + 'b'.repeat(10)
-    expect(pollTopicFromText(text)).toBe('a'.repeat(198) + '…')
-  })
-})
-
-describe('isPollTopicPublishable', () => {
-  it('needs text that can be stored', () => {
-    expect(isPollTopicPublishable('A question')).toBe(true)
-    expect(isPollTopicPublishable('')).toBe(false)
-    expect(isPollTopicPublishable('  \n ')).toBe(false)
-    expect(isPollTopicPublishable('a\u0000b')).toBe(false)
-    expect(isPollTopicPublishable('a\ud800b')).toBe(false)
-  })
 })
 
 describe('decodePollDraft', () => {
-  const assembly = {
-    rkey: '3kaaaaaaaaaa2',
-    createdAt: '2026-09-27T12:00:00.000Z',
-    fingerprint: 'abc',
-  }
-
-  it('keeps unfinished statements as typed', () => {
-    expect(decodePollDraft({statements: ['', ' a ']})).toEqual({
-      statements: ['', ' a '],
-      assembly: undefined,
+  it('keeps unfinished choices as typed', () => {
+    expect(decodePollDraft({options: ['', ' a '], duration: '3d'})).toEqual({
+      options: ['', ' a '],
+      duration: '3d',
     })
   })
 
-  it('restores an assembly reference', () => {
+  it('falls back to the default duration', () => {
+    expect(decodePollDraft({options: ['a', 'b']})).toEqual({
+      options: ['a', 'b'],
+      duration: DEFAULT_POLL_DURATION,
+    })
+    expect(decodePollDraft({options: ['a', 'b'], duration: '2h'})).toEqual({
+      options: ['a', 'b'],
+      duration: DEFAULT_POLL_DURATION,
+    })
+  })
+
+  it('reads the statements of a draft saved before the switch', () => {
     expect(
       decodePollDraft({
-        statements: ['a'],
-        assembly: {...assembly, conversationId: '7abcdefghi', reportId: 'r1'},
+        statements: ['first', 'second', 'third'],
+        assembly: {rkey: '3k'},
       }),
     ).toEqual({
-      statements: ['a'],
-      assembly: {...assembly, conversationId: '7abcdefghi', reportId: 'r1'},
+      options: ['first', 'second', 'third'],
+      duration: DEFAULT_POLL_DURATION,
     })
   })
 
-  it('drops a malformed assembly reference but keeps the statements', () => {
-    expect(decodePollDraft({statements: ['a'], assembly: {rkey: 1}})).toEqual({
-      statements: ['a'],
-      assembly: undefined,
-    })
-    expect(
-      decodePollDraft({
-        statements: ['a'],
-        assembly: {...assembly, conversationId: 7},
-      }),
-    ).toEqual({
-      statements: ['a'],
-      assembly: {...assembly, conversationId: undefined, reportId: undefined},
-    })
-  })
-
-  it('rejects anything that is not a list of one to ten strings', () => {
+  it('rejects anything that is not a short list of strings', () => {
     expect(decodePollDraft(undefined)).toBeUndefined()
-    expect(decodePollDraft({statements: []})).toBeUndefined()
-    expect(decodePollDraft({statements: ['a', 1]})).toBeUndefined()
-    expect(decodePollDraft({statements: 'a'})).toBeUndefined()
+    expect(decodePollDraft({options: []})).toBeUndefined()
+    expect(decodePollDraft({options: ['a', 1]})).toBeUndefined()
+    expect(decodePollDraft({options: 'a'})).toBeUndefined()
     expect(
       decodePollDraft({
-        statements: Array.from(Array(POLL_MAX_STATEMENTS + 1).keys(), String),
+        options: Array.from(Array(POLL_MAX_OPTIONS + 1).keys(), String),
       }),
     ).toBeUndefined()
+  })
+})
+
+describe('isPollDuration', () => {
+  it('accepts only the offered durations', () => {
+    expect(isPollDuration('1d')).toBe(true)
+    expect(isPollDuration('2h')).toBe(false)
+    expect(isPollDuration(undefined)).toBe(false)
   })
 })

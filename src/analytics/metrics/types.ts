@@ -417,7 +417,8 @@ export type Events = {
   'composer:gif:select': {}
   'composer:poll:open': {}
   'composer:poll:remove': {}
-  'composer:poll:statementAdd': {count: number}
+  'composer:poll:optionAdd': {count: number}
+  'composer:poll:publish': {optionCount: number}
   'composer:event:open': {}
   'composer:event:remove': {}
   'composer:image:edit': {
@@ -493,7 +494,7 @@ export type Events = {
     hasLink: boolean
     hasQuote: boolean
     hasPoll: boolean
-    pollStatementCount: number
+    pollOptionCount: number
     hasEvent: boolean
     langs: string
     logContext: 'Composer'
@@ -1349,15 +1350,6 @@ export type Events = {
   'share:press:dmSelected': {uri: string};
   'share:press:recentDm': {uri: string};
   'share:press:embed': {uri: string};
-  'assembly:create': {
-    conversationId: string
-    statementCount: number
-    isReplay: boolean
-  };
-  'assembly:create:error': {
-    stage: 'record' | 'token' | 'create'
-    code: string
-  };
   'assembly:vote': {
     conversationId: string
     tid: number
