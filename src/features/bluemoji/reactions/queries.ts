@@ -220,6 +220,14 @@ export function useViewerReactionForPost(uri: string | undefined) {
   return data.filter(r => r.subject === uri)
 }
 
+/**
+ * Reactions whose record URI is real. Anything else is an optimistic entry the
+ * PDS has not acknowledged yet, so it cannot be deleted or counted on.
+ */
+export function isPersistedReaction(reaction: ViewerReaction | undefined) {
+  return Boolean(reaction?.uri && reaction.uri.startsWith('at://'))
+}
+
 /** AppView-wide trending, used as the Discover tab's default content. */
 export function useTrendingEmojiQuery() {
   return useQuery({

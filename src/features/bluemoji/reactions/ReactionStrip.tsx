@@ -15,6 +15,7 @@ import {
   useDeleteReactionMutation,
 } from '#/features/bluemoji/reactions/mutations'
 import {
+  isPersistedReaction,
   useReactionCountsQuery,
   useViewerReactionForPost,
 } from '#/features/bluemoji/reactions/queries'
@@ -70,7 +71,7 @@ export function ReactionStrip({
       reaction => reaction.emoji.uri === group.emoji.uri,
     )
     requireAuth(() => {
-      if (own) {
+      if (own && isPersistedReaction(own)) {
         remove({
           reactionUri: own.uri,
           target: {uri: post.uri, cid: post.cid},

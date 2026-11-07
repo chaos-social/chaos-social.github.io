@@ -10,6 +10,7 @@ import {useHaptics} from '#/lib/haptics'
 import {logger} from '#/logger'
 import {usePdsClient} from '#/state/session'
 import * as Toast from '#/components/Toast'
+import {type ViewerReaction} from '#/features/bluemoji/reactions/queries'
 import {
   REACTION_COLLECTION,
   type ReactionEmoji,
@@ -19,6 +20,12 @@ import {type BluemojiItem} from '#/features/bluemoji/util'
 import {com} from '#/lexicons'
 
 type ReactionTarget = {uri: string; cid?: string}
+
+/**
+ * Stands in for the record URI until the PDS assigns one. Removals match on
+ * emoji rather than this, so the placeholder never needs to round-trip.
+ */
+export const OPTIMISTIC_URI = 'optimistic'
 
 /** Only the CID-bearing v1 slots travel in the record; v0 bytes cannot. */
 function toReactionEmoji(item: BluemojiItem): ReactionEmoji {
@@ -66,12 +73,28 @@ function bumpCounts(
         .sort((a, b) => b.count - a.count)
     },
   )
-  queryClient.setQueriesData<{subject: string}[]>(
+  /*
+   * Game a whole ViewerReaction rather than just the subject: every reader
+   * matches on `emoji.uri`, and removing only the subject would drop the
+   * viewer's other reactions on the same post.
+   */
+  queryClient.setQueriesData<ViewerReaction[]>(
     {queryKey: ['bluemoji-viewer-reactions']},
     previous => {
       if (!previous) return previous
-      if (delta > 0) return [...previous, {subject: target.uri}]
-      return previous.filter(reaction => reaction.subject !== target.uri)
+      const rest = previous.filter(
+        reaction =>
+          !(reaction.subject === target.uri && reaction.emoji.uri === emoji.uri),
+      )
+      if (delta < 0) return rest
+      return [
+        ...rest,
+        {
+          uri: OPTIMISTIC_URI,
+          subject: target.uri,
+          emoji,
+        },
+      ]
     },
   )
 }
@@ -154,12 +177,18 @@ export function useDeleteReactionMutation() {
       target: ReactionTarget
       emoji: ReactionEmoji
     }) => {
-      const uri = new AtUri(reactionUri)
-      await pds.call(com.atproto.repo.deleteRecord, {
-        repo: pds.assertDid,
-        collection: REACTION_COLLECTION,
-        rkey: uri.rkey,
-      })
+      /*
+       * An optimistic placeholder has no rkey yet. The create's onSettled
+       * refetch replaces it with the real record.
+       */
+      if (reactionUri !== OPTIMISTIC_URI) {
+        const uri = new AtUri(reactionUri)
+        await pds.call(com.atproto.repo.deleteRecord, {
+          repo: pds.assertDid,
+          collection: REACTION_COLLECTION,
+          rkey: uri.rkey,
+        })
+      }
       return reactionUri
     },
     onMutate: ({target, emoji}) => {
