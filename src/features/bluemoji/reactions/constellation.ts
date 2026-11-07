@@ -1,11 +1,9 @@
+import {type DidString} from '@atproto/syntax'
 import {useQuery} from '@tanstack/react-query'
 
 import {useConstellationInstance} from '#/state/preferences/constellation-instance'
 import {STALE} from '#/state/queries'
-import {
-  type ConstellationLink,
-  constellationLinks,
-} from '#/state/queries/constellation'
+import {constellationLinks} from '#/state/queries/constellation'
 import {LRU} from '#/state/queries/direct-fetch-record'
 import {resolvePdsServiceUrl} from '#/state/queries/resolve-identity'
 import {createQueryKey} from '#/state/queries/util'
@@ -14,6 +12,7 @@ import {
   REACTION_COLLECTION,
   type ReactionEmoji,
   type ReactionGroup,
+  toReactionEmoji,
 } from '#/features/bluemoji/reactions/util'
 import {blue} from '#/lexicons'
 
@@ -25,21 +24,19 @@ type ConstellationReaction = {
   createdAt: string
 }
 
-async function readReaction(link: ConstellationLink) {
-  const atUri = `at://${link.did}/${REACTION_COLLECTION}/${link.rkey}`
+export async function readReaction(did: string, rkey: string) {
+  const atUri = `at://${did}/${REACTION_COLLECTION}/${rkey}`
   const value = await recordCache.getOrTryInsertWith(atUri, async () => {
-    const service = await resolvePdsServiceUrl(link.did)
+    const service = await resolvePdsServiceUrl(did as DidString)
     if (!service) return undefined
     const res = await fetch(
-      `${service}/xrpc/com.atproto.repo.getRecord?repo=${encodeURIComponent(link.did)}&collection=${REACTION_COLLECTION}&rkey=${encodeURIComponent(link.rkey)}`,
+      `${service}/xrpc/com.atproto.repo.getRecord?repo=${encodeURIComponent(did)}&collection=${REACTION_COLLECTION}&rkey=${encodeURIComponent(rkey)}`,
     )
     if (!res.ok) return undefined
     return ((await res.json()) as {value?: unknown}).value
   })
   const record = blue.moji.feed.reaction.main.$ifMatches(value)
-  return record
-    ? {did: link.did, emoji: record.emoji, createdAt: record.createdAt}
-    : null
+  return record ? {did, emoji: record.emoji, createdAt: record.createdAt} : null
 }
 
 /**
@@ -57,7 +54,7 @@ async function verifyReactions(reactions: ConstellationReaction[]) {
       items.set(
         uri,
         fetchBluemojiItem(uri)
-          .then(item => (item ? reaction.emoji : null))
+          .then(item => (item ? toReactionEmoji(item) : null))
           .catch(() => null),
       )
     }
@@ -65,15 +62,13 @@ async function verifyReactions(reactions: ConstellationReaction[]) {
 
   await Promise.all(
     [...items].map(async ([uri, promise]) => {
-      if (!(await promise)) return
+      const emoji = await promise
+      if (!emoji) return
       // Count distinct reactors, matching the AppView's aggregation.
       const reactors = new Set(
         reactions.filter(r => r.emoji.uri === uri).map(r => r.did),
       )
-      groupMap.set(uri, {
-        emoji: reactions.find(r => r.emoji.uri === uri)!.emoji,
-        count: reactors.size,
-      })
+      groupMap.set(uri, {emoji, count: reactors.size})
     }),
   )
 
@@ -96,7 +91,7 @@ export async function fetchConstellationReactions(
     collection: REACTION_COLLECTION,
     path: '.subject',
   })) {
-    const reaction = await readReaction(link).catch(() => null)
+    const reaction = await readReaction(link.did, link.rkey).catch(() => null)
     if (reaction) reactions.push(reaction)
   }
   return verifyReactions(reactions)

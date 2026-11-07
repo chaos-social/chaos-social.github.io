@@ -68,6 +68,7 @@ export const router = new Router<AllNavigatableRoutes>({
   RunesUsabilityProfileSettings: '/settings/runes/usability/profiles',
   RunesDisplaySettings: '/settings/runes/display',
   RunesDisplayAlsoLikedSettings: '/settings/runes/display/also-liked',
+  CustomEmojiSettings: '/settings/custom-emoji',
   RunesInfrastructureSettings: '/settings/runes/infrastructure',
   RunesExtraSettings: '/settings/runes/extra',
   RunesExtraFeatureGatesSettings: '/settings/runes/extra/feature-gates',

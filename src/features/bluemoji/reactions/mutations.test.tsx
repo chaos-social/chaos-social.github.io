@@ -10,6 +10,7 @@ import {
 } from '#/features/bluemoji/reactions/mutations'
 import {
   isPersistedReaction,
+  mergeViewerReactions,
   type ViewerReaction,
 } from '#/features/bluemoji/reactions/queries'
 
@@ -106,19 +107,16 @@ it('adds a viewer reaction entry that carries its emoji, not just the subject', 
   expect(isPersistedReaction(viewer?.[0])).toBe(false)
 })
 
-it('bumps the count for a new emoji and keeps the existing groups', async () => {
+it('does not write into every post counts cache', async () => {
+  /*
+   * Counts live under a per-post key. An earlier version matched the key by
+   * prefix, so one reaction showed up on every post in the feed.
+   */
   const queryClient = new QueryClient()
+  const otherPost = 'at://did:plc:me/app.bsky.feed.post/other'
   queryClient.setQueryData(
-    ['bluemoji-reaction-counts'],
-    [
-      {
-        emoji: {
-          ...emoji,
-          uri: 'at://did:plc:owner/blue.moji.collection.item/other',
-        },
-        count: 4,
-      },
-    ],
+    [`bluemoji-reaction-counts`, otherPost],
+    [{emoji, count: 3}],
   )
 
   const {result} = renderHook(() => useCreateReactionMutation(), {
@@ -126,11 +124,24 @@ it('bumps the count for a new emoji and keeps the existing groups', async () => 
   })
   await result.current.mutateAsync({target, item})
 
-  const groups = queryClient.getQueryData<
-    {emoji: typeof emoji; count: number}[]
-  >(['bluemoji-reaction-counts'])
-  expect(groups).toHaveLength(2)
-  expect(groups?.find(g => g.emoji.uri === emoji.uri)?.count).toBe(1)
+  expect(
+    queryClient.getQueryData([`bluemoji-reaction-counts`, otherPost]),
+  ).toEqual([{emoji, count: 3}])
+})
+
+it('merges the viewer reaction into counts for its own post only', () => {
+  const groups = mergeViewerReactions([], [{uri: 'optimistic', subject, emoji}])
+  expect(groups).toHaveLength(1)
+  expect(groups[0].count).toBe(1)
+  expect(groups[0].emoji.uri).toBe(emoji.uri)
+})
+
+it('does not double count a reaction the AppView already reports', () => {
+  const groups = mergeViewerReactions(
+    [{emoji, count: 2}],
+    [{uri: 'optimistic', subject, emoji}],
+  )
+  expect(groups).toEqual([{emoji, count: 2}])
 })
 
 it('removes only the matching emoji, leaving the viewer other reactions on the post', async () => {

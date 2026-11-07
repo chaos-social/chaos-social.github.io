@@ -33,17 +33,27 @@ export function getReactionEmojiDid(emoji: ReactionEmoji) {
 export function getReactionEmojiImage(emoji: ReactionEmoji) {
   const did = getReactionEmojiDid(emoji)
   if (!did) return undefined
-  const formats = (emoji.formats ?? {}) as Record<string, unknown>
+  const cid = getRenditionCid(emoji)
+  if (!cid) return undefined
+  return `${BLUEMOJI_SERVICE}/img/${encodeURIComponent(did)}/${encodeURIComponent(cid)}`
+}
+
+/**
+ * The AppView rebuilds `formats` from the source item record, so appreciations
+ * arrive as blob objects (`{ref, size, mimeType}`) rather than the CID strings
+ * the inline-facet lexicon describes. Accept both.
+ */
+export function getRenditionCid(value: ReactionEmoji) {
+  const formats = (value.formats ?? {}) as Record<string, unknown>
   for (const slot of ['webp_128', 'gif_128', 'apng_128', 'png_128']) {
-    const value = formats[slot]
+    const entry = formats[slot]
     const cid =
-      value && typeof value === 'object' && 'ref' in value
-        ? (value.ref as {$link?: string}).$link
-        : typeof value === 'string'
-          ? value
+      entry && typeof entry === 'object' && 'ref' in entry
+        ? (entry as {ref: {$link?: string}}).ref?.$link
+        : typeof entry === 'string'
+          ? entry
           : undefined
-    if (cid)
-      return `${BLUEMOJI_SERVICE}/img/${encodeURIComponent(did)}/${encodeURIComponent(cid)}`
+    if (cid) return cid
   }
   return undefined
 }
@@ -59,6 +69,34 @@ export function getReactionEmojiModeration(
   if (!emoji.adultOnly) return 'ignore'
   if (!opts?.prefs.adultContentEnabled) return 'hide'
   return opts.prefs.labels.porn ?? DEFAULT_LABEL_SETTINGS.porn ?? 'warn'
+}
+
+/**
+ * Build the ref a reaction record carries from a verified item.
+ *
+ * Only the CID-bearing v1 slots travel: v0 raw bytes cannot be written, and
+ * blob objects from the item record are not valid ref values.
+ */
+export function toReactionEmoji(item: BluemojiItem): ReactionEmoji {
+  const formats: Record<string, string> = {
+    $type: 'blue.moji.richtext.facet#formats_v1',
+  }
+  const source = item.record.formats as Record<string, unknown>
+  for (const slot of ['png_128', 'webp_128', 'gif_128', 'apng_128'] as const) {
+    const cid = getRenditionCid({
+      formats: {[slot]: source?.[slot]},
+    } as ReactionEmoji)
+    if (cid) formats[slot] = cid
+  }
+  return {
+    $type: 'blue.moji.feed.reaction#emojiRef',
+    uri: item.uri as ReactionEmoji['uri'],
+    cid: item.cid,
+    name: item.record.name,
+    alt: item.record.alt,
+    adultOnly: item.record.adultOnly,
+    formats: formats as unknown as ReactionEmoji['formats'],
+  }
 }
 
 /**

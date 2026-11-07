@@ -95,9 +95,11 @@ export function useBluemojiItemQuery(ref: BluemojiRef) {
 export function useBluemojiSearchQuery({
   repo,
   query,
+  enabled = true,
 }: {
   repo?: string
   query: string
+  enabled?: boolean
 }) {
   const q = useDebouncedValue(query.trim().slice(0, 100), 300)
   return useInfiniteQuery({
@@ -107,7 +109,7 @@ export function useBluemojiSearchQuery({
     async queryFn({pageParam, signal}) {
       return fetchBluemojiDiscoveryPage({repo, q, cursor: pageParam, signal})
     },
-    enabled: Boolean(repo || q),
+    enabled: enabled && Boolean(repo || q),
     getNextPageParam: page => page.cursor,
     retry: false,
   })

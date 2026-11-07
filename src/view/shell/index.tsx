@@ -43,6 +43,7 @@ import {Outlet as PortalOutlet} from '#/components/Portal'
 import {RedirectOverlay} from '#/ageAssurance/components/RedirectOverlay'
 import {PassiveAnalytics} from '#/analytics/PassiveAnalytics'
 import {IS_ANDROID, IS_IOS, IS_LIQUID_GLASS} from '#/env'
+import {useReactionNotifications} from '#/features/bluemoji/reactions/notifications'
 import {SixSevenOutlet} from '#/features/sixSeven'
 import {RoutesContainer, TabsNavigator} from '#/Navigation'
 import {Composer} from './Composer'
@@ -56,6 +57,7 @@ function ShellInner() {
 
   useNotificationsRegistration()
   useNotificationsHandler()
+  useReactionNotifications()
 
   useEffect(() => {
     if (IS_ANDROID) {

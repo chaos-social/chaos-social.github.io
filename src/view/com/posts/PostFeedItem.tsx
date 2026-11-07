@@ -65,7 +65,6 @@ import {useBridgedHtmlSegments} from '#/components/Post/useBridgedHtmlSegments'
 import {PostControls} from '#/components/PostControls'
 import {DiscoverDebug} from '#/components/PostControls/DiscoverDebug'
 import {PostTags} from '#/components/PostTags'
-import {ReactionStrip} from '#/features/bluemoji/reactions/ReactionStrip'
 import {RichText} from '#/components/RichText'
 import {SubtleHover} from '#/components/SubtleHover'
 import {Text} from '#/components/Typography'
@@ -717,7 +716,6 @@ let PostContent = ({
         </View>
       ) : null}
       <PostTags post={post} style={[a.pb_2xs]} />
-      <ReactionStrip post={post} />
     </ContentHider>
   )
 }

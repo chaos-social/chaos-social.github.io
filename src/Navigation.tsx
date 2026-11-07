@@ -287,6 +287,10 @@ const RunesDisplayAlsoLikedSettingsScreen = deferredNamedScreen(
   () => require('#/screens/Settings/RunesSettings/AlsoLikedSettings'),
   'RunesDisplayAlsoLikedSettingsScreen',
 )
+const CustomEmojiSettingsScreen = deferredNamedScreen(
+  () => require('#/screens/Settings/RunesSettings/CustomEmojiSettings'),
+  'CustomEmojiSettingsScreen',
+)
 const RunesBadgesSettingsScreen = deferredNamedScreen(
   () => require('#/screens/Settings/RunesSettings/BadgesSettings'),
   'RunesBadgesSettingsScreen',
@@ -719,6 +723,11 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         name="RunesDisplaySettings"
         getComponent={() => RunesDisplaySettingsScreen}
         options={{title: title(msg`Display`), requireAuth: true}}
+      />
+      <Stack.Screen
+        name="CustomEmojiSettings"
+        getComponent={() => CustomEmojiSettingsScreen}
+        options={{title: title(msg`Custom emoji`), requireAuth: true}}
       />
       <Stack.Screen
         name="RunesDisplayAlsoLikedSettings"
