@@ -16,6 +16,7 @@ import {
   useDeleteReactionMutation,
 } from '#/features/bluemoji/reactions/mutations'
 import {
+  isPersistedReaction,
   usePostReactionsQuery,
   useReactionCountsQuery,
   useViewerReactionForPost,
@@ -26,6 +27,7 @@ import {
   reactionEmojiToItem,
   type ReactionGroup,
 } from '#/features/bluemoji/reactions/util'
+import {type BluemojiItem} from '#/features/bluemoji/util'
 import {type app} from '#/lexicons'
 
 /**
@@ -61,7 +63,7 @@ export function ReactionDialog({post}: {post: app.bsky.feed.defs.PostView}) {
       reaction => reaction.emoji.uri === group.emoji.uri,
     )
     requireAuth(() => {
-      if (own) {
+      if (own && isPersistedReaction(own)) {
         remove({
           reactionUri: own.uri,
           target: {uri: post.uri, cid: post.cid},
@@ -74,7 +76,7 @@ export function ReactionDialog({post}: {post: app.bsky.feed.defs.PostView}) {
     })
   }
 
-  const addFromPicker = (item: Parameters<typeof create>[0]['item']) => {
+  const addFromPicker = (item: BluemojiItem) => {
     requireAuth(() => create({target: {uri: post.uri, cid: post.cid}, item}))
   }
 
