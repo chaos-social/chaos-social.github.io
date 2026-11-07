@@ -22,7 +22,8 @@ export type BluemojiItem = {
 export type BluemojiRef = {
   did: string
   name: string
-  record?: {uri: string; cid: string}
+  /** A known URI pins the item; `cid` pins its content when we have one. */
+  record?: {uri: string; cid?: string}
 }
 
 /** Keep different collections' identically named emoji distinct within a draft. */
@@ -99,12 +100,12 @@ export function getBluemojiModeration(
 export function getBluemojiRefUri(ref: BluemojiRef) {
   try {
     if (ref.record) {
+      // A known URI is authoritative even without a CID to pin it to.
       const uri = new AtUri(ref.record.uri)
       if (
         uri.collection !== 'blue.moji.collection.item' ||
         !uri.host.startsWith('did:') ||
-        !uri.rkey ||
-        !ref.record.cid
+        !uri.rkey
       )
         return undefined
       return uri.toString()

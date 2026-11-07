@@ -82,16 +82,42 @@ function parseCounts(result: unknown) {
   return counts
 }
 
-function parseGroup(candidate: unknown): ReactionGroup[] {
+export function parseGroup(candidate: unknown): ReactionGroup[] {
   if (!candidate || typeof candidate !== 'object') return []
-  const parsed = blue.moji.feed.defs.reactionGroup.$ifMatches({
-    $type: 'blue.moji.feed.defs#reactionGroup',
-    emoji: 'emoji' in candidate ? candidate.emoji : undefined,
-    count: 'count' in candidate ? candidate.count : undefined,
-  })
-  return parsed && parsed.count > 0
-    ? [{emoji: parsed.emoji, count: parsed.count}]
-    : []
+  const record = candidate as {emoji?: unknown; count?: unknown}
+  if (typeof record.count !== 'number' || record.count <= 0) return []
+  const emoji = parseEmojiRef(record.emoji)
+  return emoji ? [{emoji, count: record.count}] : []
+}
+
+/**
+ * Parsed by hand rather than through the generated validator: the lexicon
+ * describes `formats` as CID strings (the inline-facet wire format), but the
+ * AppView rebuilds reaction refs from the source item record and returns blob
+ * objects. Strict validation rejects every real group.
+ */
+function parseEmojiRef(candidate: unknown): ReactionEmoji | undefined {
+  if (!candidate || typeof candidate !== 'object') return undefined
+  const record = candidate as Partial<Record<keyof ReactionEmoji, unknown>>
+  if (typeof record.uri !== 'string' || typeof record.name !== 'string') {
+    return undefined
+  }
+  // Reject anything that is not an item reference before trusting the URI.
+  if (
+    !record.uri.startsWith('at://') ||
+    !record.uri.includes('/blue.moji.collection.item/')
+  ) {
+    return undefined
+  }
+  return {
+    $type: 'blue.moji.feed.reaction#emojiRef',
+    uri: record.uri,
+    cid: typeof record.cid === 'string' ? record.cid : undefined,
+    name: record.name,
+    alt: typeof record.alt === 'string' ? record.alt : undefined,
+    adultOnly: record.adultOnly === true,
+    formats: (record.formats ?? {}) as ReactionEmoji['formats'],
+  } as ReactionEmoji
 }
 
 export function fetchReactionCounts(uri: string): Promise<ReactionGroup[]> {
@@ -214,10 +240,61 @@ export type ViewerReaction = {
   emoji: ReactionEmoji
 }
 
-export function useViewerReactionForPost(uri: string | undefined) {
-  const {data} = useViewerReactionsQuery()
-  if (!uri || !data) return undefined
-  return data.filter(r => r.subject === uri)
+/**
+ * The viewer's reactions on one post, plus whether their whole reaction list is
+ * known. The second half matters because an empty list has to be distinguishable
+ * from a list that has not loaded: only the former proves the viewer is not one
+ * of the reactors a count is made of.
+ */
+export function useViewerReactionForPost(uri: string | undefined): {
+  reactions: ViewerReaction[] | undefined
+  known: boolean
+} {
+  const {data, isSuccess} = useViewerReactionsQuery()
+  return {
+    reactions: uri && data ? data.filter(r => r.subject === uri) : undefined,
+    known: isSuccess,
+  }
+}
+
+/**
+ * Fold the viewer's own reactions into the AppView's groups.
+ *
+ * The reactor's PDS record is the authority on whether they reacted, and it is
+ * written before the AppView's firehose has seen anything. Without this a fresh
+ * reaction flickers in and back out until the AppView catches up.
+ *
+ * A viewer reaction only ever raises a group to 1, so a later AppView count
+ * replaces it naturally instead of double counting.
+ *
+ * `ownReactionsKnown` says the viewer's own records were read successfully. Only
+ * then does the absence of a reaction mean the viewer has none: it lets their
+ * share be subtracted from the AppView's count, so a reaction removed here stops
+ * showing even while the AppView still reports it (its index does not reliably
+ * process reaction deletes). While the read is pending nothing is subtracted,
+ * which is the old behaviour rather than a wrong one.
+ */
+export function mergeViewerReactions(
+  groups: ReactionGroup[],
+  viewerReactions: ViewerReaction[] | undefined,
+  ownReactionsKnown = false,
+): ReactionGroup[] {
+  const byEmoji = new Map(groups.map(group => [group.emoji.uri, group]))
+  const own = new Set(viewerReactions?.map(reaction => reaction.emoji.uri))
+
+  if (ownReactionsKnown) {
+    for (const [uri, group] of byEmoji) {
+      // The viewer is one of the reactors the AppView counted, and is no
+      // longer counted locally, so their reaction is gone.
+      if (!own.has(uri) && group.count <= 1) byEmoji.delete(uri)
+    }
+  }
+
+  for (const {emoji} of viewerReactions ?? []) {
+    const existing = byEmoji.get(emoji.uri)
+    byEmoji.set(emoji.uri, existing ? {...existing} : {emoji, count: 1})
+  }
+  return [...byEmoji.values()].sort((a, b) => b.count - a.count)
 }
 
 /**

@@ -2,6 +2,7 @@ import {
   getLicenseUrl,
   getReactionEmojiImage,
   getSafeSourceUrl,
+  toReactionEmoji,
 } from '#/features/bluemoji/reactions/util'
 
 const emoji = {
@@ -61,5 +62,32 @@ describe('provenance', () => {
     )
     expect(getLicenseUrl('LicenseRef-All-Rights-Reserved')).toBeUndefined()
     expect(getLicenseUrl('not a license')).toBeUndefined()
+  })
+})
+
+describe('refs built from a verified item', () => {
+  /*
+   * Reaction records in the wild ship an empty `formats`, so a ref copied from
+   * one renders no image. Rebuilding from the item record is the only source
+   * of CIDs.
+   */
+  it('carries CIDs even though the claimed ref had none', () => {
+    const ref = toReactionEmoji({
+      uri: 'at://did:plc:owner/blue.moji.collection.item/blobcat',
+      cid: 'bafyreicid',
+      did: 'did:plc:owner',
+      record: {
+        $type: 'blue.moji.collection.item',
+        name: ':blobcat:',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        formats: {
+          $type: 'blue.moji.collection.item#formats_v1',
+          png_128: {ref: {$link: 'bafypng'}, size: 10, mimeType: 'image/png'},
+        } as never,
+      },
+    })
+    expect(getReactionEmojiImage(ref)).toBe(
+      'https://moji.blue/img/did%3Aplc%3Aowner/bafypng',
+    )
   })
 })

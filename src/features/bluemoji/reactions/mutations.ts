@@ -14,7 +14,7 @@ import {type ViewerReaction} from '#/features/bluemoji/reactions/queries'
 import {
   REACTION_COLLECTION,
   type ReactionEmoji,
-  type ReactionGroup,
+  toReactionEmoji,
 } from '#/features/bluemoji/reactions/util'
 import {type BluemojiItem} from '#/features/bluemoji/util'
 import {com} from '#/lexicons'
@@ -27,74 +27,36 @@ type ReactionTarget = {uri: string; cid?: string}
  */
 export const OPTIMISTIC_URI = 'optimistic'
 
-/** Only the CID-bearing v1 slots travel in the record; v0 bytes cannot. */
-function toReactionEmoji(item: BluemojiItem): ReactionEmoji {
-  const formats: Record<string, string> = {
-    $type: 'blue.moji.richtext.facet#formats_v1',
-  }
-  const source = item.record.formats as Record<string, unknown>
-  for (const slot of ['png_128', 'webp_128', 'gif_128', 'apng_128']) {
-    const blob = source?.[slot]
-    const cid =
-      blob && typeof blob === 'object' && 'ref' in blob
-        ? (blob.ref as {$link?: string}).$link
-        : undefined
-    if (cid) formats[slot] = cid
-  }
-  return {
-    $type: 'blue.moji.feed.reaction#emojiRef',
-    uri: item.uri as ReactionEmoji['uri'],
-    name: item.record.name,
-    alt: item.record.alt,
-    adultOnly: item.record.adultOnly,
-    formats: formats as unknown as ReactionEmoji['formats'],
-  }
-}
-
-function bumpCounts(
+/**
+ * Add or remove the viewer's own reaction in the local list.
+ *
+ * This is the whole optimistic layer. Counts are never edited in place: they
+ * are derived by merging this list into the AppView result (see
+ * `mergeViewerReactions`), so a fake count cannot leak onto other posts and
+ * cannot be erased by a refetch that has not caught up yet.
+ *
+ * Only our own record is touched, and every reader matches on `subject`, so
+ * the viewer's other reactions on the same post survive.
+ */
+function setViewerReaction(
   queryClient: QueryClient,
   target: ReactionTarget,
   emoji: ReactionEmoji,
-  delta: 1 | -1,
+  action: 'add' | 'remove',
 ) {
-  queryClient.setQueriesData<ReactionGroup[]>(
-    {queryKey: ['bluemoji-reaction-counts']},
-    previous => {
-      if (!previous) return previous
-      const next = previous.map(group =>
-        group.emoji.uri === emoji.uri
-          ? {...group, count: group.count + delta}
-          : group,
-      )
-      const existing = next.find(group => group.emoji.uri === emoji.uri)
-      if (!existing && delta > 0) next.push({emoji, count: 1})
-      return next
-        .filter(group => group.count > 0)
-        .sort((a, b) => b.count - a.count)
-    },
-  )
-  /*
-   * Game a whole ViewerReaction rather than just the subject: every reader
-   * matches on `emoji.uri`, and removing only the subject would drop the
-   * viewer's other reactions on the same post.
-   */
   queryClient.setQueriesData<ViewerReaction[]>(
     {queryKey: ['bluemoji-viewer-reactions']},
     previous => {
       if (!previous) return previous
       const rest = previous.filter(
         reaction =>
-          !(reaction.subject === target.uri && reaction.emoji.uri === emoji.uri),
+          !(
+            reaction.subject === target.uri && reaction.emoji.uri === emoji.uri
+          ),
       )
-      if (delta < 0) return rest
-      return [
-        ...rest,
-        {
-          uri: OPTIMISTIC_URI,
-          subject: target.uri,
-          emoji,
-        },
-      ]
+      return action === 'remove'
+        ? rest
+        : [...rest, {uri: OPTIMISTIC_URI, subject: target.uri, emoji}]
     },
   )
 }
@@ -138,24 +100,21 @@ export function useCreateReactionMutation() {
     },
     onMutate: ({target, item}) => {
       const emoji = toReactionEmoji(item)
-      bumpCounts(queryClient, target, emoji, 1)
+      setViewerReaction(queryClient, target, emoji, 'add')
       return {target, emoji}
     },
     onError: (error, {target}, context) => {
-      if (context) bumpCounts(queryClient, target, context.emoji, -1)
+      if (context)
+        setViewerReaction(queryClient, target, context.emoji, 'remove')
       logger.error('Failed to record custom emoji reaction', {
         safeMessage: error,
       })
       Toast.show(l`Could not add your reaction`, {type: 'error'})
     },
     onSuccess: () => haptics.confirm(),
-    onSettled: (_data, _error, {target}) => {
-      void queryClient.invalidateQueries({
-        queryKey: ['bluemoji-reaction-counts'],
-      })
-      void queryClient.invalidateQueries({
-        queryKey: ['bluemoji-reactions', {uri: target.uri}],
-      })
+    onSettled: () => {
+      // Only the viewer list is authoritative locally; counts and the per-post
+      // list come from the AppView and simply catch up on the next read.
       void queryClient.invalidateQueries({
         queryKey: ['bluemoji-viewer-reactions'],
       })
@@ -192,23 +151,17 @@ export function useDeleteReactionMutation() {
       return reactionUri
     },
     onMutate: ({target, emoji}) => {
-      bumpCounts(queryClient, target, emoji, -1)
+      setViewerReaction(queryClient, target, emoji, 'remove')
     },
     onError: (error, {target, emoji}) => {
-      bumpCounts(queryClient, target, emoji, 1)
+      setViewerReaction(queryClient, target, emoji, 'add')
       logger.error('Failed to remove custom emoji reaction', {
         safeMessage: error,
       })
       Toast.show(l`Could not remove your reaction`, {type: 'error'})
     },
-    onSuccess: () => haptics.tap(),
-    onSettled: (_data, _error, {target}) => {
-      void queryClient.invalidateQueries({
-        queryKey: ['bluemoji-reaction-counts'],
-      })
-      void queryClient.invalidateQueries({
-        queryKey: ['bluemoji-reactions', {uri: target.uri}],
-      })
+    onSuccess: () => {
+      haptics.tap()
       void queryClient.invalidateQueries({
         queryKey: ['bluemoji-viewer-reactions'],
       })

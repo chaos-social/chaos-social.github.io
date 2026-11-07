@@ -41,6 +41,7 @@ import {useFormatPostStatCount} from '#/components/PostControls/util'
 import * as Skele from '#/components/Skeleton'
 import * as Toast from '#/components/Toast'
 import {useAnalytics} from '#/analytics'
+import {ReactionBar} from '#/features/bluemoji/reactions/ReactionBar'
 import {type app} from '#/lexicons'
 import {useRunWithEphemeralAgent} from '../hooks/useRunWithEphemeralAgent'
 import {BookmarkButton} from './BookmarkButton'
@@ -51,7 +52,6 @@ import {
   PostControlButtonText,
 } from './PostControlButton'
 import {PostMenuButton} from './PostMenu'
-import {ReactionButton} from './ReactionButton'
 import {useReplyIcon} from './ReplyIcon'
 import {RepostButton} from './RepostButton'
 import {ShareMenuButton} from './ShareMenu'
@@ -540,7 +540,12 @@ function PostControlsInner({
           a.gap_md,
           style,
         ]}>
-        <View style={[a.flex_row, a.flex_1, {maxWidth: 320}]}>
+        {/*
+          Reply/repost/like keep their three equal slots; the reaction bar sits
+          after them in the same capped row rather than becoming a fourth
+          flex_1, which would squeeze all four.
+        */}
+        <View style={[a.flex_row, a.flex_1, a.align_center, {maxWidth: 420}]}>
           <View
             style={[
               a.flex_1,
@@ -598,21 +603,14 @@ function PostControlsInner({
               renderLikeButton()
             )}
           </View>
-          {/* Spacer! */}
-          <View />
+          <ReactionBar
+            post={post}
+            big={big}
+            hitSlop={{left: a.gap_xs.gap, right: a.gap_xs.gap}}
+          />
         </View>
         <View
           style={[a.flex_row, a.justify_end, secondaryControlSpacingStyles]}>
-          {/*
-            Reactions live with the secondary actions: the left cluster is
-            capped at 320px with three flex slots, and a fourth would squeeze
-            reply/repost/like.
-          */}
-          <ReactionButton
-            post={post}
-            big={big}
-            hitSlop={{right: secondaryControlSpacingStyles.gap / 2}}
-          />
           {hasAlternateAccounts && currentAccount ? (
             <EphemeralAccountSwitcherFromScope
               selectedDid={currentAccount.did}

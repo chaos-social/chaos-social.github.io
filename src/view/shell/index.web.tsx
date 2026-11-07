@@ -34,6 +34,7 @@ import {Outlet as PortalOutlet} from '#/components/Portal'
 import {WelcomeModal} from '#/components/WelcomeModal'
 import {RedirectOverlay} from '#/ageAssurance/components/RedirectOverlay'
 import {PassiveAnalytics} from '#/analytics/PassiveAnalytics'
+import {useReactionNotifications} from '#/features/bluemoji/reactions/notifications'
 import {SixSevenOutlet} from '#/features/sixSeven'
 import {FlatNavigator, RoutesContainer} from '#/Navigation'
 import {Composer} from './Composer'
@@ -115,6 +116,7 @@ function ShellInner() {
   const welcomeModalControl = useWelcomeModal()
 
   useIntentHandler()
+  useReactionNotifications()
 
   useEffect(() => {
     if (!pasteToLinkEnabled) return
