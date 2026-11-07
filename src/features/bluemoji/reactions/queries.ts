@@ -3,6 +3,7 @@ import {useInfiniteQuery, useQuery, useQueryClient} from '@tanstack/react-query'
 
 import {useDeferredEnable} from '#/lib/hooks/useDeferredEnable'
 import {createServiceClient} from '#/lib/lexClient'
+import {useBluemojiInstance} from '#/state/preferences/bluemoji-instance'
 import {STALE} from '#/state/queries'
 import {createQueryKey} from '#/state/queries/util'
 import {usePdsClient, useSession} from '#/state/session'
@@ -12,10 +13,7 @@ import {
   type ReactionEmoji,
   type ReactionGroup,
 } from '#/features/bluemoji/reactions/util'
-import {BLUEMOJI_SERVICE} from '#/features/bluemoji/util'
 import {blue, com} from '#/lexicons'
-
-const client = createServiceClient(BLUEMOJI_SERVICE)
 
 const countsRoot = 'bluemoji-reaction-counts'
 const reactionsRoot = 'bluemoji-reactions'
@@ -28,40 +26,59 @@ const trendingRoot = 'bluemoji-trending'
  * hammer the AppView. Requests arriving in the same tick are coalesced into a
  * single call and each post resolves from the shared response.
  */
-const pending = new Map<string, (groups: ReactionGroup[]) => void>()
+type PendingCounts = {
+  instance: string
+  uri: string
+  resolve: (groups: ReactionGroup[]) => void
+}
+const pending = new Map<string, PendingCounts>()
 let flushHandle: ReturnType<typeof setTimeout> | null = null
 
 async function flushCounts() {
   flushHandle = null
-  const uris = [...pending.keys()]
   const waiters = new Map(pending)
   pending.clear()
+  // Switching instances mid-flight leaves entries for hosts that no longer
+  // apply; group by instance so each request goes to the one that queued it.
+  const byInstance = new Map<string, string[]>()
+  for (const {instance, uri} of waiters.values()) {
+    const uris = byInstance.get(instance)
+    if (uris) uris.push(uri)
+    else byInstance.set(instance, [uri])
+  }
   const results = new Map<string, ReactionGroup[]>()
   await Promise.all(
-    Array.from(
-      {length: Math.ceil(uris.length / REACTION_COUNT_BATCH)},
-      (_, i) => {
-        const chunk = uris.slice(
-          i * REACTION_COUNT_BATCH,
-          (i + 1) * REACTION_COUNT_BATCH,
-        )
-        return client
-          .call(
-            blue.moji.feed.getReactionCounts,
-            {uris: chunk as AtUriString[]},
-            {validateResponse: false},
+    [...byInstance].flatMap(([instance, uris]) => {
+      const client = createServiceClient(instance)
+      return Array.from(
+        {length: Math.ceil(uris.length / REACTION_COUNT_BATCH)},
+        (_, i) => {
+          const chunk = uris.slice(
+            i * REACTION_COUNT_BATCH,
+            (i + 1) * REACTION_COUNT_BATCH,
           )
-          .then(result => parseCounts(result))
-          .then(counts =>
-            counts.forEach((groups, uri) => results.set(uri, groups)),
-          )
-          .catch(() => {
-            /* A failed batch resolves as no reactions; readers retry on refetch. */
-          })
-      },
-    ),
+          return client
+            .call(
+              blue.moji.feed.getReactionCounts,
+              {uris: chunk as AtUriString[]},
+              {validateResponse: false},
+            )
+            .then(result => parseCounts(result))
+            .then(counts =>
+              counts.forEach((groups, uri) =>
+                results.set(`${instance} ${uri}`, groups),
+              ),
+            )
+            .catch(() => {
+              /* A failed batch resolves as no reactions; readers retry on refetch. */
+            })
+        },
+      )
+    }),
   )
-  for (const [uri, resolve] of waiters) resolve(results.get(uri) ?? [])
+  for (const [key, {resolve}] of waiters) {
+    resolve(results.get(key) ?? [])
+  }
 }
 
 function parseCounts(result: unknown) {
@@ -120,43 +137,48 @@ function parseEmojiRef(candidate: unknown): ReactionEmoji | undefined {
   } as ReactionEmoji
 }
 
-export function fetchReactionCounts(uri: string): Promise<ReactionGroup[]> {
+export function fetchReactionCounts(
+  instance: string,
+  uri: string,
+): Promise<ReactionGroup[]> {
   return new Promise(resolve => {
-    pending.set(uri, resolve)
+    pending.set(`${instance} ${uri}`, {instance, uri, resolve})
     flushHandle ??= setTimeout(() => void flushCounts(), 0)
   })
 }
 
-export function reactionCountsQueryOptions(uri: string) {
+export function reactionCountsQueryOptions(instance: string, uri: string) {
   return {
-    queryKey: createQueryKey(countsRoot, {uri}),
+    queryKey: createQueryKey(countsRoot, {instance, uri}),
     staleTime: STALE.MINUTES.ONE,
-    queryFn: () => fetchReactionCounts(uri),
+    queryFn: () => fetchReactionCounts(instance, uri),
     enabled: Boolean(uri),
     retry: false,
   } as const
 }
 
 export function useReactionCountsQuery(uri: string | undefined) {
+  const instance = useBluemojiInstance()
   const enabled = useDeferredEnable(Boolean(uri))
-  return useQuery({...reactionCountsQueryOptions(uri ?? ''), enabled})
+  return useQuery({...reactionCountsQueryOptions(instance, uri ?? ''), enabled})
 }
 
 export function usePostReactionsQuery(uri: string | undefined) {
+  const instance = useBluemojiInstance()
   const enabled = useDeferredEnable(Boolean(uri))
   return useInfiniteQuery({
-    queryKey: createQueryKey(reactionsRoot, {uri}),
+    queryKey: createQueryKey(reactionsRoot, {instance, uri}),
     staleTime: STALE.MINUTES.ONE,
     initialPageParam: undefined as string | undefined,
     enabled,
-    queryFn: ({pageParam}) => fetchReactions(uri ?? '', pageParam),
+    queryFn: ({pageParam}) => fetchReactions(instance, uri ?? '', pageParam),
     getNextPageParam: page => page.cursor,
     retry: false,
   })
 }
 
-async function fetchReactions(uri: string, cursor?: string) {
-  const result: unknown = await client.call(
+async function fetchReactions(instance: string, uri: string, cursor?: string) {
+  const result: unknown = await createServiceClient(instance).call(
     blue.moji.feed.getReactions,
     {uri: uri as AtUriString, limit: 50, cursor},
     {validateResponse: false},
@@ -307,13 +329,14 @@ export function isPersistedReaction(reaction: ViewerReaction | undefined) {
 
 /** AppView-wide trending, used as the Discover tab's default content. */
 export function useTrendingEmojiQuery() {
+  const instance = useBluemojiInstance()
   return useQuery({
     // Month: reactions are still sparse, and a week window is often empty.
-    queryKey: createQueryKey(trendingRoot, {period: 'month'}),
+    queryKey: createQueryKey(trendingRoot, {instance, period: 'month'}),
     staleTime: STALE.MINUTES.FIVE,
     retry: false,
     queryFn: async (): Promise<ReactionGroup[]> => {
-      const result: unknown = await client.call(
+      const result: unknown = await createServiceClient(instance).call(
         blue.moji.feed.getTrending,
         {period: 'month', limit: 60},
         {validateResponse: false},
@@ -329,13 +352,14 @@ export function useTrendingEmojiQuery() {
 
 export function useInvalidateReactions() {
   const queryClient = useQueryClient()
+  const instance = useBluemojiInstance()
   return async (uri: string) => {
     await Promise.all([
       queryClient.invalidateQueries({
-        queryKey: createQueryKey(countsRoot, {uri}),
+        queryKey: createQueryKey(countsRoot, {instance, uri}),
       }),
       queryClient.invalidateQueries({
-        queryKey: createQueryKey(reactionsRoot, {uri}),
+        queryKey: createQueryKey(reactionsRoot, {instance, uri}),
       }),
     ])
     void queryClient.invalidateQueries({queryKey: [viewerRoot]})

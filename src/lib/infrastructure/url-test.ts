@@ -80,6 +80,25 @@ export async function testSlingshotUrl(url: string): Promise<boolean> {
   }
 }
 
+export async function testBluemojiUrl(url: string): Promise<boolean> {
+  try {
+    return await withFetchTimeout(async signal => {
+      const testUrl = new URL(
+        '/xrpc/blue.moji.feed.getTrending',
+        normalizeOrigin(url),
+      )
+      testUrl.searchParams.set('period', 'month')
+      testUrl.searchParams.set('limit', '1')
+      const res = await fetch(testUrl, {method: 'GET', headers, signal})
+      if (!res.ok) return false
+      const json: unknown = await res.json()
+      return typeof json === 'object' && json !== null && 'items' in json
+    })
+  } catch {
+    return false
+  }
+}
+
 export async function testLibreTranslateUrl(url: string): Promise<boolean> {
   try {
     return await withFetchTimeout(async signal => {

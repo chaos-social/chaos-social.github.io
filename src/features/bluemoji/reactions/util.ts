@@ -1,7 +1,8 @@
 import {AtUri} from '@atproto/syntax'
 import {DEFAULT_LABEL_SETTINGS, type ModerationOpts} from '@bsky/sdk/moderation'
 
-import {BLUEMOJI_SERVICE, type BluemojiItem} from '#/features/bluemoji/util'
+import {readBluemojiInstance} from '#/state/preferences/bluemoji-instance'
+import {type BluemojiItem} from '#/features/bluemoji/util'
 import {type blue} from '#/lexicons'
 
 export const REACTION_COLLECTION = 'blue.moji.feed.reaction' as const
@@ -30,12 +31,12 @@ export function getReactionEmojiDid(emoji: ReactionEmoji) {
 }
 
 /** Reaction images render small and often, so skip v0 raw-bytes formats. */
-export function getReactionEmojiImage(emoji: ReactionEmoji) {
+export function getReactionEmojiImage(emoji: ReactionEmoji, instance?: string) {
   const did = getReactionEmojiDid(emoji)
   if (!did) return undefined
   const cid = getRenditionCid(emoji)
   if (!cid) return undefined
-  return `${BLUEMOJI_SERVICE}/img/${encodeURIComponent(did)}/${encodeURIComponent(cid)}`
+  return `${instance ?? readBluemojiInstance()}/img/${encodeURIComponent(did)}/${encodeURIComponent(cid)}`
 }
 
 /**

@@ -579,7 +579,7 @@ importers:
         version: 58.1.5(patch_hash=2454a6392a8541a3de1d8ec9cf731552c68eb9f8e0f70475ade7fcb75ebe583d)(@typescript/typescript6@6.0.2)(expo@58.0.14)(react-native@0.88.0(patch_hash=80f9cea2f2985f3e01ca8798a68960e93c9d04a388aeb803bfb8040207c086d2)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2)
       expo-paste-input:
         specifier: ^0.2.1
-        version: 0.2.1(patch_hash=6016b5f1e8fbbc8d91243a4036aba2497d25cd5aedc2e5444f42073a9ce20fa4)(expo@58.0.14)(react-native@0.88.0(patch_hash=7fad2ee5144693e6dd7d373860a204007c0a1e2a2d5180e068d214589335970a)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
+        version: 0.2.1(patch_hash=6016b5f1e8fbbc8d91243a4036aba2497d25cd5aedc2e5444f42073a9ce20fa4)(expo@58.0.14)(react-native@0.88.0(patch_hash=80f9cea2f2985f3e01ca8798a68960e93c9d04a388aeb803bfb8040207c086d2)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
       expo-privacy-sensitive:
         specifier: ^0.2.0
         version: 0.2.0(expo@58.0.14)(react-native@0.88.0(patch_hash=80f9cea2f2985f3e01ca8798a68960e93c9d04a388aeb803bfb8040207c086d2)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0)
@@ -17716,7 +17716,7 @@ snapshots:
       - supports-color
       - typescript
 
-  expo-paste-input@0.2.1(patch_hash=6016b5f1e8fbbc8d91243a4036aba2497d25cd5aedc2e5444f42073a9ce20fa4)(expo@58.0.14)(react-native@0.88.0(patch_hash=7fad2ee5144693e6dd7d373860a204007c0a1e2a2d5180e068d214589335970a)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0):
+  expo-paste-input@0.2.1(patch_hash=6016b5f1e8fbbc8d91243a4036aba2497d25cd5aedc2e5444f42073a9ce20fa4)(expo@58.0.14)(react-native@0.88.0(patch_hash=80f9cea2f2985f3e01ca8798a68960e93c9d04a388aeb803bfb8040207c086d2)(@babel/core@7.29.7(supports-color@10.2.2))(@react-native/metro-config@0.88.0(@babel/core@7.29.7(supports-color@10.2.2))(supports-color@10.2.2))(@types/react@19.3.0)(react@19.3.0)(supports-color@10.2.2))(react@19.3.0):
     dependencies:
       expo: 58.0.14(patch_hash=0208b099bee03d1d30dddfe51b3a1598db2180fa85ae9a9c032a296cb0cb006f)(31f99316f3f53ae9689d3531fc42f4f0)
       react: 19.3.0

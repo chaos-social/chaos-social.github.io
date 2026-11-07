@@ -4,12 +4,19 @@ import {Trans, useLingui} from '@lingui/react/macro'
 
 import {usePalette} from '#/lib/hooks/usePalette'
 import {
+  testBluemojiUrl,
   testConstellationUrl,
   testImageCdnUrl,
   testPlcDirectoryUrl,
   testSlingshotUrl,
 } from '#/lib/infrastructure/url-test'
 import * as persisted from '#/state/persisted'
+import {
+  useBluemojiInstanceCustom,
+  useBluemojiInstanceSetting,
+  useSetBluemojiInstance,
+  useSetBluemojiInstanceCustom,
+} from '#/state/preferences/bluemoji-instance'
 import {
   useConstellationInstanceCustom,
   useConstellationInstanceSetting,
@@ -74,6 +81,8 @@ const SLINGSHOT_PRESETS = [
   'https://slingshot.wafflehouse.dev',
 ] as const
 
+const BLUEMOJI_PRESETS = ['https://moji.blue'] as const
+
 export function RunesInfrastructureSettingsScreen() {
   const {t: l} = useLingui()
 
@@ -98,6 +107,11 @@ export function RunesInfrastructureSettingsScreen() {
   const setSlingshotInstanceControl = Dialog.useDialogControl()
   const [slingshotDialogSession, setSlingshotDialogSession] = useState(0)
 
+  const bluemojiInstanceSetting = useBluemojiInstanceSetting()
+  const setBluemojiInstance = useSetBluemojiInstance()
+  const setBluemojiInstanceControl = Dialog.useDialogControl()
+  const [bluemojiDialogSession, setBluemojiDialogSession] = useState(0)
+
   const openImageCdnCustomDialog = () => {
     setImageCdnDialogSession(session => session + 1)
     setImageCdnHostControl.open()
@@ -118,6 +132,11 @@ export function RunesInfrastructureSettingsScreen() {
     setSlingshotInstanceControl.open()
   }
 
+  const openBluemojiCustomDialog = () => {
+    setBluemojiDialogSession(session => session + 1)
+    setBluemojiInstanceControl.open()
+  }
+
   const imageCdnSelectValue = getImageCdnSelectValue(imageCdnHostSetting)
   const plcDirectorySelectValue =
     getPlcDirectorySelectValue(plcDirectorySetting)
@@ -125,6 +144,7 @@ export function RunesInfrastructureSettingsScreen() {
     constellationInstanceSetting,
   )
   const slingshotSelectValue = getSlingshotSelectValue(slingshotInstanceSetting)
+  const bluemojiSelectValue = getBluemojiSelectValue(bluemojiInstanceSetting)
 
   const imageCdnItems = [
     {value: 'default', label: l`App server default`},
@@ -149,6 +169,11 @@ export function RunesInfrastructureSettingsScreen() {
   const slingshotItems = [
     {value: SLINGSHOT_PRESETS[0], label: l`microcosm.blue`},
     {value: SLINGSHOT_PRESETS[1], label: l`Wafflehouse.dev`},
+    {value: 'custom', label: l`Custom`},
+  ]
+
+  const bluemojiItems = [
+    {value: BLUEMOJI_PRESETS[0], label: l`moji.blue`},
     {value: 'custom', label: l`Custom`},
   ]
 
@@ -314,6 +339,45 @@ export function RunesInfrastructureSettingsScreen() {
         </View>
       </SettingsList.Group>
 
+      <SettingsList.Divider />
+
+      <SettingsList.Group iconInset={false}>
+        <SettingsList.ItemText>
+          <Trans>{`Bluemoji AppView`}</Trans>
+        </SettingsList.ItemText>
+        <View style={[a.gap_md, a.w_full]}>
+          <Text style={[a.leading_snug]}>
+            <Trans>
+              Used to find custom emoji and count reactions on them.
+            </Trans>
+          </Text>
+          <Select.Root
+            value={bluemojiSelectValue}
+            onValueChange={value => {
+              if (value === 'custom') {
+                openBluemojiCustomDialog()
+                return
+              }
+              setBluemojiInstance(value)
+            }}>
+            <Select.Trigger label={l`Select Bluemoji AppView`}>
+              <Select.ValueText />
+              <Select.Icon />
+            </Select.Trigger>
+            <Select.Content
+              label={l`Bluemoji AppView`}
+              renderItem={({label, value}) => (
+                <Select.Item value={value} label={label}>
+                  <Select.ItemIndicator />
+                  <Select.ItemText>{label}</Select.ItemText>
+                </Select.Item>
+              )}
+              items={bluemojiItems}
+            />
+          </Select.Root>
+        </View>
+      </SettingsList.Group>
+
       <ConstellationInstanceDialog
         control={setConstellationInstanceControl}
         openGeneration={constellationDialogSession}
@@ -321,6 +385,10 @@ export function RunesInfrastructureSettingsScreen() {
       <SlingshotInstanceDialog
         control={setSlingshotInstanceControl}
         openGeneration={slingshotDialogSession}
+      />
+      <BluemojiInstanceDialog
+        control={setBluemojiInstanceControl}
+        openGeneration={bluemojiDialogSession}
       />
       <ImageCdnHostDialog
         control={setImageCdnHostControl}
@@ -493,6 +561,99 @@ function ConstellationInstanceDialog({
             placeholderTextColor={pal.colors.textLight}
             onSubmitEditing={() => void submit()}
             accessibilityHint={l`Input the url of the constellations instance to use`}
+            defaultValue={savedCustomUrl}
+          />
+
+          {testError && <Admonition type="error">{testError}</Admonition>}
+
+          <View style={IS_WEB && [a.flex_row, a.justify_end]}>
+            <Button
+              label={isClear ? l`Clear` : l`Save`}
+              size="large"
+              onPress={() => void submit()}
+              variant="solid"
+              color={isClear ? 'secondary' : 'primary'}
+              disabled={!canSubmit}>
+              {isTesting && <ButtonIcon icon={Loader} />}
+              <ButtonText>
+                {isClear ? <Trans>Clear</Trans> : <Trans>Save</Trans>}
+              </ButtonText>
+            </Button>
+          </View>
+        </View>
+
+        <Dialog.Close />
+      </Dialog.ScrollableInner>
+    </Dialog.Outer>
+  )
+}
+
+function BluemojiInstanceDialog({
+  control,
+  openGeneration,
+}: {
+  control: Dialog.DialogControlProps
+  openGeneration: number
+}) {
+  const pal = usePalette('default')
+  const {t: l} = useLingui()
+
+  const bluemojiInstanceCustom = useBluemojiInstanceCustom()
+  const savedCustomUrl = bluemojiInstanceCustom ?? ''
+  const [url, setUrl] = useState(savedCustomUrl)
+  const setBluemojiInstance = useSetBluemojiInstance()
+  const setBluemojiInstanceCustom = useSetBluemojiInstanceCustom()
+  const {submit, isTesting, testError, canSubmit, isClear, clearTestError} =
+    useInfrastructureUrlSave({
+      url,
+      isUrlValid: isValidHostnameUrl,
+      testUrl: testBluemojiUrl,
+      onSave: nextUrl => {
+        setBluemojiInstanceCustom(nextUrl)
+        setBluemojiInstance(nextUrl)
+      },
+      onClear: () => {
+        setBluemojiInstanceCustom(undefined)
+        setBluemojiInstance(persisted.defaults.bluemojiInstance)
+      },
+      control,
+    })
+
+  useLayoutEffect(() => {
+    setUrl(savedCustomUrl)
+    clearTestError()
+  }, [savedCustomUrl, openGeneration, clearTestError])
+
+  return (
+    <Dialog.Outer
+      control={control}
+      nativeOptions={{preventExpansion: true}}
+      onClose={() => {
+        setUrl(savedCustomUrl)
+        clearTestError()
+      }}>
+      <Dialog.Handle />
+      <Dialog.ScrollableInner label={l`Bluemoji AppView URL`}>
+        <View style={[a.gap_sm, a.pb_lg]}>
+          <Text style={[a.text_2xl, a.font_bold]}>
+            <Trans>Bluemoji AppView URL</Trans>
+          </Text>
+        </View>
+
+        <View style={a.gap_lg}>
+          <Dialog.Input
+            key={openGeneration}
+            label="Text input field"
+            autoFocus
+            style={[styles.textInput, pal.border, pal.text]}
+            onChangeText={text => {
+              setUrl(text)
+              clearTestError()
+            }}
+            placeholder={persisted.defaults.bluemojiInstance}
+            placeholderTextColor={pal.colors.textLight}
+            onSubmitEditing={() => void submit()}
+            accessibilityHint={l`Input the URL of the Bluemoji AppView to use`}
             defaultValue={savedCustomUrl}
           />
 
@@ -757,6 +918,18 @@ function getSlingshotSelectValue(raw: string | undefined) {
   if (
     origin &&
     SLINGSHOT_PRESETS.includes(origin as (typeof SLINGSHOT_PRESETS)[number])
+  ) {
+    return origin
+  }
+
+  return 'custom'
+}
+
+function getBluemojiSelectValue(raw: string | undefined) {
+  const origin = normalizeOrigin(raw ?? persisted.defaults.bluemojiInstance)
+  if (
+    origin &&
+    BLUEMOJI_PRESETS.includes(origin as (typeof BLUEMOJI_PRESETS)[number])
   ) {
     return origin
   }
