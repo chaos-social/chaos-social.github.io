@@ -46,6 +46,40 @@ export async function openPicker(opts?: ImagePickerOptions) {
     }))
 }
 
+/**
+ * Pick several images at once. The file name comes back too, because a bulk
+ * emoji upload derives each alias from the file it was picked as.
+ */
+export async function openMultiplePicker({
+  selectionLimit = 0,
+}: {selectionLimit?: number} = {}) {
+  const response = await launchImageLibraryAsync({
+    exif: false,
+    mediaTypes: ['images'],
+    quality: 1,
+    allowsMultipleSelection: true,
+    selectionLimit,
+    legacy: true,
+    shouldDownloadFromNetwork: true,
+    preferredAssetRepresentationMode:
+      UIImagePickerPreferredAssetRepresentationMode.Automatic,
+  })
+
+  return (response.assets ?? []).flatMap(image => {
+    if (!image.mimeType?.startsWith('image/')) return []
+    return [
+      {
+        mime: image.mimeType,
+        height: image.height,
+        width: image.width,
+        path: image.uri,
+        size: image.fileSize ?? getDataUriSize(image.uri),
+        fileName: image.fileName ?? undefined,
+      } satisfies PickerImage & {fileName?: string},
+    ]
+  })
+}
+
 export async function openUnifiedPicker({
   selectionCountRemaining,
   videoMaxDurationMs = VIDEO_MAX_DURATION_MS,
