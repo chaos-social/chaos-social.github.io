@@ -18,6 +18,8 @@ export type Device = {
 
   fontScale: '-2' | '-1' | '0' | '1' | '2'
   fontFamily: 'system' | 'theme' | 'material'
+  /** Extra letter spacing on the system font. Defaults to on. */
+  fontLetterSpacing?: boolean
   lastNuxDialog: string | undefined
 
   /**

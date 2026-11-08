@@ -268,6 +268,7 @@ export function Composer({
       {
         fontScale: fonts.scaleMultiplier,
         fontFamily: fonts.family,
+        fontLetterSpacing: fonts.letterSpacing,
         flags: {},
       },
     )

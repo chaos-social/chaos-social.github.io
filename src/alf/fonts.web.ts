@@ -9,8 +9,9 @@ export * from './fonts.shared'
 export function applyFonts(
   style: MutableTextStyle,
   fontFamily: 'material' | 'system' | 'theme',
+  letterSpacing = true,
 ) {
-  applySharedFonts(style, fontFamily)
+  applySharedFonts(style, fontFamily, letterSpacing)
   style.fontFamily = style.fontFamily?.replace(
     /^([^,]+)(.*)$/,
     '$1, var(--emoji-font, "__disabledEmojiFont")$2',

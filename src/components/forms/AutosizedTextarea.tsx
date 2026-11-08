@@ -52,6 +52,7 @@ export function AutosizedTextarea({
         {
           fontScale: fonts.scaleMultiplier,
           fontFamily: fonts.family,
+          fontLetterSpacing: fonts.letterSpacing,
           flags: {},
         },
       )
@@ -154,11 +155,7 @@ export function AutosizedTextarea({
       reportHeight(minInputHeight)
     }
     prevRawValue.current = rawValue
-  }, [
-	rawValue,
-	minInputHeight,
-	onUpdateHeight
-])
+  }, [rawValue, minInputHeight, onUpdateHeight])
 
   return (
     <TextInput

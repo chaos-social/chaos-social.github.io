@@ -340,7 +340,7 @@ export function createInput(Component: typeof TextInput) {
       ]),
     }
 
-    applyFonts(flattened, fonts.family)
+    applyFonts(flattened, fonts.family, fonts.letterSpacing)
 
     if (flattened.fontSize) {
       flattened.fontSize = Math.round(

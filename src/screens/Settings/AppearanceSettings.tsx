@@ -37,6 +37,7 @@ import {type Alf, atoms as a, native, useAlf, useTheme} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
 import * as Toggle from '#/components/forms/Toggle'
 import {At_Stroke2_Corner0_Rounded as AtIcon} from '#/components/icons/At'
+import {PageText_Stroke2_Corner0_Rounded as PageTextIcon} from '#/components/icons/Page'
 import {Repost_Stroke2_Corner3_Rounded as RepostIcon} from '#/components/icons/Repost'
 import {Shapes_Stroke2_Corner0_Rounded as CornersIcon} from '#/components/icons/Shapes'
 import {Sparkle_Stroke2_Corner0_Rounded as SparkleIcon} from '#/components/icons/Sparkle'
@@ -241,6 +242,22 @@ export function AppearanceSettingsScreen({}: Props) {
                 value={fonts.family}
                 onChange={onChangeFontFamily}
               />
+
+              {fonts.family === 'system' && (
+                <Toggle.Item
+                  name="font_letter_spacing"
+                  label={l`Add letter spacing to the system font`}
+                  value={fonts.letterSpacing}
+                  onChange={value => fonts.setLetterSpacing(value)}>
+                  <SettingsList.Item>
+                    <SettingsList.ItemIcon icon={PageTextIcon} />
+                    <SettingsList.ItemText>
+                      <Trans>Add letter spacing to the system font</Trans>
+                    </SettingsList.ItemText>
+                    <Toggle.Platform />
+                  </SettingsList.Item>
+                </Toggle.Item>
+              )}
 
               <AppearanceToggleButtonGroup
                 title={l`Font size`}

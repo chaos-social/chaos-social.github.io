@@ -18,8 +18,10 @@ import {useThemePrefs} from '#/state/shell/color-mode'
 import {
   computeFontScaleMultiplier,
   getFontFamily,
+  getFontLetterSpacing,
   getFontScale,
   setFontFamily as persistFontFamily,
+  setFontLetterSpacing as persistFontLetterSpacing,
   setFontScale as persistFontScale,
 } from '#/alf/fonts'
 import {
@@ -78,8 +80,11 @@ export type Alf = {
     scale: Exclude<Device['fontScale'], undefined>
     scaleMultiplier: number
     family: Device['fontFamily']
+    /** Extra letter spacing applied to the system font. */
+    letterSpacing: boolean
     setFontScale: (fontScale: Exclude<Device['fontScale'], undefined>) => void
     setFontFamily: (fontFamily: Device['fontFamily']) => void
+    setLetterSpacing: (enabled: boolean) => void
   }
   /**
    * Feature flags or other gated options
@@ -98,8 +103,10 @@ export const Context = createContext<Alf>({
     scale: getFontScale(),
     scaleMultiplier: computeFontScaleMultiplier(getFontScale()),
     family: getFontFamily(),
+    letterSpacing: getFontLetterSpacing(),
     setFontScale: () => {},
     setFontFamily: () => {},
+    setLetterSpacing: () => {},
   },
   flags: {},
 })
@@ -295,6 +302,13 @@ function ThemeProviderInner({
     },
     [setFontFamily],
   )
+  const [letterSpacing, setLetterSpacing] = useState(getFontLetterSpacing)
+  const setLetterSpacingAndPersist = useCallback<
+    Alf['fonts']['setLetterSpacing']
+  >(enabled => {
+    setLetterSpacing(enabled)
+    persistFontLetterSpacing(enabled)
+  }, [])
 
   const value = useMemo<Alf>(() => {
     // Use currentScheme for Witchsky's custom theming, but allow themesOverride from upstream
@@ -307,8 +321,10 @@ function ThemeProviderInner({
         scale: fontScale,
         scaleMultiplier: fontScaleMultiplier,
         family: fontFamily,
+        letterSpacing,
         setFontScale: setFontScaleAndPersist,
         setFontFamily: setFontFamilyAndPersist,
+        setLetterSpacing: setLetterSpacingAndPersist,
       },
       flags: {},
     }
@@ -318,8 +334,10 @@ function ThemeProviderInner({
     fontScale,
     fontScaleMultiplier,
     fontFamily,
+    letterSpacing,
     setFontScaleAndPersist,
     setFontFamilyAndPersist,
+    setLetterSpacingAndPersist,
     themesOverride,
   ])
 

@@ -77,12 +77,21 @@ export function setFontFamily(fontFamily: Device['fontFamily']) {
   device.set(['fontFamily'], fontFamily)
 }
 
+export function getFontLetterSpacing() {
+  return device.get(['fontLetterSpacing']) ?? true
+}
+
+export function setFontLetterSpacing(enabled: boolean) {
+  device.set(['fontLetterSpacing'], enabled)
+}
+
 /*
  * Unused fonts are commented out, but the files are there if we need them.
  */
 export function applyFonts(
   style: MutableTextStyle,
   fontFamily: 'material' | 'system' | 'theme',
+  letterSpacing = true,
 ) {
   if (IS_ANDROID && fontFamily === 'material') {
     const weight = Number(style.fontWeight || 400)
@@ -151,6 +160,8 @@ export function applyFonts(
      * Overridden to previous spacing for the `system` font option.
      * https://github.com/bluesky-social/social-app/commit/2419096e2409008b7d71fd6b8f8d0dd5b016e267
      */
-    style.letterSpacing = 0.25
+    if (letterSpacing) {
+      style.letterSpacing = 0.25
+    }
   }
 }

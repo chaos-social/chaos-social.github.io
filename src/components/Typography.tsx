@@ -47,6 +47,7 @@ export function Text({
     {
       fontScale: allowFontScaling ? fonts.scaleMultiplier : 1,
       fontFamily: fonts.family,
+      fontLetterSpacing: fonts.letterSpacing,
       flags,
     },
   )

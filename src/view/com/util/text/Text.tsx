@@ -66,7 +66,7 @@ function Text_DEPRECATED({
         {}),
     }
 
-    applyFonts(flattened, fonts.family)
+    applyFonts(flattened, fonts.family, fonts.letterSpacing)
 
     if (flattened.fontSize) {
       flattened.fontSize = Math.round(
@@ -86,6 +86,7 @@ function Text_DEPRECATED({
   }, [
     dataSet,
     fonts.family,
+    fonts.letterSpacing,
     fonts.scaleMultiplier,
     lineHeight,
     props,

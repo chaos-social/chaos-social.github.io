@@ -25,6 +25,7 @@ export function Text({blend, style}: TextStyleProp & SkeletonProps) {
     {
       fontScale: fonts.scaleMultiplier,
       fontFamily: fonts.family,
+      fontLetterSpacing: fonts.letterSpacing,
       flags,
     },
   )

@@ -507,6 +507,7 @@ export function TextInput({
       {
         fontScale: fonts.scaleMultiplier,
         fontFamily: fonts.family,
+        fontLetterSpacing: fonts.letterSpacing,
         flags: {},
       },
     )
