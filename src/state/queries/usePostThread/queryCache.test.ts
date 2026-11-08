@@ -13,6 +13,7 @@ import {
 } from '#/state/queries/post-feed'
 import {findAllPostsInQueryData as findAllPostsInQuoteQueryData} from '#/state/queries/post-quotes'
 import {findAllPostsInQueryData as findAllPostsInSearchQueryData} from '#/state/queries/search-posts-v2'
+import {findAllPostsInQueryData as findAllPostsInBookmarkListsQueryData} from '#/features/tokimeki/bookmarkLists'
 import {type app} from '#/lexicons'
 import {getThreadPlaceholder} from './queryCache'
 
@@ -21,6 +22,9 @@ jest.mock('#/state/cache/post-shadow', () => ({
   updatePostShadow: jest.fn(),
 }))
 jest.mock('#/state/queries/bookmarks/useBookmarksQuery', () => ({
+  findAllPostsInQueryData: jest.fn(),
+}))
+jest.mock('#/features/tokimeki/bookmarkLists', () => ({
   findAllPostsInQueryData: jest.fn(),
 }))
 jest.mock('#/state/queries/explore-feed-previews', () => ({
@@ -49,6 +53,7 @@ jest.mock('#/state/queries/usePostThread', () => ({
 
 const finders = [
   findAllPostsInBookmarksQueryData,
+  findAllPostsInBookmarkListsQueryData,
   findAllPostsInExploreFeedPreviewsQueryData,
   findAllPostsInNotifsQueryData,
   findAllPostsInGroupedNotifsQueryData,

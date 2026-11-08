@@ -9,6 +9,7 @@ import {
   testImageCdnUrl,
   testPlcDirectoryUrl,
   testSlingshotUrl,
+  testTokimekiUrl,
 } from '#/lib/infrastructure/url-test'
 import * as persisted from '#/state/persisted'
 import {
@@ -41,6 +42,12 @@ import {
   useSlingshotInstanceCustom,
   useSlingshotInstanceSetting,
 } from '#/state/preferences/slingshot-instance'
+import {
+  useSetTokimekiInstance,
+  useSetTokimekiInstanceCustom,
+  useTokimekiInstanceCustom,
+  useTokimekiInstanceSetting,
+} from '#/state/preferences/tokimeki-instance'
 import {
   isValidHostnameUrl,
   isValidPlcDirectoryUrl,
@@ -85,6 +92,8 @@ const SLINGSHOT_PRESETS = [
 
 const BLUEMOJI_PRESETS = ['https://moji.blue'] as const
 
+const TOKIMEKI_PRESETS = ['https://api.tokimeki.tech'] as const
+
 export function RunesInfrastructureSettingsScreen() {
   const {t: l} = useLingui()
 
@@ -114,6 +123,11 @@ export function RunesInfrastructureSettingsScreen() {
   const setBluemojiInstanceControl = Dialog.useDialogControl()
   const [bluemojiDialogSession, setBluemojiDialogSession] = useState(0)
 
+  const tokimekiInstanceSetting = useTokimekiInstanceSetting()
+  const setTokimekiInstance = useSetTokimekiInstance()
+  const setTokimekiInstanceControl = Dialog.useDialogControl()
+  const [tokimekiDialogSession, setTokimekiDialogSession] = useState(0)
+
   const tagSearchInstanceControl = Dialog.useDialogControl()
 
   const openImageCdnCustomDialog = () => {
@@ -141,6 +155,11 @@ export function RunesInfrastructureSettingsScreen() {
     setBluemojiInstanceControl.open()
   }
 
+  const openTokimekiCustomDialog = () => {
+    setTokimekiDialogSession(session => session + 1)
+    setTokimekiInstanceControl.open()
+  }
+
   const imageCdnSelectValue = getImageCdnSelectValue(imageCdnHostSetting)
   const plcDirectorySelectValue =
     getPlcDirectorySelectValue(plcDirectorySetting)
@@ -149,6 +168,7 @@ export function RunesInfrastructureSettingsScreen() {
   )
   const slingshotSelectValue = getSlingshotSelectValue(slingshotInstanceSetting)
   const bluemojiSelectValue = getBluemojiSelectValue(bluemojiInstanceSetting)
+  const tokimekiSelectValue = getTokimekiSelectValue(tokimekiInstanceSetting)
 
   const imageCdnItems = [
     {value: 'default', label: l`App server default`},
@@ -178,6 +198,11 @@ export function RunesInfrastructureSettingsScreen() {
 
   const bluemojiItems = [
     {value: BLUEMOJI_PRESETS[0], label: l`moji.blue`},
+    {value: 'custom', label: l`Custom`},
+  ]
+
+  const tokimekiItems = [
+    {value: TOKIMEKI_PRESETS[0], label: l`api.tokimeki.tech`},
     {value: 'custom', label: l`Custom`},
   ]
 
@@ -386,6 +411,46 @@ export function RunesInfrastructureSettingsScreen() {
 
       <SettingsList.Group iconInset={false}>
         <SettingsList.ItemText>
+          <Trans>{`TOKIMEKI AppView`}</Trans>
+        </SettingsList.ItemText>
+        <View style={[a.gap_md, a.w_full]}>
+          <Text style={[a.leading_snug]}>
+            <Trans>
+              Used for private bookmark lists. Lists are stored on TOKIMEKI's
+              servers, not your own repository.
+            </Trans>
+          </Text>
+          <Select.Root
+            value={tokimekiSelectValue}
+            onValueChange={value => {
+              if (value === 'custom') {
+                openTokimekiCustomDialog()
+                return
+              }
+              setTokimekiInstance(value)
+            }}>
+            <Select.Trigger label={l`Select TOKIMEKI AppView`}>
+              <Select.ValueText />
+              <Select.Icon />
+            </Select.Trigger>
+            <Select.Content
+              label={l`TOKIMEKI AppView`}
+              renderItem={({label, value}) => (
+                <Select.Item value={value} label={label}>
+                  <Select.ItemIndicator />
+                  <Select.ItemText>{label}</Select.ItemText>
+                </Select.Item>
+              )}
+              items={tokimekiItems}
+            />
+          </Select.Root>
+        </View>
+      </SettingsList.Group>
+
+      <SettingsList.Divider />
+
+      <SettingsList.Group iconInset={false}>
+        <SettingsList.ItemText>
           <Trans>Tag Search Server</Trans>
         </SettingsList.ItemText>
         <View style={[a.gap_md, a.w_full]}>
@@ -417,6 +482,10 @@ export function RunesInfrastructureSettingsScreen() {
       <BluemojiInstanceDialog
         control={setBluemojiInstanceControl}
         openGeneration={bluemojiDialogSession}
+      />
+      <TokimekiInstanceDialog
+        control={setTokimekiInstanceControl}
+        openGeneration={tokimekiDialogSession}
       />
       <ImageCdnHostDialog
         control={setImageCdnHostControl}
@@ -709,6 +778,99 @@ function BluemojiInstanceDialog({
   )
 }
 
+function TokimekiInstanceDialog({
+  control,
+  openGeneration,
+}: {
+  control: Dialog.DialogControlProps
+  openGeneration: number
+}) {
+  const pal = usePalette('default')
+  const {t: l} = useLingui()
+
+  const tokimekiInstanceCustom = useTokimekiInstanceCustom()
+  const savedCustomUrl = tokimekiInstanceCustom ?? ''
+  const [url, setUrl] = useState(savedCustomUrl)
+  const setTokimekiInstance = useSetTokimekiInstance()
+  const setTokimekiInstanceCustom = useSetTokimekiInstanceCustom()
+  const {submit, isTesting, testError, canSubmit, isClear, clearTestError} =
+    useInfrastructureUrlSave({
+      url,
+      isUrlValid: isValidHostnameUrl,
+      testUrl: testTokimekiUrl,
+      onSave: nextUrl => {
+        setTokimekiInstanceCustom(nextUrl)
+        setTokimekiInstance(nextUrl)
+      },
+      onClear: () => {
+        setTokimekiInstanceCustom(undefined)
+        setTokimekiInstance(persisted.defaults.tokimekiInstance)
+      },
+      control,
+    })
+
+  useLayoutEffect(() => {
+    setUrl(savedCustomUrl)
+    clearTestError()
+  }, [savedCustomUrl, openGeneration, clearTestError])
+
+  return (
+    <Dialog.Outer
+      control={control}
+      nativeOptions={{preventExpansion: true}}
+      onClose={() => {
+        setUrl(savedCustomUrl)
+        clearTestError()
+      }}>
+      <Dialog.Handle />
+      <Dialog.ScrollableInner label={l`TOKIMEKI AppView URL`}>
+        <View style={[a.gap_sm, a.pb_lg]}>
+          <Text style={[a.text_2xl, a.font_bold]}>
+            <Trans>TOKIMEKI AppView URL</Trans>
+          </Text>
+        </View>
+
+        <View style={a.gap_lg}>
+          <Dialog.Input
+            key={openGeneration}
+            label="Text input field"
+            autoFocus
+            style={[styles.textInput, pal.border, pal.text]}
+            onChangeText={text => {
+              setUrl(text)
+              clearTestError()
+            }}
+            placeholder={persisted.defaults.tokimekiInstance}
+            placeholderTextColor={pal.colors.textLight}
+            onSubmitEditing={() => void submit()}
+            accessibilityHint={l`Input the URL of the TOKIMEKI AppView to use`}
+            defaultValue={savedCustomUrl}
+          />
+
+          {testError && <Admonition type="error">{testError}</Admonition>}
+
+          <View style={IS_WEB && [a.flex_row, a.justify_end]}>
+            <Button
+              label={isClear ? l`Clear` : l`Save`}
+              size="large"
+              onPress={() => void submit()}
+              variant="solid"
+              color={isClear ? 'secondary' : 'primary'}
+              disabled={!canSubmit}>
+              {isTesting && <ButtonIcon icon={Loader} />}
+              <ButtonText>
+                {isClear ? <Trans>Clear</Trans> : <Trans>Save</Trans>}
+              </ButtonText>
+            </Button>
+          </View>
+        </View>
+
+        <Dialog.Close />
+      </Dialog.ScrollableInner>
+    </Dialog.Outer>
+  )
+}
+
 function ImageCdnHostDialog({
   control,
   openGeneration,
@@ -946,6 +1108,18 @@ function getSlingshotSelectValue(raw: string | undefined) {
   if (
     origin &&
     SLINGSHOT_PRESETS.includes(origin as (typeof SLINGSHOT_PRESETS)[number])
+  ) {
+    return origin
+  }
+
+  return 'custom'
+}
+
+function getTokimekiSelectValue(raw: string | undefined) {
+  const origin = normalizeOrigin(raw ?? persisted.defaults.tokimekiInstance)
+  if (
+    origin &&
+    TOKIMEKI_PRESETS.includes(origin as (typeof TOKIMEKI_PRESETS)[number])
   ) {
     return origin
   }

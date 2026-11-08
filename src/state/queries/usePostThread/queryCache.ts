@@ -39,6 +39,7 @@ import {
   embedViewRecordToPostView,
   getEmbeddedPost,
 } from '#/state/queries/util'
+import {findAllPostsInQueryData as findAllPostsInBookmarkListsQueryData} from '#/features/tokimeki/bookmarkLists'
 import {app} from '#/lexicons'
 import * as bsky from '#/types/bsky'
 
@@ -292,6 +293,9 @@ export function* getThreadPlaceholderCandidates(
     yield postViewToThreadPlaceholder(post)
   }
   for (let post of findAllPostsInBookmarksQueryData(queryClient, uri)) {
+    yield postViewToThreadPlaceholder(post, postNumbering)
+  }
+  for (let post of findAllPostsInBookmarkListsQueryData(queryClient, uri)) {
     yield postViewToThreadPlaceholder(post, postNumbering)
   }
   for (let post of findAllPostsInExploreFeedPreviewsQueryData(

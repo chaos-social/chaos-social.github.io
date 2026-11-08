@@ -162,6 +162,14 @@ const BookmarksScreen = deferredNamedScreen(
   () => require('#/screens/Bookmarks'),
   'BookmarksScreen',
 )
+const TokimekiBookmarkListsScreen = deferredNamedScreen(
+  () => require('#/screens/TokimekiBookmarkLists'),
+  'TokimekiBookmarkListsScreen',
+)
+const TokimekiBookmarkListScreen = deferredNamedScreen(
+  () => require('#/screens/TokimekiBookmarkList'),
+  'TokimekiBookmarkListScreen',
+)
 const SeenPostsScreen = deferredNamedScreen(
   () => require('#/screens/SeenPosts'),
   'SeenPostsScreen',
@@ -971,6 +979,22 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         getComponent={() => BookmarksScreen}
         options={{
           title: title(msg`Saved Posts`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="TokimekiBookmarkLists"
+        getComponent={() => TokimekiBookmarkListsScreen}
+        options={{
+          title: title(msg`Private lists`),
+          requireAuth: true,
+        }}
+      />
+      <Stack.Screen
+        name="TokimekiBookmarkList"
+        getComponent={() => TokimekiBookmarkListScreen}
+        options={{
+          title: title(msg`Private list`),
           requireAuth: true,
         }}
       />

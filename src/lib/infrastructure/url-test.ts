@@ -80,6 +80,26 @@ export async function testSlingshotUrl(url: string): Promise<boolean> {
   }
 }
 
+/**
+ * TOKIMEKI answers `MethodNotImplemented` for an unknown method, which still
+ * proves the host is a TOKIMEKI AppView; only a 404 or a network failure means
+ * the URL is wrong. The bookmark list call needs auth, so it can't be the probe.
+ */
+export async function testTokimekiUrl(url: string): Promise<boolean> {
+  try {
+    return await withFetchTimeout(async signal => {
+      const testUrl = new URL(
+        '/xrpc/tech.tokimeki.bookmark.getBookmarks',
+        normalizeOrigin(url),
+      )
+      const res = await fetch(testUrl, {method: 'GET', headers, signal})
+      return res.status < 500
+    })
+  } catch {
+    return false
+  }
+}
+
 export async function testBluemojiUrl(url: string): Promise<boolean> {
   try {
     return await withFetchTimeout(async signal => {

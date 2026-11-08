@@ -132,6 +132,8 @@ export type CommonNavigatorParams = {
   StarterPackEdit: {rkey?: string}
   VideoFeed: VideoFeedSourceContext
   Bookmarks: undefined
+  TokimekiBookmarkLists: undefined
+  TokimekiBookmarkList: {listId: string}
   SeenPosts: undefined
   FindContactsFlow: undefined
 }

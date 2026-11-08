@@ -116,6 +116,8 @@ export const router = new Router<AllNavigatableRoutes>({
   StarterPackWizard: '/starter-pack/create',
   VideoFeed: '/video-feed',
   Bookmarks: '/saved',
+  TokimekiBookmarkLists: '/saved/lists',
+  TokimekiBookmarkList: '/saved/list/:listId',
   SeenPosts: '/seen',
   FindContactsFlow: '/find-contacts',
 })

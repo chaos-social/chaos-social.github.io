@@ -2,6 +2,9 @@ export const TOKIMEKI_POLL_COLLECTION = 'tech.tokimeki.poll.poll'
 export const TOKIMEKI_VOTE_COLLECTION = 'tech.tokimeki.poll.vote'
 export const TOKIMEKI_HOSTS = ['poll.tokimeki.tech', 'poll.tokimeki.blue']
 
+/** Private bookmark lists live on TOKIMEKI's servers, not the user's repo. */
+export const TOKIMEKI_PRIVACY_URL = 'https://docs.tokimeki.blue/privacy'
+
 /** Where a poll lives: its author's repo and the record key. */
 export type TokimekiPollRef = {did: string; rkey: string}
 

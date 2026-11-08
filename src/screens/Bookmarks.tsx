@@ -35,6 +35,7 @@ import {
   Bookmark_Filled_Corner0_Rounded as BookmarkFilled,
   BookmarkDelete_Stroke2_Corner0_Rounded_Large as BookmarkDeleteLarge,
 } from '#/components/icons/Bookmark'
+import {BulletList_Stroke2_Corner0_Rounded as BulletListIcon} from '#/components/icons/BulletList'
 import {CircleQuestion_Stroke2_Corner2_Rounded as QuestionIcon} from '#/components/icons/CircleQuestion'
 import * as Layout from '#/components/Layout'
 import {ListFooter} from '#/components/Lists'
@@ -50,8 +51,9 @@ import * as bsky from '#/types/bsky'
 
 type Props = NativeStackScreenProps<CommonNavigatorParams, 'Bookmarks'>
 
-export function BookmarksScreen({}: Props) {
+export function BookmarksScreen({navigation}: Props) {
   const ax = useAnalytics()
+  const {_} = useLingui()
 
   useFocusEffect(
     useCallback(() => {
@@ -70,7 +72,16 @@ export function BookmarksScreen({}: Props) {
             <Trans>Saved Posts</Trans>
           </Layout.Header.TitleText>
         </Layout.Header.Content>
-        <Layout.Header.Slot />
+        <Layout.Header.Slot>
+          <Button
+            testID="privateListsBtn"
+            label={_(msg`Private lists`)}
+            size="small"
+            color="secondary"
+            onPress={() => navigation.navigate('TokimekiBookmarkLists')}>
+            <ButtonIcon icon={BulletListIcon} />
+          </Button>
+        </Layout.Header.Slot>
       </Layout.Header.Outer>
       <BookmarksInner />
     </Layout.Screen>
