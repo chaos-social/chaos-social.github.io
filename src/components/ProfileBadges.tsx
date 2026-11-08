@@ -2,6 +2,7 @@ import {useState} from 'react'
 import {View} from 'react-native'
 import {useLingui} from '@lingui/react/macro'
 
+import {isCakeDay} from '#/lib/cake-day'
 import {HITSLOP_20} from '#/lib/constants'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
 import {type Shadow} from '#/state/cache/types'
@@ -13,10 +14,12 @@ import {
 } from '#/state/preferences/pds-label'
 import {useDeerVerificationProfileOverlay} from '#/state/queries/deer-verification'
 import {usePdsFaviconUrl, usePdsLabelQuery} from '#/state/queries/pds-label'
+import {useTickEveryMinute} from '#/state/shell'
 import {atoms as a, useAlf, useTheme, type ViewStyleProp} from '#/alf'
 import {useNativeFontScale} from '#/alf/util/dimensions'
 import {BotBadge, BotBadgeButton, isBotAccount} from '#/components/BotBadge'
 import {Button} from '#/components/Button'
+import {CakeDayBadge} from '#/components/CakeDayBadge'
 import * as Dialog from '#/components/Dialog'
 import {PdsBadgeIcon, PdsDialog} from '#/components/PdsDialog'
 import {isPetAccount, PetBadge, PetBadgeButton} from '#/components/PetBadge'
@@ -122,11 +125,19 @@ export function ProfileBadgesFromProfileShadow({
     shouldShowPdsCandidate && (!pdsData || !(hideBskyPds && pdsData.isBsky))
 
   const isBetaBadgeVisible = useIsBetaBadgeVisible(shadowed) && showBetaBadge
+  /*
+   * Only subscribe to the minute tick on the anniversary day, so the cake
+   * appears and disappears at UTC midnight without every profile polling.
+   * The tick is 0 when not subscribed, which also means no cake.
+   */
+  const cakeDayTick = useTickEveryMinute(isCakeDay(shadowed.createdAt))
+  const showCake = cakeDayTick > 0 && isCakeDay(shadowed.createdAt, cakeDayTick)
   const badgeVisibility = [
     verification.showBadge,
     isBetaBadgeVisible,
     isBotAccount(shadowed),
     isPetAccount(shadowed),
+    showCake,
   ]
   const badgeCount = badgeVisibility.filter(Boolean).length
 
@@ -201,6 +212,13 @@ export function ProfileBadgesFromProfileShadow({
             hitSlop={hitSlops[2]}
           />
           <PetBadgeButton profile={shadowed} width={botIconWidth} />
+          {showCake && (
+            <CakeDayBadge
+              width={botIconWidth}
+              interactive
+              hitSlop={hitSlops[4]}
+            />
+          )}
         </>
       ) : (
         <>
@@ -234,6 +252,7 @@ export function ProfileBadgesFromProfileShadow({
           ) : null}
           <BotBadge profile={shadowed} width={botIconWidth} />
           <PetBadge profile={shadowed} width={botIconWidth} />
+          {showCake && <CakeDayBadge width={botIconWidth} />}
         </>
       )}
     </View>
