@@ -44,6 +44,16 @@ export const DISCOVER_DEBUG_DIDS: Record<string, true> = {
   'did:plc:2dzyut5lxna5ljiaasgeuffz': true, // darrin.bsky.team
 }
 
+/**
+ * Accounts that are never shown as verified while the AppView's verifier
+ * selection is in use (custom trusted verifiers off). Add one `did: true` line
+ * per account, with a comment naming the handle.
+ */
+export const NEVER_VERIFIED_DIDS: Record<string, true> = {
+  'did:plc:h3wpawnrlptr4534chevddo6': true, // @chaosgreml.in
+  'did:plc:gq4fo3u6tqzzdkjlwzpb23tj': true, // @dame.is
+}
+
 const BASE_FEEDBACK_FORM_URL = `${HELP_DESK_URL}`
 export function FEEDBACK_FORM_URL(_params: {
   email?: string

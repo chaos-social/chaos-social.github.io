@@ -1,5 +1,7 @@
 import {useMemo} from 'react'
 
+import {NEVER_VERIFIED_DIDS} from '#/lib/constants'
+import {useDeerVerificationEnabled} from '#/state/preferences/deer-verification'
 import {useMaybeDeerVerificationProfileOverlay} from '#/state/queries/deer-verification'
 import {usePreferencesQuery} from '#/state/queries/preferences'
 import {useCurrentAccountProfile} from '#/state/queries/useCurrentAccountProfile'
@@ -88,6 +90,7 @@ export function useSimpleVerificationState({
   profile?: bsky.profile.AnyProfileView
 }): SimpleVerificationState {
   const preferences = usePreferencesQuery()
+  const deerVerificationEnabled = useDeerVerificationEnabled()
   const prefs = useMemo(
     () => preferences.data?.verificationPrefs || {hideBadges: false},
     [preferences.data?.verificationPrefs],
@@ -104,16 +107,19 @@ export function useSimpleVerificationState({
     const {verifiedStatus, trustedVerifierStatus} = profile.verification
     const isVerifiedUser = ['valid', 'invalid'].includes(verifiedStatus)
     const isVerifierUser = ['valid', 'invalid'].includes(trustedVerifierStatus)
+    const neverVerified =
+      !deerVerificationEnabled && !!NEVER_VERIFIED_DIDS[profile.did]
     const isVerified =
-      (isVerifiedUser && verifiedStatus === 'valid') ||
-      (isVerifierUser && trustedVerifierStatus === 'valid')
+      !neverVerified &&
+      ((isVerifiedUser && verifiedStatus === 'valid') ||
+        (isVerifierUser && trustedVerifierStatus === 'valid'))
 
     return {
       role: isVerifierUser ? 'verifier' : 'default',
       isVerified,
       showBadge: prefs.hideBadges ? false : isVerified,
     }
-  }, [profile, prefs])
+  }, [profile, prefs, deerVerificationEnabled])
 }
 
 /**
