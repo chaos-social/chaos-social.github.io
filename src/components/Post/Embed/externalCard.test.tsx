@@ -2,16 +2,37 @@ import {render} from '@testing-library/react-native'
 
 import {Embed, PostEmbedViewContext} from './index'
 
+jest.mock('#/features/events/components/EventEmbed', () => ({
+  EventEmbed: () => null,
+}))
+jest.mock('#/Navigation', () => ({}))
 jest.mock('#/state/session', () => ({}))
 jest.mock('#/state/queries/profile', () => ({}))
-jest.mock('#/state/queries/direct-fetch-record', () => ({}))
+jest.mock('#/lib/haptics', () => ({}))
+jest.mock('#/state/queries/direct-fetch-record', () => ({
+  // Avoid loading the real module (and its expo deps); only LRU is used here.
+  LRU: class {
+    async getOrInsertWith(_key: string, fn: () => Promise<unknown>) {
+      return fn()
+    }
+    async getOrTryInsertWith(_key: string, fn: () => Promise<unknown>) {
+      return fn()
+    }
+  },
+}))
+jest.mock('#/alf', () => ({
+  atoms: jest.requireActual<typeof import('@bsky.app/alf')>('@bsky.app/alf').atoms,
+  platform: (value: unknown) => value,
+  tokens: jest.requireActual<typeof import('#/alf/tokens')>('#/alf/tokens'),
+  useScheme: () => 'light',
+  useTheme: () => ({}),
+}))
 jest.mock('#/state/preferences/see-through-blocks', () => ({
   useSeeThroughBlocks: () => false,
 }))
 jest.mock('#/state/queries/see-through-blocks', () => ({
   useUnblockedPostQuery: () => ({}),
 }))
-jest.mock('#/alf', () => ({atoms: {mt_sm: {}}, useTheme: () => ({})}))
 jest.mock('#/state/preferences/moderation-opts', () => ({
   useModerationOpts: () => undefined,
 }))

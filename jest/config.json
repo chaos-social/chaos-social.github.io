@@ -26,10 +26,11 @@
     "^unicode-segmenter/grapheme$": "<rootDir>/node_modules/unicode-segmenter/grapheme.cjs",
     "^await-lock$": "<rootDir>/node_modules/await-lock/build/AwaitLock.js",
     "^@ipld/dag-cbor$": "<rootDir>/node_modules/@ipld/dag-cbor/src/index.js",
-    "^cborg$": "<rootDir>/node_modules/cborg/cborg.js"
+    "^cborg$": "<rootDir>/node_modules/cborg/cborg.js",
+    "^chroma-js/(src/.*)$": "<rootDir>/node_modules/chroma-js/$1"
   },
   "transformIgnorePatterns": [
-    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|nanoid|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|normalize-url|react-native-svg|@sentry/.*|sentry-expo|bcp-47|is-alphabetical|is-alphanumerical|is-decimal|@atproto/.*|@bsky/sdk|@bsky.app/tapper|tlds|sonner-native|sonner|react-native-uuid|multiformats|uint8arrays|@ipld/.*|cborg|await-lock|htmlparser2|domhandler|domutils|domelementtype|entities|dom-serializer)"
+    "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|nanoid|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|normalize-url|react-native-svg|@sentry/.*|sentry-expo|bcp-47|is-alphabetical|is-alphanumerical|is-decimal|@atproto/.*|@bsky/sdk|@bsky.app/tapper|tlds|sonner-native|sonner|react-native-uuid|multiformats|uint8arrays|@ipld/.*|cborg|await-lock|htmlparser2|domhandler|domutils|domelementtype|entities|dom-serializer|chroma-js|@bsky.app/peek-menu)"
   ],
   "modulePathIgnorePatterns": [
     "__tests__/.*/__mocks__",
