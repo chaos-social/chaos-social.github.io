@@ -10,13 +10,10 @@ import {RichText} from '@bsky/sdk/richtext'
 import {t} from '@lingui/core/macro'
 import {type QueryClient} from '@tanstack/react-query'
 
-import {type PollDraft, pollOptionsForPublish} from '#/lib/api/poll'
-import {
-  buildPollExternal,
-  createPoll,
-  deletePoll,
-} from '#/lib/api/poll-publish'
+import {type PollDraft} from '#/lib/api/poll'
+import {createPoll, deletePoll, tokimekiPollUrl} from '#/lib/api/poll-publish'
 import {type LinkResolvers} from '#/lib/api/resolve'
+import {retry} from '#/lib/async/retry'
 import {withCreator} from '#/lib/at-card'
 import {IMAGE_SIZE_CONFIG_POSTS, MAX_TAGS} from '#/lib/constants'
 import {} from '#/lib/constants'
@@ -33,6 +30,7 @@ import {compressImage} from '#/state/gallery'
 import {
   fetchResolveGifQuery,
   fetchResolveLinkQuery,
+  RQKEY_LINK,
 } from '#/state/queries/resolve-link'
 import {
   createThreadgateRecord,
@@ -172,10 +170,7 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
   }
 
   /*
-   * The poll record has to name the post it belongs to by CID, so the post is
-   * built and hashed first and the poll is written just before the post. Its
-   * record key is assigned here because the post's link card needs it, and it
-   * is kept on the draft so a retry overwrites the same record.
+   * Keep the poll key on the draft so failed publishing attempts reuse it.
    */
   let poll: PostResult['poll']
   const pollDraft = pollPost?.embed.poll
@@ -247,6 +242,7 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
   let tid: TID | undefined
   let eventPostRef: {uri: string; cid: string} | undefined
   let pollPostRef: {uri: string; cid: string} | undefined
+  let pollCreatedAt: Date | undefined
 
   for (let i = 0; i < thread.posts.length; i++) {
     const draft = thread.posts[i]
@@ -258,14 +254,16 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
         draft.bluemoji?.[name] ?? {did, name},
       ).catch(() => null),
     )
-    const embedPromise = resolveEmbed(
-      opts.appviewClient,
-      opts.chatClient,
-      opts.pdsClient,
-      queryClient,
-      draft,
-      opts.onStateChange,
-    )
+    const embedPromise = draft.embed.poll
+      ? Promise.resolve(undefined)
+      : resolveEmbed(
+          opts.appviewClient,
+          opts.chatClient,
+          opts.pdsClient,
+          queryClient,
+          draft,
+          opts.onStateChange,
+        )
     let labels: $Typed<com.atproto.label.defs.SelfLabels> | undefined
     if (draft.labels.length) {
       labels = {
@@ -301,6 +299,32 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
     }
     if (!opts.omitViaField) {
       ;(record as app.bsky.feed.post.Main & {via?: string}).via = via
+    }
+    if (draft.embed.poll) {
+      pollCreatedAt = new Date(now)
+      opts.onStateChange?.(t`Creating poll...`)
+      await createPoll(
+        opts.pdsClient,
+        draft.embed.poll,
+        {
+          uri,
+          cid: await computeCid(record),
+        },
+        pollCreatedAt,
+      )
+      try {
+        record.embed = await resolveEmbed(
+          opts.appviewClient,
+          opts.chatClient,
+          opts.pdsClient,
+          queryClient,
+          draft,
+          opts.onStateChange,
+        )
+      } catch (err) {
+        await deletePoll(opts.pdsClient, draft.embed.poll.rkey!)
+        throw err
+      }
     }
     writes.push({
       $type: 'com.atproto.repo.applyWrites#create',
@@ -357,15 +381,14 @@ export async function post(queryClient: QueryClient, opts: PostOpts) {
   }
 
   /*
-   * The poll record names the post by CID, so it can only be written once the
-   * post is built. It goes to the PDS on its own rather than in the batch: the
-   * TOKIMEKI lexicon is not bundled, and `applyWrites` validates records.
+   * The thumbnail changes the post's CID, so replace the preliminary subject
+   * with the finished post ref before writing the post and any thread replies.
    */
   let createdPoll = false
   const pollToWrite = thread.posts.find(p => p.embed.poll)?.embed.poll
   if (pollPostRef && pollToWrite?.rkey) {
     opts.onStateChange?.(t`Creating poll...`)
-    await createPoll(opts.pdsClient, pollToWrite, pollPostRef, now)
+    await createPoll(opts.pdsClient, pollToWrite, pollPostRef, pollCreatedAt)
     createdPoll = true
     poll = {rkey: pollToWrite.rkey, optionCount: pollToWrite.options.length}
   }
@@ -514,7 +537,15 @@ export async function resolveEmbed(
     return resolveEvent(pdsClient, draft, draft.embed.event)
   }
   if (draft.embed.poll) {
-    return resolvePoll(pdsClient, draft, draft.embed.poll)
+    return resolvePoll(
+      appviewClient,
+      chatClient,
+      pdsClient,
+      queryClient,
+      draft,
+      draft.embed.poll,
+      onStateChange,
+    )
   }
   if (draft.embed.quote) {
     const [resolvedMedia, resolvedQuote] = await Promise.all([
@@ -604,27 +635,52 @@ function resolveEvent(
 }
 
 /**
- * The post's link card for a poll it created. The record key is on the draft
- * before the post is built, so the card is known here; TOKIMEKI's service
- * reads the record from the URL and serves its own card elsewhere.
+ * Resolve a published poll through the same preview and upload path as links.
  */
-function resolvePoll(
+async function resolvePoll(
+  appviewClient: Client,
+  chatClient: Client,
   pdsClient: Client,
+  queryClient: QueryClient,
   draft: PostDraft,
   poll: PollDraft,
-): $Typed<app.bsky.embed.external.Main> {
+  onStateChange: ((state: string) => void) | undefined,
+): Promise<$Typed<app.bsky.embed.external.Main>> {
   refusePollWithAttachments(draft)
   if (!poll.rkey) {
     throw new Error('A poll cannot be posted without its record key')
   }
-  return {
-    $type: 'app.bsky.embed.external',
-    external: buildPollExternal({
-      did: pdsClient.assertDid,
-      rkey: poll.rkey,
-      options: pollOptionsForPublish(poll),
-    }),
-  }
+  const uri = tokimekiPollUrl(pdsClient.assertDid, poll.rkey) as UriString
+  // Give TOKIMEKI time to index the new record without caching an empty preview.
+  return retry(
+    3,
+    () => true,
+    async () => {
+      await queryClient.invalidateQueries({
+        queryKey: RQKEY_LINK(uri),
+        refetchType: 'none',
+      })
+      const embed = await resolveMedia(
+        appviewClient,
+        chatClient,
+        pdsClient,
+        queryClient,
+        {
+          quote: undefined,
+          media: undefined,
+          link: {type: 'link', uri},
+        },
+        onStateChange,
+      )
+      if (embed?.$type !== 'app.bsky.embed.external' || !embed.external.thumb) {
+        throw new Error(
+          t`Could not load the poll link preview. Please try again.`,
+        )
+      }
+      return embed
+    },
+    1000,
+  )
 }
 
 async function resolveMedia(

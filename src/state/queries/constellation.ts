@@ -23,6 +23,8 @@ type Collection =
   | 'blue.poll.poll.poll'
   | 'blue.poll.poll.vote'
   | 'blue.moji.feed.reaction'
+  | 'tech.tokimeki.poll.poll'
+  | 'tech.tokimeki.poll.vote'
 
 const headers = new Headers({
   Accept: 'application/json',
