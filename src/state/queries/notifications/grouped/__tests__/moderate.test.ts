@@ -1,4 +1,4 @@
-import {type DidString} from '@atproto/syntax'
+import {type DidString, toDatetimeString} from '@atproto/syntax'
 import {type ModerationOpts} from '@bsky/sdk/moderation'
 import {describe, expect, it} from '@jest/globals'
 
@@ -69,7 +69,7 @@ function label(uri: string, val: string): com.atproto.label.defs.Label {
     src: LABELER,
     uri: uri as com.atproto.label.defs.Label['uri'],
     val,
-    cts: NOW.toISOString() as com.atproto.label.defs.Label['cts'],
+    cts: toDatetimeString(NOW),
   }
 }
 

@@ -1,5 +1,4 @@
-import chroma from 'chroma-js'
-
+import {chroma} from '#/platform/chroma-formats'
 import {generatePaletteFromColor} from '#/alf/util/material3'
 import {getMaterialYouColor} from '#/alf/util/materialYou'
 import {accentForeground} from './accentForeground'

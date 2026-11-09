@@ -1,6 +1,6 @@
 import {renderHook} from '@testing-library/react-native'
-import chroma from 'chroma-js'
 
+import {chroma} from '#/platform/chroma-formats'
 import {useTheme} from '#/alf'
 import {DEFAULT_ACTIVE_THEME} from '#/features/themes/catalog'
 import {

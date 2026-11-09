@@ -1,4 +1,4 @@
-import {type DidString} from '@atproto/syntax'
+import {type DidString, toDatetimeString} from '@atproto/syntax'
 import {type ModerationOpts} from '@bsky/sdk/moderation'
 import {describe, expect, it} from '@jest/globals'
 
@@ -86,7 +86,7 @@ function hideableOffense<
     src: LABELER,
     uri: actor.did,
     val: '!hide',
-    cts: NOW.toISOString() as com.atproto.label.defs.Label['cts'],
+    cts: toDatetimeString(NOW),
   }
   return {...actor, labels: [label]}
 }

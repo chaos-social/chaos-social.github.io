@@ -11,7 +11,7 @@ import {
   useState,
 } from 'react'
 import {AppState} from 'react-native'
-import {type ISODatetimeString} from '@atproto/syntax'
+import {toDatetimeString} from '@atproto/syntax'
 import {useQueryClient} from '@tanstack/react-query'
 import {EventEmitter} from 'eventemitter3'
 
@@ -137,7 +137,7 @@ export function Provider({children}: React.PropsWithChildren<{}>) {
         // update server
         await client.call(app.bsky.notification.updateSeen, {
           // toISOString always emits the Z-suffixed form the format requires
-          seenAt: seenAt.toISOString() as ISODatetimeString,
+          seenAt: toDatetimeString(seenAt),
         })
         lastMarkedReadAt.current = Date.now()
 

@@ -1,5 +1,4 @@
-import chroma from 'chroma-js'
-
+import {chroma} from '#/platform/chroma-formats'
 import {accentForeground} from '#/features/themes/accentForeground'
 import {DEFAULT_ACTIVE_THEME} from '#/features/themes/catalog'
 import {activeThemeToScheme} from '#/features/themes/semanticTheme'

@@ -2,6 +2,7 @@ import {TID} from '@atproto/common-web'
 import {type Client} from '@atproto/lex'
 import {type DidString} from '@atproto/syntax'
 import {describe, expect, it, jest} from '@jest/globals'
+import {type QueryClient} from '@tanstack/react-query'
 
 import {app} from '#/lexicons'
 import {type FeedPage, type Notification, type UnreadCheck} from '../types'
@@ -257,14 +258,8 @@ describe('fetchPage bites', () => {
   const BIT_AT = Date.UTC(2026, 9, 1)
   const rkey = (time: number) => TID.fromTime(time * 1000, 2).toString()
 
-  function makeClient({
-    bites,
-    profiles,
-  }: {
-    bites: {did: string; rkey: string}[]
-    profiles: string[]
-  }) {
-    const call = jest.fn(async (method: unknown, params: any) => {
+  function makeClient({bites}: {bites: {did: string; rkey: string}[]}) {
+    const call = jest.fn((method: unknown, params: {actors: string[]}) => {
       if (method === app.bsky.notification.listNotifications) {
         return {notifications: [], cursor: undefined, seenAt: undefined}
       }
@@ -274,15 +269,15 @@ describe('fetchPage bites', () => {
         }
       }
       if (method === app.bsky.feed.getPosts) return {posts: []}
-      throw new Error(`unexpected call ${method}`)
+      throw new Error(`unexpected call ${String(method)}`)
     })
     const fetchMock = jest.spyOn(globalThis, 'fetch').mockResolvedValue({
-      json: async () => ({linking_records: bites, cursor: null}),
-    } as Response)
+      json: () => ({linking_records: bites, cursor: null}),
+    } as unknown as Response)
     return {client: {did: VIEWER, call} as unknown as Client, call, fetchMock}
   }
 
-  const queryClient = {setQueryData: jest.fn()} as any
+  const queryClient = {setQueryData: jest.fn()} as unknown as QueryClient
 
   async function page(
     client: Client,
@@ -310,11 +305,11 @@ describe('fetchPage bites', () => {
       {did: 'did:plc:b', rkey: rkey(BIT_AT + 1000)},
       {did: 'did:plc:a', rkey: rkey(BIT_AT + 2000)},
     ]
-    const {client, call, fetchMock} = makeClient({bites, profiles: []})
+    const {client, call, fetchMock} = makeClient({bites})
 
     const result = await page(client)
 
-    const url = new URL(String(fetchMock.mock.calls[0][0]))
+    const url = new URL(fetchMock.mock.calls[0][0] as string)
     expect(url.origin + url.pathname).toBe('https://constellation.test/links')
     expect(url.searchParams.get('target')).toBe(`at://${VIEWER}`)
     expect(url.searchParams.get('collection')).toBe('net.wafrn.feed.bite')
@@ -340,7 +335,6 @@ describe('fetchPage bites', () => {
   it('takes a bite notification time from its rkey', async () => {
     const {client} = makeClient({
       bites: [{did: 'did:plc:a', rkey: rkey(BIT_AT)}],
-      profiles: [],
     })
 
     const [item] = (await page(client)).items
@@ -349,7 +343,7 @@ describe('fetchPage bites', () => {
   })
 
   it('leaves bites out where only their count is wanted', async () => {
-    const {client, fetchMock} = makeClient({bites: [], profiles: []})
+    const {client, fetchMock} = makeClient({bites: []})
 
     await page(client, {fetchAdditionalData: false})
 
@@ -357,7 +351,7 @@ describe('fetchPage bites', () => {
   })
 
   it('only puts bites on the first page', async () => {
-    const {client, fetchMock} = makeClient({bites: [], profiles: []})
+    const {client, fetchMock} = makeClient({bites: []})
 
     await page(client, {cursor: 'next'})
 
@@ -365,7 +359,7 @@ describe('fetchPage bites', () => {
   })
 
   it('leaves bites out of the mentions tab', async () => {
-    const {client, fetchMock} = makeClient({bites: [], profiles: []})
+    const {client, fetchMock} = makeClient({bites: []})
 
     await page(client, {reasons: ['mention', 'reply', 'quote']})
 

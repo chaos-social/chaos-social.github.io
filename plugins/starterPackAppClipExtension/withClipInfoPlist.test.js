@@ -1,5 +1,6 @@
 /* eslint-disable import/no-nodejs-modules -- Config plugin tests run in Node. */
 const fs = require('fs')
+const path = require('path')
 const {IOSConfig} = require('expo/config-plugins')
 const plist = require('@expo/plist').default
 
@@ -53,7 +54,10 @@ async function generateClipInfoPlist(inputConfig) {
 
   expect(fs.writeFileSync).toHaveBeenCalledTimes(1)
   const [targetPath, xml] = jest.mocked(fs.writeFileSync).mock.calls[0]
-  expect(targetPath).toBe('/project/ios/BlueskyClip/Info.plist')
+  // path.join uses the host separator; compare the logical path.
+  expect(targetPath.split(path.sep).join('/')).toBe(
+    '/project/ios/BlueskyClip/Info.plist',
+  )
   if (typeof xml !== 'string') {
     throw new Error('Expected a plist string')
   }

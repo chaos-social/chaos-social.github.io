@@ -1,4 +1,5 @@
 import {type $Typed} from '@atproto/lex'
+import {toDatetimeString} from '@atproto/syntax'
 
 import {type app, type com} from '#/lexicons'
 
@@ -33,8 +34,7 @@ export const mock = {
       reply,
       embed,
       langs: ['en'],
-      createdAt:
-        new Date().toISOString() as app.bsky.feed.post.Main['createdAt'],
+      createdAt: toDatetimeString(new Date()),
     }
   },
   postView({
@@ -71,8 +71,7 @@ export const mock = {
       replyCount,
       repostCount,
       likeCount,
-      indexedAt:
-        new Date().toISOString() as app.bsky.feed.defs.PostView['indexedAt'],
+      indexedAt: toDatetimeString(new Date()),
       viewer,
       labels,
     }
@@ -183,8 +182,7 @@ export const mock = {
       reasonSubject: `at://${author.did}/app.bsky.feed.post/fake-parent`,
       record,
       isRead: false,
-      indexedAt:
-        new Date().toISOString() as app.bsky.notification.listNotifications.Notification['indexedAt'],
+      indexedAt: toDatetimeString(new Date()),
       labels,
     }
   },
@@ -208,8 +206,7 @@ export const mock = {
         subject: subjectDid,
       },
       isRead: false,
-      indexedAt:
-        new Date().toISOString() as app.bsky.notification.listNotifications.Notification['indexedAt'],
+      indexedAt: toDatetimeString(new Date()),
       labels,
     }
   },
@@ -227,8 +224,7 @@ export const mock = {
       did: 'did:web:feeds.example.com',
       creator: {...creator, $type: 'app.bsky.actor.defs#profileView'},
       displayName,
-      indexedAt:
-        new Date().toISOString() as app.bsky.feed.defs.GeneratorView['indexedAt'],
+      indexedAt: toDatetimeString(new Date()),
     }
   },
   starterPackViewBasic({
@@ -250,8 +246,7 @@ export const mock = {
         list: `at://${creator.did}/app.bsky.graph.list/fake`,
         createdAt,
       },
-      indexedAt:
-        createdAt as app.bsky.graph.defs.StarterPackViewBasic['indexedAt'],
+      indexedAt: toDatetimeString(createdAt),
     }
   },
   label({
@@ -268,7 +263,7 @@ export const mock = {
         'did:plc:fake-labeler') as com.atproto.label.defs.Label['src'],
       uri: uri as com.atproto.label.defs.Label['uri'],
       val,
-      cts: new Date().toISOString() as com.atproto.label.defs.Label['cts'],
+      cts: toDatetimeString(new Date()),
     }
   },
 }
