@@ -1,14 +1,17 @@
 import {type Client} from '@atproto/lex'
 import {type QueryClient} from '@tanstack/react-query'
 
+import {fetchResolveLinkQuery} from '#/state/queries/resolve-link'
 import {TOKIMEKI_POLL_COLLECTION} from '#/features/tokimeki/types'
 import {app, com} from '#/lexicons'
+import * as cid from '../computeCid'
 import {post, resolveEmbed} from '../index'
 
 jest.mock('#/state/gallery', () => ({compressImage: jest.fn()}))
 jest.mock('#/state/queries/resolve-link', () => ({
   fetchResolveGifQuery: jest.fn(),
   fetchResolveLinkQuery: jest.fn(),
+  RQKEY_LINK: (url: string) => ['resolve-link', url],
 }))
 jest.mock('#/state/queries/threadgate', () => ({
   createThreadgateRecord: jest.fn(),
@@ -24,6 +27,28 @@ jest.mock('multiformats/cid', () => ({
 }))
 
 const queryClient = {invalidateQueries: jest.fn()} as unknown as QueryClient
+const originalFetch = global.fetch
+const mockFetch: jest.MockedFunction<typeof fetch> = jest.fn()
+const thumbnail = new Blob(['poll image'], {type: 'image/png'})
+const thumb = {
+  $type: 'blob',
+  ref: {$link: 'bafkreithumb'},
+  mimeType: 'image/png',
+  size: 10,
+}
+
+beforeEach(() => {
+  global.fetch = mockFetch
+  mockFetch.mockResolvedValue({
+    ok: true,
+    blob: () => Promise.resolve(thumbnail),
+  } as Response)
+})
+
+afterEach(() => {
+  global.fetch = originalFetch
+  jest.restoreAllMocks()
+})
 
 type Write = {
   collection: string
@@ -37,18 +62,37 @@ type Write = {
 
 function setup() {
   const events: string[] = []
+  jest
+    .mocked(fetchResolveLinkQuery)
+    .mockImplementation((_query, _clients, uri) => {
+      events.push('resolveLink')
+      return Promise.resolve({
+        type: 'external',
+        uri,
+        title: 'Poll from TOKIMEKI',
+        description: 'Yes / No',
+        thumb: {
+          source: {path: 'data:image/png;base64,cG5n', mime: 'image/png'},
+        },
+      } as never)
+    })
+  const uploadBlob = jest.fn(() => {
+    events.push('uploadBlob')
+    return Promise.resolve({body: {blob: thumb}})
+  })
   const applyWrites = jest.fn((_input: unknown) => {
     events.push('applyWrites')
     return Promise.resolve({})
   })
-  const putRecord = jest.fn(
-    (record: Record<string, unknown>, rkey: string) => {
-      events.push('putRecord')
-      return Promise.resolve({
-        body: {uri: `at://did:plc:alice/${String(record.$type)}/${rkey}`, cid: 'cid-poll'},
-      })
-    },
-  )
+  const putRecord = jest.fn((record: Record<string, unknown>, rkey: string) => {
+    events.push('putRecord')
+    return Promise.resolve({
+      body: {
+        uri: `at://did:plc:alice/${String(record.$type)}/${rkey}`,
+        cid: 'cid-poll',
+      },
+    })
+  })
   const deleteRecord = jest.fn(() => {
     events.push('deleteRecord')
     return Promise.resolve({})
@@ -63,6 +107,7 @@ function setup() {
     }),
     putRecord,
     deleteRecord,
+    uploadBlob,
   } as unknown as Client
   const appviewClient = {
     assertDid: 'did:plc:alice',
@@ -73,7 +118,15 @@ function setup() {
       throw new Error('unexpected appview call')
     }),
   } as unknown as Client
-  return {pdsClient, appviewClient, applyWrites, putRecord, deleteRecord, events}
+  return {
+    pdsClient,
+    appviewClient,
+    applyWrites,
+    putRecord,
+    deleteRecord,
+    uploadBlob,
+    events,
+  }
 }
 
 function draft(
@@ -125,8 +178,8 @@ describe('publishing a post with a poll', () => {
     const [postId, rkey] = onPollRkey.mock.calls[0]
     expect(postId).toBe('post-1')
 
-    expect(ctx.putRecord).toHaveBeenCalledTimes(1)
-    const [record, writtenRkey] = ctx.putRecord.mock.calls[0]
+    expect(ctx.putRecord).toHaveBeenCalledTimes(2)
+    const [record, writtenRkey] = ctx.putRecord.mock.calls[1]
     expect(writtenRkey).toBe(rkey)
     expect(record.$type).toBe(TOKIMEKI_POLL_COLLECTION)
     expect(record.options).toEqual(['Yes', 'No'])
@@ -137,12 +190,65 @@ describe('publishing a post with a poll', () => {
       $type: 'app.bsky.embed.external',
       external: {
         uri: `https://poll.tokimeki.tech/p/did:plc:alice/${rkey}`,
-        title: 'Yes / No',
+        title: 'Poll from TOKIMEKI',
         description: 'Yes / No',
+        thumb,
+        associatedRefs: undefined,
       },
     })
     expect(result.poll).toEqual({rkey, optionCount: 2})
-    expect(ctx.events).toEqual(['putRecord', 'applyWrites'])
+    expect(ctx.uploadBlob).toHaveBeenCalledWith(thumbnail, {
+      encoding: 'image/png',
+    })
+    expect(fetchResolveLinkQuery).toHaveBeenCalledWith(
+      queryClient,
+      {appviewClient: ctx.appviewClient, chatClient: ctx.appviewClient},
+      `https://poll.tokimeki.tech/p/did:plc:alice/${rkey}`,
+    )
+    expect(ctx.events).toEqual([
+      'putRecord',
+      'resolveLink',
+      'uploadBlob',
+      'putRecord',
+      'applyWrites',
+    ])
+  })
+
+  it('does not publish a text-only card when thumbnail upload fails', async () => {
+    const ctx = setup()
+    ctx.uploadBlob.mockRejectedValue(new Error('Upload refused'))
+    await expect(
+      post(queryClient, {
+        ...clientsOf(ctx),
+        thread: thread([
+          draft({poll: {options: ['Yes', 'No'], duration: '1d'}}),
+        ]),
+      }),
+    ).rejects.toThrow('Upload refused')
+    expect(ctx.deleteRecord).toHaveBeenCalled()
+    expect(ctx.applyWrites).not.toHaveBeenCalled()
+  })
+
+  it('cleans up an unindexed poll when its preview has no thumbnail', async () => {
+    const ctx = setup()
+    jest.mocked(fetchResolveLinkQuery).mockResolvedValue({
+      type: 'external',
+      uri: 'https://poll.tokimeki.tech/p/did:plc:alice/3mpoll',
+      title: '',
+      description: '',
+      thumb: undefined,
+    })
+    await expect(
+      post(queryClient, {
+        ...clientsOf(ctx),
+        thread: thread([
+          draft({poll: {options: ['Yes', 'No'], duration: '1d'}}),
+        ]),
+      }),
+    ).rejects.toThrow('Could not load the poll link preview. Please try again.')
+    expect(ctx.uploadBlob).not.toHaveBeenCalled()
+    expect(ctx.deleteRecord).toHaveBeenCalled()
+    expect(ctx.applyWrites).not.toHaveBeenCalled()
   })
 
   it('reuses the record key on a retry', async () => {
@@ -161,6 +267,39 @@ describe('publishing a post with a poll', () => {
     expect(ctx.putRecord.mock.calls[0][1]).toBe('3mpoll')
   })
 
+  it('finalizes the poll and following replies with the post CID including its preview', async () => {
+    const ctx = setup()
+    jest
+      .spyOn(cid, 'computeCid')
+      .mockImplementation(record =>
+        Promise.resolve(
+          record.embed ? 'cid-with-preview' : 'cid-without-preview',
+        ),
+      )
+    await post(queryClient, {
+      ...clientsOf(ctx),
+      thread: thread([
+        draft({poll: {options: ['Yes', 'No'], duration: '1d'}}),
+        draft({}, 'Reply', 'post-2'),
+      ]),
+    })
+    expect(ctx.putRecord.mock.calls[0][0].subject).toMatchObject({
+      cid: 'cid-without-preview',
+    })
+    expect(ctx.putRecord.mock.calls[1][0].subject).toMatchObject({
+      cid: 'cid-with-preview',
+    })
+    expect(writesOf(ctx.applyWrites)[1].value).toMatchObject({
+      reply: {
+        parent: {cid: 'cid-with-preview'},
+        root: {cid: 'cid-with-preview'},
+      },
+    })
+    expect(ctx.putRecord.mock.calls[1][0].endsAt).toBe(
+      ctx.putRecord.mock.calls[0][0].endsAt,
+    )
+  })
+
   it('closes the poll at the chosen duration', async () => {
     const ctx = setup()
     jest.useFakeTimers({now: new Date('2026-11-07T12:00:00.000Z')})
@@ -176,10 +315,12 @@ describe('publishing a post with a poll', () => {
     }
 
     // The poll closes three days after the post's own timestamp.
-    const createdAt = new Date(writesOf(ctx.applyWrites)[0].value.createdAt)
-      .getTime()
-    expect(new Date(ctx.putRecord.mock.calls[0][0].endsAt as string).getTime())
-      .toBe(createdAt + 3 * 24 * 60 * 60e3)
+    const createdAt = new Date(
+      writesOf(ctx.applyWrites)[0].value.createdAt,
+    ).getTime()
+    expect(
+      new Date(ctx.putRecord.mock.calls[0][0].endsAt as string).getTime(),
+    ).toBe(createdAt + 3 * 24 * 60 * 60e3)
   })
 
   it('removes the poll when the post write is refused', async () => {
@@ -192,7 +333,9 @@ describe('publishing a post with a poll', () => {
       post(queryClient, {
         ...clientsOf(ctx),
         thread: thread([
-          draft({poll: {options: ['Yes', 'No'], duration: '1d', rkey: '3mpoll'}}),
+          draft({
+            poll: {options: ['Yes', 'No'], duration: '1d', rkey: '3mpoll'},
+          }),
         ]),
       }),
     ).rejects.toThrow('InvalidRequest')

@@ -84,6 +84,7 @@ export function Outer({
   control,
   onOpen,
   onClose,
+  onBack,
   nativeOptions,
   testID,
 }: React.PropsWithChildren<DialogOuterProps>) {
@@ -295,6 +296,7 @@ export function Outer({
       backgroundColor={t.atoms.bg.backgroundColor}
       colorScheme={t.scheme}
       {...nativeOptions}
+      onBackPress={IS_ANDROID ? (onBack ?? close) : undefined}
       {...(enableSquareButtons === 'sharp' && {cornerRadius: 0})}
       sourceViewTag={sourceViewTag ?? nativeOptions?.sourceViewTag}
       onSnapPointChange={onSnapPointChange}

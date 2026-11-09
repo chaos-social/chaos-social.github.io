@@ -39,6 +39,7 @@ export type DialogControlProps = DialogControlRefProps & {
 
 export type DialogContextProps = {
   close: DialogControlProps['close']
+  onBack?: () => void
   isNativeDialog: boolean
   /** Actual content width of the presented native sheet or popover. */
   availableWidth?: number
@@ -77,6 +78,7 @@ export type DialogOuterProps = {
   control: DialogControlProps
   onOpen?: () => void
   onClose?: () => void
+  onBack?: () => void
   nativeOptions?: Omit<BottomSheetViewProps, 'children'>
   webOptions?: {
     alignCenter?: boolean

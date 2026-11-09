@@ -1,11 +1,21 @@
 import {Share} from 'react-native'
 // import * as Sharing from 'expo-sharing'
-import {setStringAsync} from 'expo-clipboard'
+import {setStringAsync, setUrlAsync} from 'expo-clipboard'
 import {Share as BlueskyShare} from '@bsky.app/expo-bluesky-swiss-army'
 import {t} from '@lingui/core/macro'
 
 import * as Toast from '#/components/Toast'
 import {IS_ANDROID, IS_IOS} from '#/env'
+
+/** Copy a URL without opening a share sheet, then confirm clipboard success. */
+export async function copyUrl(url: string) {
+  if (IS_IOS) {
+    await setUrlAsync(url)
+  } else {
+    await setStringAsync(url)
+  }
+  Toast.show(t`Copied to clipboard`, {type: 'success'})
+}
 
 export type ShareResult = {
   status: 'shared' | 'dismissed'

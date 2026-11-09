@@ -168,6 +168,19 @@ function makeAccount(overrides: Partial<SessionAccount> = {}): SessionAccount {
   }
 }
 
+function makeOtherAccount(
+  authentication: 'password' | 'oauth',
+): SessionAccount {
+  const isOauthSession = authentication === 'oauth'
+  return makeAccount({
+    did: 'did:plc:bob',
+    handle: 'bob.test',
+    isOauthSession,
+    accessJwt: isOauthSession ? undefined : 'bob-access-jwt',
+    refreshJwt: isOauthSession ? undefined : 'bob-refresh-jwt',
+  })
+}
+
 /*
  * The provider only ever reads `bundle.agent` (for context) and
  * `bundle.session.destroyed` / `bundle.session.session` (for the cross-tab
@@ -206,6 +219,7 @@ type Harness = {
   onSessionChange: OnSessionChange
   currentAccount: () => SessionAccount | undefined
   hasSession: () => boolean
+  accountHistory: () => Array<string | undefined>
 }
 
 /**
@@ -219,9 +233,11 @@ async function renderLoggedIn(
 ): Promise<Harness> {
   let api!: SessionApiContext
   let session!: ReturnType<typeof useSession>
+  const accountHistory: Array<string | undefined> = []
   function Probe() {
     api = useSessionApi()
     session = useSession()
+    accountHistory.push(session.currentAccount?.did)
     return null
   }
   render(
@@ -244,6 +260,7 @@ async function renderLoggedIn(
     onSessionChange: captured,
     currentAccount: () => session.currentAccount,
     hasSession: () => session.hasSession,
+    accountHistory: () => accountHistory,
   }
 }
 
@@ -517,6 +534,147 @@ function emitSynced(session: Schema['session']) {
  * against the store having advanced underneath it.
  */
 describe('cross-tab sync', () => {
+  it.each(['password', 'oauth'] as const)(
+    'keeps the current session visible until a %s account switch is ready',
+    async authentication => {
+      const account = makeAccount()
+      const bundle = makeBundle(account)
+      const {currentAccount, hasSession, accountHistory} = await renderLoggedIn(
+        account,
+        bundle,
+      )
+      const nextAccount = makeOtherAccount(authentication)
+      const nextBundle = makeBundle(nextAccount)
+      let finishRestore!: (value: unknown) => void
+      const restore = authentication === 'oauth' ? mockOAuthResume : mockResume
+      restore.mockReturnValueOnce(
+        new Promise(resolve => {
+          finishRestore = resolve
+        }),
+      )
+      const historyStart = accountHistory().length
+
+      act(() => {
+        emitSynced({
+          accounts: [account, nextAccount],
+          currentAccount: nextAccount,
+        })
+      })
+
+      expect(hasSession()).toBe(true)
+      expect(currentAccount()?.did).toBe(account.did)
+      expect(mockDisposeBundle).not.toHaveBeenCalledWith(bundle)
+
+      await act(async () => {
+        finishRestore({bundle: nextBundle, account: nextAccount})
+        await Promise.resolve()
+      })
+
+      expect(currentAccount()?.did).toBe(nextAccount.did)
+      expect(hasSession()).toBe(true)
+      expect(accountHistory().slice(historyStart)).not.toContain(undefined)
+      expect(mockDisposeBundle).toHaveBeenCalledWith(bundle)
+    },
+  )
+
+  it.each(['password', 'oauth'] as const)(
+    'ignores a pending %s switch superseded by another tab switching back',
+    async authentication => {
+      const account = makeAccount()
+      const bundle = makeBundle(account)
+      const {currentAccount} = await renderLoggedIn(account, bundle)
+      const nextAccount = makeOtherAccount(authentication)
+      const nextBundle = makeBundle(nextAccount)
+      let finishRestore!: (value: unknown) => void
+      const restore = authentication === 'oauth' ? mockOAuthResume : mockResume
+      restore.mockReturnValueOnce(
+        new Promise(resolve => {
+          finishRestore = resolve
+        }),
+      )
+
+      act(() => {
+        emitSynced({
+          accounts: [account, nextAccount],
+          currentAccount: nextAccount,
+        })
+        emitSynced({accounts: [account, nextAccount], currentAccount: account})
+      })
+      await act(async () => {
+        finishRestore({bundle: nextBundle, account: nextAccount})
+        await Promise.resolve()
+      })
+
+      expect(currentAccount()?.did).toBe(account.did)
+      expect(mockDisposeBundle).toHaveBeenCalledWith(nextBundle)
+    },
+  )
+
+  it.each(['password', 'oauth'] as const)(
+    'keeps the previous session if a cross-tab %s restore fails',
+    async authentication => {
+      const account = makeAccount()
+      const bundle = makeBundle(account)
+      const {currentAccount, hasSession} = await renderLoggedIn(account, bundle)
+      const nextAccount = makeOtherAccount(authentication)
+      const restore = authentication === 'oauth' ? mockOAuthResume : mockResume
+      restore.mockRejectedValueOnce(new Error('network unavailable'))
+
+      await act(async () => {
+        emitSynced({
+          accounts: [account, nextAccount],
+          currentAccount: nextAccount,
+        })
+        await Promise.resolve()
+      })
+
+      expect(currentAccount()?.did).toBe(account.did)
+      expect(hasSession()).toBe(true)
+      expect(mockDisposeBundle).not.toHaveBeenCalledWith(bundle)
+    },
+  )
+
+  it.each(['password', 'oauth'] as const)(
+    'honors a real logout during a pending cross-tab %s switch',
+    async authentication => {
+      const account = makeAccount()
+      const bundle = makeBundle(account)
+      const {currentAccount, hasSession} = await renderLoggedIn(account, bundle)
+      const nextAccount = makeOtherAccount(authentication)
+      const nextBundle = makeBundle(nextAccount)
+      let finishRestore!: (value: unknown) => void
+      const restore = authentication === 'oauth' ? mockOAuthResume : mockResume
+      restore.mockReturnValueOnce(
+        new Promise(resolve => {
+          finishRestore = resolve
+        }),
+      )
+
+      act(() => {
+        emitSynced({
+          accounts: [account, nextAccount],
+          currentAccount: nextAccount,
+        })
+      })
+      act(() => {
+        emitSynced({
+          accounts: [account, nextAccount],
+          currentAccount: undefined,
+        })
+      })
+      expect(hasSession()).toBe(false)
+
+      await act(async () => {
+        finishRestore({bundle: nextBundle, account: nextAccount})
+        await Promise.resolve()
+      })
+
+      expect(currentAccount()).toBeUndefined()
+      expect(hasSession()).toBe(false)
+      expect(mockDisposeBundle).toHaveBeenCalledWith(nextBundle)
+    },
+  )
+
   it('short-circuits an update carrying the tokens the live session already has', async () => {
     const account = makeAccount()
     const bundle = makeBundle(account)
@@ -584,7 +742,7 @@ describe('cross-tab sync', () => {
   it('cancels pending work when another tab logs the account out', async () => {
     const account = makeAccount()
     const bundle = makeBundle(account)
-    const {api} = await renderLoggedIn(account, bundle)
+    const {api, hasSession} = await renderLoggedIn(account, bundle)
 
     /* a resume is in flight and will resolve only after the cross-tab logout */
     const resumedBundle = makeBundle(account)
@@ -600,6 +758,7 @@ describe('cross-tab sync', () => {
     act(() => {
       emitSynced({accounts: [loggedOut], currentAccount: loggedOut})
     })
+    expect(hasSession()).toBe(false)
 
     await act(async () => {
       finishResume({bundle: resumedBundle, account})

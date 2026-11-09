@@ -12,6 +12,7 @@ import {useSaveDraftMutation} from './state/queries'
 import {type DraftSummary} from './state/schema'
 
 export function DraftsButton({
+  accountDid,
   onSelectDraft,
   onSaveDraft,
   onDiscard,
@@ -21,6 +22,7 @@ export function DraftsButton({
   canSaveDraft,
   textLength,
 }: {
+  accountDid: string
   onSelectDraft: (draft: DraftSummary) => void
   onSaveDraft: () => Promise<{success: boolean}>
   onDiscard: () => void
@@ -34,7 +36,7 @@ export function DraftsButton({
   const ax = useAnalytics()
   const draftsDialogControl = Dialog.useDialogControl()
   const savePromptControl = Prompt.usePromptControl()
-  const {isPending: isSaving} = useSaveDraftMutation()
+  const {isPending: isSaving} = useSaveDraftMutation(accountDid)
   const enableSquareButtons = useEnableSquareButtons()
 
   const handlePress = () => {
@@ -86,6 +88,7 @@ export function DraftsButton({
         </ButtonText>
       </Button>
       <DraftsListDialog
+        accountDid={accountDid}
         control={draftsDialogControl}
         onSelectDraft={onSelectDraft}
       />

@@ -1,36 +1,18 @@
 import {TID} from '@atproto/common-web'
 import {type Client} from '@atproto/lex'
-import {type UriString} from '@atproto/syntax'
 
-import {
-  type PollDraft,
-  pollEndsAt,
-  pollOptionsForPublish,
-} from '#/lib/api/poll'
+import {type PollDraft, pollEndsAt, pollOptionsForPublish} from '#/lib/api/poll'
 import {logger} from '#/logger'
-import {TOKIMEKI_HOSTS, TOKIMEKI_POLL_COLLECTION} from '#/features/tokimeki/types'
+import {
+  TOKIMEKI_HOSTS,
+  TOKIMEKI_POLL_COLLECTION,
+} from '#/features/tokimeki/types'
 
 /** The post a poll belongs to. */
 export type PollPostRef = {uri: string; cid: string}
 
 export function tokimekiPollUrl(did: string, rkey: string): string {
   return `https://${TOKIMEKI_HOSTS[0]}/p/${did}/${rkey}`
-}
-
-/**
- * The link card a poll post carries. TOKIMEKI finds the poll from the record
- * at this URL's path; other clients only ever show the card text.
- */
-export function buildPollExternal(input: {
-  did: string
-  rkey: string
-  options: string[]
-}): {uri: UriString; title: string; description: string} {
-  return {
-    uri: tokimekiPollUrl(input.did, input.rkey) as UriString,
-    title: input.options.slice(0, 2).join(' / '),
-    description: input.options.join(' / '),
-  }
 }
 
 function pollRecord(draft: PollDraft, post: PollPostRef, now: Date) {
@@ -64,10 +46,7 @@ export async function createPoll(
 }
 
 /** Removes a poll left behind by a post that never got written. */
-export async function deletePoll(
-  client: Client,
-  rkey: string,
-): Promise<void> {
+export async function deletePoll(client: Client, rkey: string): Promise<void> {
   try {
     await client.deleteRecord(TOKIMEKI_POLL_COLLECTION, rkey, {
       repo: client.assertDid,

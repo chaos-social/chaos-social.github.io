@@ -172,6 +172,20 @@ export function RunesDisplaySettingsScreen() {
         </SettingsList.Item>
       </Toggle.Item>
       <Toggle.Item
+        testID="hideBluemojiReactionsToggle"
+        name="hide_bluemoji_reactions"
+        label={l`Hide custom emoji reactions`}
+        value={hideBluemojiReactions}
+        onChange={setHideBluemojiReactions}>
+        <SettingsList.Item>
+          <SettingsList.ItemIcon icon={EmojiIcon} />
+          <SettingsList.ItemText>
+            <Trans>Hide custom emoji reactions</Trans>
+          </SettingsList.ItemText>
+          <Toggle.Platform />
+        </SettingsList.Item>
+      </Toggle.Item>
+      <Toggle.Item
         name="show_via_client"
         label={l`Show client used to post`}
         value={showViaClient}

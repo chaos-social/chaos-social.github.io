@@ -277,12 +277,22 @@ let reducer = (state: State, action: Action): State => {
     }
     case 'synced-accounts': {
       const {syncedAccounts, syncedCurrentDid} = action
+      const currentAccount = syncedAccounts.find(
+        account => account.did === state.currentBundleState.did,
+      )
+      const syncedAccount = syncedAccounts.find(
+        account => account.did === syncedCurrentDid,
+      )
+      const keepCurrentBundle =
+        currentAccount &&
+        (currentAccount.refreshJwt || currentAccount.isOauthSession) &&
+        syncedAccount &&
+        (syncedAccount.refreshJwt || syncedAccount.isOauthSession)
       return {
         accounts: syncedAccounts,
-        currentBundleState:
-          syncedCurrentDid === state.currentBundleState.did
-            ? state.currentBundleState
-            : createPublicBundleState(), // Log out if different user.
+        currentBundleState: keepCurrentBundle
+          ? state.currentBundleState
+          : createPublicBundleState(),
         needsPersist: false, // Synced from another tab. Don't persist to avoid cycles.
       }
     }

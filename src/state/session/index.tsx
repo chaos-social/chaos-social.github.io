@@ -792,11 +792,19 @@ export function Provider({children}: PropsWithChildren<{}>) {
       ) {
         cancelPendingTask()
       }
-      if (syncedAccount?.isOauthSession) {
+      if (
+        syncedAccount &&
+        (syncedAccount.isOauthSession ||
+          (syncedAccount.refreshJwt &&
+            syncedAccount.did !== before.currentBundleState.did))
+      ) {
         const expectedBundle = store.getState().currentBundleState.bundle
         // Restoring a follower must neither cancel an interactive login nor
         // broadcast its temporarily empty bundle back as a logout.
-        void createOAuthSessionBundleAndResume(syncedAccount).then(
+        const restore = syncedAccount.isOauthSession
+          ? createOAuthSessionBundleAndResume(syncedAccount)
+          : createSessionBundleAndResume(syncedAccount, onSessionChange)
+        void restore.then(
           ({bundle, account}) => {
             if (
               generation !== syncGeneration ||
@@ -818,65 +826,60 @@ export function Provider({children}: PropsWithChildren<{}>) {
         return
       }
       if (syncedAccount && syncedAccount.refreshJwt) {
-        if (syncedAccount.did !== before.currentBundleState.did) {
-          // The leader refreshes before broadcasting, so followers receive fresh tokens.
-          void resumeSession(syncedAccount)
-        } else {
-          /*
-           * PasswordSession cannot be patched in place. Rebuild from the tokens
-           * the leader already refreshed, then dispose the previous bundle.
-           */
-          const prevBundle = before.currentBundleState.bundle as unknown as
-            ActiveSessionBundle | PublicSessionBundle
-          // Avoid replacing the live bundle for an unrelated account update.
-          const live =
-            prevBundle.session && !prevBundle.session.destroyed
-              ? prevBundle.session.session
-              : undefined
-          if (
-            live &&
-            live.accessJwt === syncedAccount.accessJwt &&
-            live.refreshJwt === syncedAccount.refreshJwt
-          ) {
-            return
-          }
-          const rebuilt = createSessionBundleFromStoredAccount(
-            syncedAccount,
-            onSessionChange,
-            newBundle => {
-              const current = store.getState()
-              const latestAccount = current.accounts.find(
-                account => account.did === syncedAccount.did,
-              )
-              const isCurrent =
-                current.currentBundleState.bundle === prevBundle &&
-                latestAccount?.accessJwt === syncedAccount.accessJwt &&
-                latestAccount?.refreshJwt === syncedAccount.refreshJwt
-              if (isCurrent) {
-                addSessionDebugLog({
-                  type: 'bundle:patch',
-                  bundleId: getBundleId(newBundle),
-                  prevSession: redactSessionData(
-                    prevBundle.session && !prevBundle.session.destroyed
-                      ? prevBundle.session.session
-                      : undefined,
-                  ),
-                  nextSession: redactSessionData(newBundle.session.session),
-                })
-              }
-              return isCurrent
-            },
-          )
-          if (!rebuilt) {
-            return
-          }
-          const {bundle: newBundle, account: newAccount} = rebuilt
-          store.dispatch({
-            type: 'replaced-current-bundle',
-            newBundle,
-            newAccount,
-          })
+        /*
+         * PasswordSession cannot be patched in place. Rebuild from the tokens
+         * the leader already refreshed, then dispose the previous bundle.
+         */
+        const prevBundle = before.currentBundleState.bundle as unknown as
+          ActiveSessionBundle | PublicSessionBundle
+        // Avoid replacing the live bundle for an unrelated account update.
+        const live =
+          prevBundle.session && !prevBundle.session.destroyed
+            ? prevBundle.session.session
+            : undefined
+        if (
+          live &&
+          live.accessJwt === syncedAccount.accessJwt &&
+          live.refreshJwt === syncedAccount.refreshJwt
+        ) {
+          return
         }
+        const rebuilt = createSessionBundleFromStoredAccount(
+          syncedAccount,
+          onSessionChange,
+          newBundle => {
+            const current = store.getState()
+            const latestAccount = current.accounts.find(
+              account => account.did === syncedAccount.did,
+            )
+            const isCurrent =
+              current.currentBundleState.bundle === prevBundle &&
+              latestAccount?.accessJwt === syncedAccount.accessJwt &&
+              latestAccount?.refreshJwt === syncedAccount.refreshJwt
+            if (isCurrent) {
+              addSessionDebugLog({
+                type: 'bundle:patch',
+                bundleId: getBundleId(newBundle),
+                prevSession: redactSessionData(
+                  prevBundle.session && !prevBundle.session.destroyed
+                    ? prevBundle.session.session
+                    : undefined,
+                ),
+                nextSession: redactSessionData(newBundle.session.session),
+              })
+            }
+            return isCurrent
+          },
+        )
+        if (!rebuilt) {
+          return
+        }
+        const {bundle: newBundle, account: newAccount} = rebuilt
+        store.dispatch({
+          type: 'replaced-current-bundle',
+          newBundle,
+          newAccount,
+        })
       }
     }
     const unsubscribe = persisted.onUpdate('session', nextSession => {
@@ -906,7 +909,7 @@ export function Provider({children}: PropsWithChildren<{}>) {
       listener.remove()
       unsubscribe()
     }
-  }, [store, resumeSession, onSessionChange, cancelPendingTask])
+  }, [store, onSessionChange, cancelPendingTask])
 
   const stateContext = useMemo(
     () => ({

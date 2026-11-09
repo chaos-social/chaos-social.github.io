@@ -1,4 +1,4 @@
-import {useMemo, useState} from 'react'
+import {useState} from 'react'
 import {View} from 'react-native'
 import Animated, {FadeIn, FadeOut} from 'react-native-reanimated'
 import {useSafeAreaFrame} from 'react-native-safe-area-context'
@@ -14,33 +14,22 @@ import {Logotype} from '#/view/icons/Logotype'
 import {atoms as a, useBreakpoints, useTheme} from '#/alf'
 import {Button, ButtonText} from '#/components/Button'
 // @ts-expect-error
-import phoneArt from '../../../../assets/illustrations/illustration-mobile.webp'
-// @ts-expect-error
-import darkPhoneArt from '../../../../assets/illustrations/illustration-mobile-dark.webp'
-// @ts-expect-error
-import darkSafeArt from '../../../../assets/illustrations/illustration-mobile-dark-safe.webp'
-// @ts-expect-error
-import safeArt from '../../../../assets/illustrations/illustration-mobile-safe.webp'
+import catArt from '../../../../assets/illustrations/signin-cat.jpg'
 
 const ART = {
-  phone: {light: phoneArt, dark: darkPhoneArt},
-  safe: {light: safeArt, dark: darkSafeArt},
+  phone: {light: catArt, dark: catArt},
+  safe: {light: catArt, dark: catArt},
 }
 
 /**
- * The phone art extends the illustration with extra sky above and flat green
- * ground below for the buttons to sit on. Those extensions only line up with
- * the artwork in the middle: further out they cut through a cloud and a man's
- * legs. Cover-cropping keeps the cuts offscreen up to 9:16, which is as wide as
- * phones get, so anything wider shows the unextended "safe" art instead.
+ * Keep separate aspect-ratio and theme slots for future illustrated artwork.
  */
 const MAX_PHONE_ART_ASPECT_RATIO = 0.57
 
 /**
- * When the safe art is cropped top and bottom, take more from the bottom so
- * the logo stays on the sky.
+ * Center the photo when wider layouts crop the top and bottom.
  */
-const SAFE_ART_POSITION: ImageContentPosition = {top: '25%', left: '50%'}
+const SAFE_ART_POSITION: ImageContentPosition = {top: '50%', left: '50%'}
 
 export function NativeSplashScreen({
   onPressSignin,
@@ -66,25 +55,20 @@ export function NativeSplashScreen({
   const {width, height} = size ?? frame
   const isPhoneShaped = width / height <= MAX_PHONE_ART_ASPECT_RATIO
 
-  const styles = useMemo(() => {
-    const logoFill = isDarkMode ? 'white' : t.palette.primary_500
-    return {
-      logoFill,
-      logoShadow: isDarkMode
-        ? [
-            {
-              shadowColor: logoFill,
-              shadowRadius: 8,
-              shadowOpacity: 0.5,
-              shadowOffset: {
-                width: 0,
-                height: 0,
-              },
-            },
-          ]
-        : [],
-    }
-  }, [t, isDarkMode])
+  const styles = {
+    logoFill: 'white',
+    logoShadow: [
+      {
+        shadowColor: 'black',
+        shadowRadius: 8,
+        shadowOpacity: 0.5,
+        shadowOffset: {
+          width: 0,
+          height: 0,
+        },
+      },
+    ],
+  }
 
   return (
     <>
@@ -101,6 +85,7 @@ export function NativeSplashScreen({
           source={
             ART[isPhoneShaped ? 'phone' : 'safe'][isDarkMode ? 'dark' : 'light']
           }
+          contentFit="cover"
           contentPosition={isPhoneShaped ? 'center' : SAFE_ART_POSITION}
           style={[a.absolute, a.inset_0]}
         />
@@ -170,26 +155,13 @@ export function NativeSplashScreen({
               msg`Opens flow to sign in to your existing Bluesky account`,
             )}
             size="large"
-            /*
-             * Only the phone art has flat ground under this button, so
-             * elsewhere it gets the same dark glass as the lightbox chrome to
-             * stay legible over the busy part of the illustration. The fill
-             * goes on the button because the web BlurView overrides its own.
-             */
-            style={
-              !isPhoneShaped && [
-                a.overflow_hidden,
-                {backgroundColor: 'rgba(0, 0, 0, 0.5)'},
-              ]
-            }
+            style={[a.overflow_hidden, {backgroundColor: 'rgba(0, 0, 0, 0.5)'}]}
             hoverStyle={{opacity: 0.5}}>
-            {!isPhoneShaped && (
-              <BlurView
-                intensity={20}
-                tint="dark"
-                style={[a.absolute, a.inset_0]}
-              />
-            )}
+            <BlurView
+              intensity={20}
+              tint="dark"
+              style={[a.absolute, a.inset_0]}
+            />
             <ButtonText style={{color: 'white'}}>
               <Trans>Sign in</Trans>
             </ButtonText>

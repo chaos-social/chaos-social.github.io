@@ -8,6 +8,7 @@ import {
 } from 'react-native'
 import Animated from 'react-native-reanimated'
 import {useSafeAreaInsets} from 'react-native-safe-area-context'
+import {useLingui} from '@lingui/react/macro'
 
 import {PressableScale} from '#/lib/custom-animations/PressableScale'
 import {useHaptics} from '#/lib/haptics'
@@ -16,6 +17,7 @@ import {clamp} from '#/lib/numbers'
 import {getShapeStyle} from '#/lib/shapes'
 import {userStyle} from '#/lib/userstyles'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
+import {useComposerState} from '#/state/shell/composer'
 import {atoms as a, ios, useBreakpoints, useTheme} from '#/alf'
 import {IS_WEB} from '#/env'
 
@@ -38,11 +40,15 @@ export function FABInner({
   onPress,
   style,
   userStyleVariant,
+  accessibilityLabel,
+  accessibilityHint,
   ...props
 }: FABProps) {
   const insets = useSafeAreaInsets()
   const {gtMobile} = useBreakpoints()
   const t = useTheme()
+  const {t: l} = useLingui()
+  const composer = useComposerState()
   const haptics = useHaptics()
   const pressInHapticAt = useRef(0)
   const fabMinimalShellTransform = useMinimalShellFabTransform()
@@ -105,7 +111,13 @@ export function FABInner({
           a.justify_center,
           style,
         ]}
-        {...props}>
+        {...props}
+        accessibilityHint={accessibilityHint}
+        accessibilityLabel={
+          userStyleVariant === 'compose' && composer
+            ? l`Open post`
+            : accessibilityLabel
+        }>
         {icon}
       </PressableScale>
     </Animated.View>

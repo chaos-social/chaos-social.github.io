@@ -233,6 +233,7 @@ export type ComposerState = {
 }
 
 export type ComposerAction =
+  | {type: 'retarget'; quoteUri?: string}
   | {type: 'update_postgate'; postgate: app.bsky.feed.postgate.Main}
   | {type: 'update_threadgate'; threadgate: ThreadgateAllowUISetting[]}
   | {
@@ -339,6 +340,24 @@ export function composerReducer(
   action: ComposerAction,
 ): ComposerState {
   switch (action.type) {
+    case 'retarget': {
+      const path = action.quoteUri && postUriToRelativePath(action.quoteUri)
+      const quote: Link | undefined = path
+        ? {type: 'link', uri: toBskyAppUrl(path) as UriString}
+        : undefined
+      return {
+        ...state,
+        isDirty: true,
+        activePostIndex: 0,
+        mutableNeedsFocusActive: true,
+        thread: {
+          ...state.thread,
+          posts: state.thread.posts.map((post, index) =>
+            index === 0 ? {...post, embed: {...post.embed, quote}} : post,
+          ),
+        },
+      }
+    }
     case 'update_postgate': {
       return {
         ...state,

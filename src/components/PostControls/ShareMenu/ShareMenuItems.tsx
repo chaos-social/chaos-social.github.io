@@ -1,7 +1,5 @@
-import {memo, useMemo, useRef} from 'react'
-import * as ExpoClipboard from 'expo-clipboard'
+import {memo, useMemo} from 'react'
 import {AtUri} from '@atproto/syntax'
-import {isIOS} from '@bsky.app/alf'
 import {Trans, useLingui} from '@lingui/react/macro'
 import {useNavigation} from '@react-navigation/native'
 import {useQueryClient} from '@tanstack/react-query'
@@ -9,7 +7,7 @@ import {useQueryClient} from '@tanstack/react-query'
 import {useOpenLink} from '#/lib/hooks/useOpenLink'
 import {makeProfileLink} from '#/lib/routes/links'
 import {type NavigationProp} from '#/lib/routes/types'
-import {shareUrl, simpleShareText} from '#/lib/sharing'
+import {copyUrl, shareUrl, simpleShareText} from '#/lib/sharing'
 import {toShareUrl, toShareUrlBsky} from '#/lib/strings/url-helpers'
 import {useProfileShadow} from '#/state/cache/profile-shadow'
 import {
@@ -32,10 +30,12 @@ import {PDSlsIcon} from '#/components/icons/services/PDSls'
 import {SquareArrowTopRight_Stroke2_Corner0_Rounded as ExternalIcon} from '#/components/icons/SquareArrowTopRight'
 import * as Menu from '#/components/Menu'
 import {CheckboxItemText} from '#/components/Menu/CheckboxItem'
-import * as Toast from '#/components/Toast'
 import {useAgeAssurance} from '#/ageAssurance'
 import {useAnalytics} from '#/analytics'
-import {IS_IOS} from '#/env'
+import {
+  getCopyShareLinks,
+  useCopyShareLinks,
+} from '#/storage/hooks/copy-share-links'
 import {useDevMode} from '#/storage/hooks/dev-mode'
 import {RecentChats} from './RecentChats'
 import {type ShareMenuItemsProps} from './ShareMenuItems.types'
@@ -53,7 +53,7 @@ let ShareMenuItems = ({
   const aa = useAgeAssurance()
   const openLink = useOpenLink()
   const queryClient = useQueryClient()
-  const copyLinksRef = useRef(false)
+  const [copyLinks, setCopyLinks] = useCopyShareLinks()
   const atprotoExplorer = useAtprotoExplorer()
 
   const postUri = post.uri
@@ -89,30 +89,14 @@ let ShareMenuItems = ({
   const onCopyLink = async () => {
     ax.metric('share:press:copyLink', {uri: postUri})
     const url = toShareUrl(href)
-    if (IS_IOS) {
-      // iOS only
-      await ExpoClipboard.setUrlAsync(url)
-    } else {
-      await ExpoClipboard.setStringAsync(url)
-    }
-    Toast.show(l`Copied to clipboard`, {
-      type: 'success',
-    })
+    await copyUrl(url)
     onShareProp()
   }
 
   const onCopyLinkBsky = async () => {
     ax.metric('share:press:copyLink', {uri: postUri})
     const url = toShareUrlBsky(href)
-    if (isIOS) {
-      // iOS only
-      await ExpoClipboard.setUrlAsync(url)
-    } else {
-      await ExpoClipboard.setStringAsync(url)
-    }
-    Toast.show(l`Copied to clipboard`, {
-      type: 'success',
-    })
+    await copyUrl(url)
     onShareProp()
   }
 
@@ -122,14 +106,7 @@ let ShareMenuItems = ({
   }
 
   const onCopyAtprotoExplorerLink = async () => {
-    if (isIOS) {
-      await ExpoClipboard.setUrlAsync(atprotoExplorerUrl)
-    } else {
-      await ExpoClipboard.setStringAsync(atprotoExplorerUrl)
-    }
-    Toast.show(l`Copied to clipboard`, {
-      type: 'success',
-    })
+    await copyUrl(atprotoExplorerUrl)
     onShareProp()
   }
 
@@ -229,7 +206,7 @@ let ShareMenuItems = ({
                 testID="postDropdownShareBlueskyBtn"
                 label={l`Bluesky`}
                 onPress={() => {
-                  if (copyLinksRef.current) {
+                  if (getCopyShareLinks()) {
                     void onCopyLinkBsky()
                   } else {
                     onSharePostBsky()
@@ -244,7 +221,7 @@ let ShareMenuItems = ({
                 testID="postDropdownShareAtprotoExplorerBtn"
                 label={atprotoExplorer.name}
                 onPress={() => {
-                  if (copyLinksRef.current) {
+                  if (getCopyShareLinks()) {
                     void onCopyAtprotoExplorerLink()
                   } else {
                     onSharePostInAtprotoExplorer()
@@ -261,10 +238,8 @@ let ShareMenuItems = ({
               <Menu.ContainerItem>
                 <CheckboxItemText
                   label={l`Copy instead of opening the share sheet`}
-                  initialValue={copyLinksRef.current}
-                  onChange={value => {
-                    copyLinksRef.current = value
-                  }}>
+                  value={copyLinks}
+                  onChange={setCopyLinks}>
                   <Trans>Copy</Trans>
                 </CheckboxItemText>
               </Menu.ContainerItem>

@@ -8,8 +8,6 @@ import {useQueryClient} from '@tanstack/react-query'
 import {MAX_POST_LINES} from '#/lib/constants'
 import {useOpenComposer} from '#/lib/hooks/useOpenComposer'
 import {makeProfileLink} from '#/lib/routes/links'
-import {segmentsToText} from '#/lib/strings/bridged-html'
-import {countLines} from '#/lib/strings/helpers'
 import {userStyle} from '#/lib/userstyles'
 import {
   POST_TOMBSTONE,
@@ -36,6 +34,7 @@ import {PostRepliedTo} from '#/components/Post/PostRepliedTo'
 import {ShowMoreTextButton} from '#/components/Post/ShowMoreTextButton'
 import {TranslatedPost} from '#/components/Post/Translated'
 import {useBridgedHtmlSegments} from '#/components/Post/useBridgedHtmlSegments'
+import {usePostTextLimit} from '#/components/Post/usePostTextLimit'
 import {PostControls} from '#/components/PostControls'
 import {PostTags} from '#/components/PostTags'
 import {RichText} from '#/components/RichText'
@@ -131,11 +130,9 @@ function PostInner({
   const {openComposer} = useOpenComposer()
   const compactPosts = useCompactPosts()
   const htmlSegments = useBridgedHtmlSegments(post.record)
-  const [limitLines, setLimitLines] = useState(
-    () =>
-      countLines(
-        htmlSegments ? segmentsToText(htmlSegments) : richText?.text,
-      ) >= MAX_POST_LINES,
+  const {limitLines, onPressShowMore} = usePostTextLimit(
+    richText?.text,
+    htmlSegments,
   )
   const itemUrip = new AtUri(post.uri)
   const pollParts = pollPostParts(post.record)
@@ -160,10 +157,6 @@ function PostInner({
       logContext: 'PostReply',
     })
   }, [openComposer, post, record, moderation])
-
-  const onPressShowMore = useCallback(() => {
-    setLimitLines(false)
-  }, [setLimitLines])
 
   const onBeforePress = useCallback(() => {
     unstableCacheProfileView(queryClient, post.author)

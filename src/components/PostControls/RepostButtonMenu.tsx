@@ -84,15 +84,6 @@ export function RepostButtonMenu({
         </Menu.Trigger>
         <Menu.Outer>
           <Menu.Group>
-            {isReposted && onBumpRepost && (
-              <Menu.Item
-                testID="repostDropdownBumpBtn"
-                label={l`Bump repost`}
-                onPress={onBumpRepost}>
-                <Menu.ItemText>{l`Bump repost`}</Menu.ItemText>
-                <Menu.ItemIcon icon={BumpRepostIcon} position="right" />
-              </Menu.Item>
-            )}
             <Menu.Item
               label={
                 isReposted
@@ -108,6 +99,15 @@ export function RepostButtonMenu({
               </Menu.ItemText>
               <Menu.ItemIcon icon={RepostIcon} position="right" />
             </Menu.Item>
+            {isReposted && onBumpRepost && (
+              <Menu.Item
+                testID="repostDropdownBumpBtn"
+                label={l`Bump repost`}
+                onPress={onBumpRepost}>
+                <Menu.ItemText>{l`Bump repost`}</Menu.ItemText>
+                <Menu.ItemIcon icon={BumpRepostIcon} position="right" />
+              </Menu.Item>
+            )}
             <Menu.Item
               disabled={embeddingDisabled}
               label={

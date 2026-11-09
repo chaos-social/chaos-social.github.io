@@ -20,9 +20,11 @@ import {useDeleteDraftMutation, useDraftsQuery} from './state/queries'
 import {type DraftSummary} from './state/schema'
 
 export function DraftsListDialog({
+  accountDid,
   control,
   onSelectDraft,
 }: {
+  accountDid: string
   control: Dialog.DialogControlProps
   onSelectDraft: (draft: DraftSummary) => void
 }) {
@@ -31,8 +33,8 @@ export function DraftsListDialog({
   const {gtPhone} = useBreakpoints()
   const ax = useAnalytics()
   const {data, isLoading, hasNextPage, isFetchingNextPage, fetchNextPage} =
-    useDraftsQuery()
-  const {mutate: deleteDraft} = useDeleteDraftMutation()
+    useDraftsQuery(accountDid)
+  const {mutate: deleteDraft} = useDeleteDraftMutation(accountDid)
 
   const drafts = useMemo(
     () => data?.pages.flatMap(page => page.drafts) ?? [],

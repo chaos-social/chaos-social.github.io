@@ -73,6 +73,7 @@ export interface BottomSheetViewProps {
   desiredContentHeight?: number
 
   onAttemptDismiss?: (event: BottomSheetAttemptDismissEvent) => void
+  onBackPress?: () => void
   onSnapPointChange?: (event: BottomSheetSnapPointChangeEvent) => void
   onStateChange?: (event: BottomSheetStateChangeEvent) => void
   onPresentationSizeChange?: (

@@ -8,7 +8,7 @@ export const TOKIMEKI_PRIVACY_URL = 'https://docs.tokimeki.blue/privacy'
 /** Where a poll lives: its author's repo and the record key. */
 export type TokimekiPollRef = {did: string; rkey: string}
 
-/** The parts of `tech.tokimeki.poll.getPoll` the card needs, flattened. */
+/** A PDS poll record with verified votes found through Constellation. */
 export type TokimekiPoll = {
   uri: string
   cid: string

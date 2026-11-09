@@ -1,28 +1,30 @@
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 
 import {atoms as a} from '#/alf'
 import * as Toggle from '#/components/forms/Toggle'
 
 export function CheckboxItemText({
   children,
-  initialValue,
+  value,
   label,
   onChange,
 }: React.PropsWithChildren<{
-  initialValue: boolean
+  value: boolean
   label: string
   onChange: (value: boolean) => void
 }>) {
-  const [selected, setSelected] = useState(initialValue)
+  // Native submenus retain their children, so feedback cannot wait for new props.
+  const [selected, setSelected] = useState(value)
+  useEffect(() => setSelected(value), [value])
 
   return (
     <Toggle.Item
       name="menu_checkbox"
       label={label}
       value={selected}
-      onChange={value => {
-        setSelected(value)
-        onChange(value)
+      onChange={next => {
+        setSelected(next)
+        onChange(next)
       }}
       style={[a.flex_1, a.gap_sm]}>
       <Toggle.Checkbox />

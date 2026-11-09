@@ -148,7 +148,7 @@ it('shows keyboard actions, refreshes the timeout, and ignores editable targets'
     expect(controls.style.opacity).toBe('0')
     press('ArrowRight')
     expect(video.currentTime).toBe(5)
-    expect(controls.style.opacity).toBe('0')
+    expect(controls.style.opacity).toBe('1')
     expect(container.textContent).toContain('+5')
     const badge = () =>
       rootContainer.querySelector<HTMLElement>(
@@ -159,6 +159,7 @@ it('shows keyboard actions, refreshes the timeout, and ignores editable targets'
     act(() => jest.advanceTimersByTime(600))
     press('ArrowLeft')
     expect(video.currentTime).toBe(0)
+    expect(controls.style.opacity).toBe('1')
     expect(container.textContent).toContain('-5')
     act(() => jest.advanceTimersByTime(600))
     expect(container.textContent).toContain('-5')
@@ -171,6 +172,10 @@ it('shows keyboard actions, refreshes the timeout, and ignores editable targets'
     expect(
       rootContainer.querySelector('[data-testid="videoKeyboardFeedback"]'),
     ).toBeNull()
+    act(() => jest.advanceTimersByTime(1199))
+    expect(controls.style.opacity).toBe('1')
+    act(() => jest.advanceTimersByTime(1))
+    expect(controls.style.opacity).toBe('0')
 
     press('c')
     expect(setSubtitlesEnabled).toHaveBeenCalledWith(true)

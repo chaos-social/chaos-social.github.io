@@ -61,6 +61,8 @@ export type Device = {
 
   trendingBetaEnabled: boolean
   keyboardShortcutsEnabled?: boolean
+  /** Copy share links instead of opening the native share sheet. */
+  copyShareLinks?: boolean
   devMode: boolean
   demoMode: boolean
 

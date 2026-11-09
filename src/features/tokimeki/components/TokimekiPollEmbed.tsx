@@ -36,8 +36,11 @@ export function TokimekiPollEmbed({
   onOpen?: () => void
   style?: StyleProp<ViewStyle>
 }) {
-  const {data, isLoading} = useTokimekiPoll({ref: pollRef, enabled: true})
-  if (data === null && !isLoading) {
+  const {data, isLoading, isError} = useTokimekiPoll({
+    ref: pollRef,
+    enabled: true,
+  })
+  if (isError || (data === null && !isLoading)) {
     return <ExternalEmbed link={link} onOpen={onOpen} style={style} />
   }
   return <PollBody poll={data} pollRef={pollRef} style={style} />

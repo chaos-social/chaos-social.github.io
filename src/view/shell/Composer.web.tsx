@@ -1,4 +1,3 @@
-import {useEffect} from 'react'
 import {StyleSheet, View} from 'react-native'
 import * as DismissableLayer from '@radix-ui/react-dismissable-layer'
 import * as FocusGuards from '@radix-ui/react-focus-guards'
@@ -16,35 +15,44 @@ const BOTTOM_BAR_HEIGHT = 61
 
 export function Composer() {
   const state = useComposerState()
-  const isActive = !!state
-
-  if (!isActive) {
+  if (!state) {
     return null
   }
 
+  return <Session state={state} />
+}
+
+function Session({state}: {state: ComposerOpts & {isMinimized?: boolean}}) {
+  const ref = useComposerCancelRef()
   return (
-    <>
-      <RemoveScrollBar />
-      <Inner state={state} />
-    </>
+    <ComposePost
+      {...state}
+      cancelRef={ref}
+      renderPresentation={children =>
+        state.isMinimized ? null : (
+          <>
+            <RemoveScrollBar />
+            <Inner onDismiss={() => ref.current?.onPressCancel()}>
+              {children}
+            </Inner>
+          </>
+        )
+      }
+    />
   )
 }
 
-function Inner({state}: {state: ComposerOpts}) {
-  const ref = useComposerCancelRef()
+function Inner({
+  children,
+  onDismiss,
+}: {
+  children: React.ReactNode
+  onDismiss: () => void
+}) {
   const t = useTheme()
   const enableSquareButtons = useEnableSquareButtons()
   const {gtMobile} = useBreakpoints()
   const {reduceMotionEnabled} = useA11y()
-
-  useEffect(() => {
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault()
-      event.returnValue = ''
-    }
-    window.addEventListener('beforeunload', onBeforeUnload)
-    return () => window.removeEventListener('beforeunload', onBeforeUnload)
-  }, [])
 
   FocusGuards.useFocusGuards()
 
@@ -64,7 +72,7 @@ function Inner({state}: {state: ComposerOpts}) {
         ])}
         onFocusOutside={evt => evt.preventDefault()}
         onInteractOutside={evt => evt.preventDefault()}
-        onDismiss={() => ref.current?.onPressCancel()}>
+        onDismiss={onDismiss}>
         <View
           style={[
             styles.container,
@@ -78,22 +86,7 @@ function Inner({state}: {state: ComposerOpts}) {
             ],
             enableSquareButtons === 'sharp' && SHARP_CORNERS,
           ]}>
-          <ComposePost
-            recoveredState={state.recoveredState}
-            cancelRef={ref}
-            activeAccountDid={state.activeAccountDid}
-            openAccountSwitcher={state.openAccountSwitcher}
-            replyTo={state.replyTo}
-            quote={state.quote}
-            onPost={state.onPost}
-            onPostSuccess={state.onPostSuccess}
-            mention={state.mention}
-            text={state.text}
-            tags={state.tags}
-            imageUris={state.imageUris}
-            videoUri={state.videoUri}
-            openGallery={state.openGallery}
-          />
+          {children}
         </View>
       </DismissableLayer.DismissableLayer>
     </FocusScope.FocusScope>

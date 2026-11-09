@@ -3,6 +3,7 @@ import {useMutation, useQueryClient} from '@tanstack/react-query'
 
 import {useHaptics} from '#/lib/haptics'
 import {logger} from '#/logger'
+import {useConstellationInstance} from '#/state/preferences/constellation-instance'
 import {usePdsClient} from '#/state/session'
 import * as Toast from '#/components/Toast'
 import {com} from '#/lexicons'
@@ -20,6 +21,7 @@ export function useTokimekiVoteMutation(
 ) {
   const pdsClient = usePdsClient()
   const queryClient = useQueryClient()
+  const instance = useConstellationInstance()
   const haptics = useHaptics()
   const {t: l} = useLingui()
 
@@ -41,7 +43,7 @@ export function useTokimekiVoteMutation(
       })
     },
     onMutate: async (index: number) => {
-      const key = RQKEY_POLL(poll?.uri ?? '', viewerDid)
+      const key = RQKEY_POLL(poll?.uri ?? '', viewerDid, instance)
       await queryClient.cancelQueries({queryKey: key})
       const prev = queryClient.getQueryData<TokimekiPoll | null>(key)
       if (prev) {

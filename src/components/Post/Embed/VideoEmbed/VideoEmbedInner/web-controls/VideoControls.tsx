@@ -565,6 +565,7 @@ export function Controls({
         if (isFrameStep) pause()
         const direction = key === 'arrowleft' || key === ',' ? -1 : 1
         if (!isFrameStep) {
+          revealKeyboardControls()
           setKeyboardFeedback({
             icon: direction < 0 ? ArrowLeftIcon : ArrowRightIcon,
             text: direction < 0 ? l`-5` : l`+5`,
@@ -613,6 +614,7 @@ export function Controls({
     l,
     setVolume,
     showVolumeFeedback,
+    revealKeyboardControls,
     togglePlayPause,
     startSpeedHold,
   ])

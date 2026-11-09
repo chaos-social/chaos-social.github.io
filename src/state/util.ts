@@ -1,9 +1,9 @@
 import {useCallback} from 'react'
 
 import {useDialogStateControlContext} from '#/state/dialogs'
+import {useComposerControls, useComposerState} from '#/state/shell/composer'
 import {useLightboxControls} from '#/components/Lightbox/state'
 import {IS_WEB} from '#/env'
-import {useComposerControls} from './shell/composer'
 import {useSetDrawerOpen} from './shell/drawer-open'
 
 /**
@@ -12,22 +12,22 @@ import {useSetDrawerOpen} from './shell/drawer-open'
  */
 export function useCloseAnyActiveElement() {
   const {closeLightbox} = useLightboxControls()
-  const {closeComposer} = useComposerControls()
+  const composer = useComposerState()
   const {closeAllDialogs} = useDialogStateControlContext()
   const setDrawerOpen = useSetDrawerOpen()
   return useCallback(() => {
     if (closeLightbox()) {
       return true
     }
-    if (closeAllDialogs()) {
-      return true
+    if (composer && !composer.isMinimized) {
+      return false
     }
-    if (closeComposer()) {
+    if (closeAllDialogs()) {
       return true
     }
     setDrawerOpen(false)
     return false
-  }, [closeLightbox, closeComposer, setDrawerOpen, closeAllDialogs])
+  }, [closeLightbox, composer, setDrawerOpen, closeAllDialogs])
 }
 
 /**

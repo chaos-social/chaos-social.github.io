@@ -60,6 +60,7 @@ export function Outer({
   control,
   onOpen,
   onClose,
+  onBack,
   webOptions,
 }: React.PropsWithChildren<DialogOuterProps>) {
   const {_} = useLingui()
@@ -133,6 +134,7 @@ export function Outer({
   const context = useMemo(
     () => ({
       close,
+      onBack,
       isNativeDialog: false,
       presentationBottomOffset: 0,
       isNativePopover: false,
@@ -144,7 +146,7 @@ export function Outer({
       shouldMeasureContentHeight: false,
       setDesiredContentHeight: () => {},
     }),
-    [close],
+    [close, onBack],
   )
 
   return (
@@ -213,7 +215,7 @@ export function Inner({
 }: DialogInnerProps) {
   const t = useTheme()
   const enableSquareButtons = useEnableSquareButtons()
-  const {close} = useContext(Context)
+  const {close, onBack} = useContext(Context)
   const {gtMobile} = useBreakpoints()
   const {reduceMotionEnabled} = useA11y()
   FocusGuards.useFocusGuards()
@@ -256,6 +258,14 @@ export function Inner({
           onInteractOutside={preventDefault}
           onFocusOutside={preventDefault}
           onDismiss={close}
+          onEscapeKeyDown={
+            onBack
+              ? event => {
+                  event.preventDefault()
+                  onBack()
+                }
+              : undefined
+          }
           style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
           {header}
           <View style={[gtMobile ? a.p_2xl : a.p_xl, contentContainerStyle]}>

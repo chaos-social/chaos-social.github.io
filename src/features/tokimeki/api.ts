@@ -1,98 +1,124 @@
+import {type DidString} from '@atproto/syntax'
 import {useQuery} from '@tanstack/react-query'
 
 import {useDeferredEnable} from '#/lib/hooks/useDeferredEnable'
+import {useConstellationInstance} from '#/state/preferences/constellation-instance'
 import {STALE} from '#/state/queries'
+import {
+  asyncGenCollect,
+  constellationLinks,
+} from '#/state/queries/constellation'
+import {resolvePdsServiceUrl} from '#/state/queries/resolve-identity'
 import {createQueryKey} from '#/state/queries/util'
 import {useSession} from '#/state/session'
-import {IS_WEB} from '#/env'
 import {
   TOKIMEKI_POLL_COLLECTION,
+  TOKIMEKI_VOTE_COLLECTION,
   type TokimekiPoll,
   type TokimekiPollRef,
 } from './types'
 
-const UPSTREAM = 'https://poll.tokimeki.tech/xrpc/tech.tokimeki.poll.getPoll'
+export const RQKEY_POLL = (uri: string, viewer: string, instance: string) =>
+  createQueryKey('tokimekiPoll', {uri, viewer, instance})
 
-export const RQKEY_POLL = (uri: string, viewer: string) =>
-  createQueryKey('tokimekiPoll', {uri, viewer})
-
-type ApiResponse = {
-  poll?: {
+async function readRecord(did: string, collection: string, rkey: string) {
+  const pds = await resolvePdsServiceUrl(did as DidString)
+  if (!pds) return null
+  const url = new URL('/xrpc/com.atproto.repo.getRecord', pds)
+  url.searchParams.set('repo', did)
+  url.searchParams.set('collection', collection)
+  url.searchParams.set('rkey', rkey)
+  const response = await fetch(url)
+  if (response.status === 404) return null
+  if (!response.ok)
+    throw new Error(`Could not read poll record: ${response.status}`)
+  const data = (await response.json()) as {
     uri?: string
     cid?: string
-    options?: string[]
-    endsAt?: string
+    value?: Record<string, unknown>
   }
-  options?: {index?: number; count?: number}[]
-  totalVotes?: number
-  myVote?: number
-}
-
-/**
- * TOKIMEKI only sends CORS headers for its own origins, so the web build asks
- * our `/tokimeki/<did>/<rkey>` Pages Function while native goes straight out.
- */
-function pollApiUrl(ref: TokimekiPollRef, viewerDid: string) {
-  const viewer = viewerDid ? `?viewer=${encodeURIComponent(viewerDid)}` : ''
-  if (IS_WEB) {
-    return `/tokimeki/${encodeURIComponent(ref.did)}/${encodeURIComponent(
-      ref.rkey,
-    )}${viewer}`
+  if (
+    data.uri !== `at://${did}/${collection}/${rkey}` ||
+    typeof data.cid !== 'string' ||
+    !data.value ||
+    data.value.$type !== collection
+  ) {
+    return null
   }
-  return `${UPSTREAM}?uri=${encodeURIComponent(tokimekiAtUri(ref))}${
-    viewer ? `&viewer=${encodeURIComponent(viewerDid)}` : ''
-  }`
+  return {uri: data.uri, cid: data.cid, value: data.value}
 }
 
-function tokimekiAtUri(ref: TokimekiPollRef) {
-  return `at://${ref.did}/${TOKIMEKI_POLL_COLLECTION}/${ref.rkey}`
-}
-
+/** Read the poll from its PDS and verify Constellation's vote backlinks there. */
 export async function fetchTokimekiPoll(
   ref: TokimekiPollRef,
   viewerDid: string,
+  instance: string,
 ): Promise<TokimekiPoll | null> {
-  let res: Response
-  try {
-    res = await fetch(pollApiUrl(ref, viewerDid))
-  } catch {
+  const record = await readRecord(ref.did, TOKIMEKI_POLL_COLLECTION, ref.rkey)
+  if (!record) return null
+  const {options, endsAt, createdAt} = record.value
+  if (
+    !Array.isArray(options) ||
+    options.length < 2 ||
+    options.length > 4 ||
+    !options.every(
+      o => typeof o === 'string' && o.length > 0 && o.length <= 100,
+    ) ||
+    typeof endsAt !== 'string' ||
+    !Number.isFinite(Date.parse(endsAt)) ||
+    typeof createdAt !== 'string' ||
+    !Number.isFinite(Date.parse(createdAt))
+  ) {
     return null
   }
-  if (!res.ok) return null
 
-  let data: ApiResponse
-  try {
-    data = (await res.json()) as ApiResponse
-  } catch {
-    return null
-  }
-  const {poll} = data
-  if (!poll?.uri || !poll.cid || !Array.isArray(poll.options)) return null
-  if (!poll.options.every(o => typeof o === 'string')) return null
-
-  /*
-   * The service reports counts by index rather than in array order, and omits
-   * zero-count options, so rebuild the array aligned with `options`.
-   */
-  const counts = poll.options.map(() => 0)
-  for (const option of data.options ?? []) {
-    const i = option.index
-    if (typeof i === 'number' && i >= 0 && i < counts.length) {
-      counts[i] = typeof option.count === 'number' ? option.count : 0
+  const links = await asyncGenCollect(
+    constellationLinks(instance, {
+      target: record.uri,
+      collection: TOKIMEKI_VOTE_COLLECTION,
+      path: '.poll.uri',
+    }),
+  )
+  const votes = await Promise.all(
+    links.map(async link => ({
+      did: link.did,
+      record: await readRecord(link.did, TOKIMEKI_VOTE_COLLECTION, link.rkey),
+    })),
+  )
+  const byVoter = new Map<string, {index: number; time: number}>()
+  for (const vote of votes) {
+    const value = vote.record?.value
+    if (!value) continue
+    const poll = value.poll as {uri?: unknown; cid?: unknown} | undefined
+    const index = value.optionIndex
+    const time =
+      typeof value.createdAt === 'string' ? Date.parse(value.createdAt) : NaN
+    if (
+      poll?.uri !== record.uri ||
+      poll.cid !== record.cid ||
+      typeof index !== 'number' ||
+      !Number.isInteger(index) ||
+      index < 0 ||
+      index >= options.length ||
+      !Number.isFinite(time) ||
+      time < Date.parse(createdAt) ||
+      time > Date.parse(endsAt)
+    ) {
+      continue
     }
+    const previous = byVoter.get(vote.did)
+    if (!previous || previous.time < time) byVoter.set(vote.did, {index, time})
   }
-
+  const counts = options.map(() => 0)
+  for (const vote of byVoter.values()) counts[vote.index]++
   return {
-    uri: poll.uri,
-    cid: poll.cid,
-    options: poll.options,
-    endsAt: poll.endsAt,
+    uri: record.uri,
+    cid: record.cid,
+    options,
+    endsAt,
     counts,
-    totalVotes:
-      typeof data.totalVotes === 'number'
-        ? data.totalVotes
-        : counts.reduce((sum, n) => sum + n, 0),
-    myVote: typeof data.myVote === 'number' ? data.myVote : undefined,
+    totalVotes: byVoter.size,
+    myVote: byVoter.get(viewerDid)?.index,
   }
 }
 
@@ -104,16 +130,21 @@ export function useTokimekiPoll({
   enabled: boolean
 }) {
   const {currentAccount} = useSession()
+  const instance = useConstellationInstance()
   const viewerDid = currentAccount?.did ?? ''
   const deferred = useDeferredEnable(enabled && Boolean(ref))
 
   return useQuery({
-    queryKey: RQKEY_POLL(ref ? tokimekiAtUri(ref) : '', viewerDid),
+    queryKey: RQKEY_POLL(
+      ref ? `at://${ref.did}/${TOKIMEKI_POLL_COLLECTION}/${ref.rkey}` : '',
+      viewerDid,
+      instance,
+    ),
     enabled: deferred,
     staleTime: STALE.SECONDS.THIRTY,
     async queryFn() {
       if (!ref) return null
-      return await fetchTokimekiPoll(ref, viewerDid)
+      return await fetchTokimekiPoll(ref, viewerDid, instance)
     },
   })
 }
