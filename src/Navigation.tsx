@@ -738,11 +738,6 @@ function commonScreens(Stack: typeof Flat, unreadCountLabel?: string) {
         options={{title: title(msg`Custom emoji`), requireAuth: true}}
       />
       <Stack.Screen
-        name="CustomEmojiSettings"
-        getComponent={() => CustomEmojiSettingsScreen}
-        options={{title: title(msg`Custom emoji`), requireAuth: true}}
-      />
-      <Stack.Screen
         name="RunesDisplayAlsoLikedSettings"
         getComponent={() => RunesDisplayAlsoLikedSettingsScreen}
         options={{title: title(msg`Also liked`), requireAuth: true}}
