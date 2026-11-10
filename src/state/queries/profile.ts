@@ -233,6 +233,9 @@ export function useProfileUpdateMutation() {
           if ('links' in updates) {
             next.links = updates.links
           }
+          if ('labels' in updates) {
+            next.labels = updates.labels
+          }
         }
         if (newUserAvatarPromise) {
           const res = await newUserAvatarPromise

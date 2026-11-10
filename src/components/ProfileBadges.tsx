@@ -23,6 +23,7 @@ import {CakeDayBadge} from '#/components/CakeDayBadge'
 import * as Dialog from '#/components/Dialog'
 import {PdsBadgeIcon, PdsDialog} from '#/components/PdsDialog'
 import {isPetAccount, PetBadge, PetBadgeButton} from '#/components/PetBadge'
+import {isPvpAccount, PvpBadge} from '#/components/PvpBadge'
 import {useSimpleVerificationState} from '#/components/verification'
 import {verificationBadges} from '#/components/verification/badges'
 import {VerificationCheck} from '#/components/verification/VerificationCheck'
@@ -137,6 +138,7 @@ export function ProfileBadgesFromProfileShadow({
     isBetaBadgeVisible,
     isBotAccount(shadowed),
     isPetAccount(shadowed),
+    isPvpAccount(shadowed),
     showCake,
   ]
   const badgeCount = badgeVisibility.filter(Boolean).length
@@ -212,11 +214,16 @@ export function ProfileBadgesFromProfileShadow({
             hitSlop={hitSlops[2]}
           />
           <PetBadgeButton profile={shadowed} width={botIconWidth} />
+          <PvpBadge
+            profile={shadowed}
+            size={size}
+            allowFontScaling={allowFontScaling}
+          />
           {showCake && (
             <CakeDayBadge
               width={botIconWidth}
               interactive
-              hitSlop={hitSlops[4]}
+              hitSlop={hitSlops[5]}
             />
           )}
         </>
@@ -252,6 +259,11 @@ export function ProfileBadgesFromProfileShadow({
           ) : null}
           <BotBadge profile={shadowed} width={botIconWidth} />
           <PetBadge profile={shadowed} width={botIconWidth} />
+          <PvpBadge
+            profile={shadowed}
+            size={size}
+            allowFontScaling={allowFontScaling}
+          />
           {showCake && <CakeDayBadge width={botIconWidth} />}
         </>
       )}

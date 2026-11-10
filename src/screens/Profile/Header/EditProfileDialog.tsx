@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react'
 import {View} from 'react-native'
 import {Plural, Trans, useLingui} from '@lingui/react/macro'
+import {useQueryClient} from '@tanstack/react-query'
 
 import {MAX_DESCRIPTION, MAX_DISPLAY_NAME, urls} from '#/lib/constants'
 import {useCallOnce} from '#/lib/once'
@@ -11,7 +12,9 @@ import {logger} from '#/logger'
 import {type ImageMeta} from '#/state/gallery'
 import {useEnableSquareAvatars} from '#/state/preferences/enable-square-avatars'
 import {useEnableSquareButtons} from '#/state/preferences/enable-square-buttons'
+import {RQKEY_ROOT as POST_FEED_RQKEY_ROOT} from '#/state/queries/post-feed'
 import {useProfileUpdateMutation} from '#/state/queries/profile'
+import {postThreadQueryKeyRoot} from '#/state/queries/usePostThread/types'
 import {ErrorMessage} from '#/view/com/util/error/ErrorMessage'
 import {
   EditableUserAvatar,
@@ -26,9 +29,11 @@ import {Admonition} from '#/components/Admonition'
 import {Button, ButtonIcon, ButtonText} from '#/components/Button'
 import * as Dialog from '#/components/Dialog'
 import * as TextField from '#/components/forms/TextField'
+import * as Toggle from '#/components/forms/Toggle'
 import {InlineLinkText} from '#/components/Link'
 import {Loader} from '#/components/Loader'
 import * as Prompt from '#/components/Prompt'
+import {isPvpAccount} from '#/components/PvpBadge'
 import * as Toast from '#/components/Toast'
 import {Text} from '#/components/Typography'
 import {useSimpleVerificationStateWithDeer} from '#/components/verification'
@@ -47,6 +52,28 @@ import {
 import {type app} from '#/lexicons'
 
 const PRONOUNS_MAX_GRAPHEMES = 20
+
+/**
+ * Builds the profile record's self-labels with PVP mode added or removed,
+ * preserving any other self-labels such as the pet or bot labels.
+ */
+function getPvpSelfLabels(
+  profile: app.bsky.actor.defs.ProfileViewDetailed,
+  enabled: boolean,
+) {
+  const values = new Set(
+    (profile.labels ?? [])
+      .filter(label => label.src === profile.did && !label.neg)
+      .map(label => label.val),
+  )
+  values.delete('pvp')
+  if (enabled) values.add('pvp')
+  if (values.size === 0) return undefined
+  return {
+    $type: 'com.atproto.label.defs#selfLabels' as const,
+    values: Array.from(values, val => ({val})),
+  }
+}
 
 export function EditProfileDialog({
   profile,
@@ -128,6 +155,7 @@ function DialogInner({
   const {t: l} = useLingui()
   const t = useTheme()
   const ax = useAnalytics()
+  const queryClient = useQueryClient()
   const control = Dialog.useDialogContext()
   const enableSquareButtons = useEnableSquareButtons()
   // the dialog's contents mount on every open, so this fires once per open
@@ -151,6 +179,8 @@ function DialogInner({
   const [description, setDescription] = useState(initialDescription)
   const initialPronouns = profile.pronouns || ''
   const [pronouns, setPronouns] = useState(initialPronouns)
+  const initialPvpMode = isPvpAccount(profile)
+  const [pvpMode, setPvpMode] = useState(initialPvpMode)
   const [websiteTransferred, setWebsiteTransferred] = useState(false)
   const [userBanner, setUserBanner] = useState<string | undefined | null>(
     profile.banner,
@@ -197,6 +227,7 @@ function DialogInner({
     userAvatar !== profile.avatar ||
     userBanner !== profile.banner ||
     pronouns !== initialPronouns ||
+    pvpMode !== initialPvpMode ||
     websiteTransferred
   const linksDirty =
     !!editedLinks &&
@@ -264,14 +295,28 @@ function DialogInner({
           ...(written && {
             links: written.refs.length ? written.refs : undefined,
           }),
+          ...(pvpMode !== initialPvpMode && {
+            labels: getPvpSelfLabels(profile, pvpMode),
+          }),
         },
         newUserAvatar,
         newUserBanner,
+        ...(pvpMode !== initialPvpMode && {
+          checkCommitted: fresh => !!fresh && isPvpAccount(fresh) === pvpMode,
+        }),
       })
       if (nextLinks && written) {
         logProfileLinkChanges(ax, storedLinks ?? [], nextLinks)
         setOwnProfileLinksCache(profile.did, nextLinks, written.refs)
         await written.deleteRemoved()
+      }
+      if (pvpMode !== initialPvpMode) {
+        // Cached feed rows embed the author's labels, so refresh them to pick
+        // up the new PVP badge.
+        void queryClient.resetQueries({queryKey: [POST_FEED_RQKEY_ROOT]})
+        void queryClient.invalidateQueries({
+          queryKey: [postThreadQueryKeyRoot],
+        })
       }
       control.close(() => onUpdate?.())
       Toast.show(l({message: 'Profile updated', context: 'toast'}))
@@ -286,6 +331,8 @@ function DialogInner({
     displayName,
     description,
     pronouns,
+    pvpMode,
+    initialPvpMode,
     websiteTransferred,
     newUserAvatar,
     newUserBanner,
@@ -297,6 +344,7 @@ function DialogInner({
     ax,
     writeProfileLinks,
     setOwnProfileLinksCache,
+    queryClient,
   ])
 
   const displayNameTooLong = isOverMaxGraphemeCount({
@@ -540,6 +588,39 @@ function DialogInner({
             </Text>
           )}
         </View>
+
+        <Toggle.Item
+          name="pvp_mode"
+          label={l`PVP mode`}
+          value={pvpMode}
+          onChange={setPvpMode}
+          disabled={isUpdatingProfile}
+          testID="editProfilePvpModeToggle"
+          style={[
+            a.flex_row,
+            a.align_center,
+            a.justify_between,
+            a.gap_md,
+            a.rounded_lg,
+            a.border,
+            a.p_md,
+            t.atoms.border_contrast_low,
+            t.atoms.bg_contrast_50,
+          ]}>
+          <View style={[a.flex_1, a.gap_2xs]}>
+            <Text style={[a.text_md, a.font_semi_bold]}>
+              <Trans>PVP mode</Trans>
+            </Text>
+            <Text
+              style={[a.text_sm, a.leading_snug, t.atoms.text_contrast_medium]}>
+              <Trans>
+                Show a PVP badge next to your name on posts. This does not
+                affect how other people can interact with your account.
+              </Trans>
+            </Text>
+          </View>
+          <Toggle.Switch />
+        </Toggle.Item>
 
         {linksEnabled && links && (
           <ProfileLinksEditor
