@@ -1,0 +1,178 @@
+name: Build Android
+
+# Port of .tangled/workflows/build-android.yml. Tangled pinned this to manual
+# runs on main; here the build can be dispatched on any branch, but only runs
+# on main publish a GitHub release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      architectures:
+        type: string
+        description: >-
+          ABIs to compile into the APK, comma separated. Leave empty to build
+          every ABI in android/gradle.properties. The APK is universal, so
+          limiting this only drops architectures some devices cannot use.
+        required: false
+        default: "armeabi-v7a,arm64-v8a"
+
+concurrency:
+  group: build-android-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # React Native is compiled from source (expo-build-properties
+    # buildReactNativeFromSource), so expect this to take the better part of
+    # an hour on a 4-core runner.
+    timeout-minutes: 180
+    permissions:
+      # softprops/action-gh-release creates the tag and release
+      contents: write
+    env:
+      # EXPO_PUBLIC_* values are inlined into the bundle at build time, so they
+      # have to be set here. A value set anywhere later is too late.
+      EXPO_PUBLIC_ENV: production
+      EXPO_PUBLIC_OAUTH_BASE_URL: ${{ vars.OAUTH_BASE_URL || 'https://witchsky.app' }}
+      EXPO_PUBLIC_APP_NAME: ${{ vars.APP_NAME || 'Witchsky' }}
+      EXPO_PUBLIC_SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+      EXPO_PUBLIC_BUNDLE_IDENTIFIER: ${{ github.sha }}
+      # Version code has to increase for every published release, otherwise
+      # Android refuses to install the update over the existing app. This is
+      # what EAS's autoIncrement does for the store builds.
+      BSKY_ANDROID_VERSION_CODE: ${{ github.run_number }}
+      # Production is what makes app.config.js turn OTA updates on, and the
+      # update channel is Bluesky's (updates.bsky.app), not ours. Left on, the
+      # APK would poll for a bundle matching this runtime version and could pull
+      # one that was never built from this source.
+      DISABLE_UPDATES: "1"
+      # There is no Sentry auth token here, and the upload task fails without
+      # one. See the sideload-android EAS profile and the local build script.
+      SENTRY_DISABLE_AUTO_UPLOAD: "true"
+      # React Native asks for CMake 3.30.5 (CMAKE_VERSION in
+      # ReactAndroid/build.gradle.kts), which neither the SDK repository nor the
+      # runner image ships. 3.31.5 is installed with the SDK and is a drop-in.
+      CMAKE_VERSION: "3.31.5"
+      NODE_OPTIONS: --max-old-space-size=4096
+    steps:
+      - uses: actions/checkout@v4
+
+      # package.json requires node >=24.22.1 and devEngines pins pnpm 11.28.5.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.28.5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+
+      # React Native and the app target Java 17 (see ReactAndroid's
+      # sourceCompatibility); Gradle 9.4 supports it.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # A from-source React Native build does not fit in the default runner
+      # disk, so drop toolchains this build has no use for.
+      - name: Free disk space
+        run: |
+          sudo rm -rf \
+            /usr/share/dotnet \
+            /opt/ghc \
+            /usr/local/share/boost \
+            /opt/hostedtoolcache/CodeQL \
+            "$ANDROID_HOME/system-images" \
+            "$ANDROID_HOME/emulator"
+          sudo docker image prune --all --force || true
+          df -h /
+
+      - name: Accept SDK licenses
+        run: yes | sdkmanager --licenses > /dev/null || true
+
+      # React Native resolves its NDK from `ext.ndkVersion`, which the Expo
+      # Gradle plugin fills in from its version catalog (27.1.12297006 for this
+      # React Native release). The runner image ships 27.3, 29 and 30 instead.
+      # API 37 platforms are published per minor version, and compileSdk 37 is
+      # satisfied only by "android-37.0".
+      - name: Install Android SDK packages
+        env:
+          COMPILE_SDK: "37.0"
+          BUILD_TOOLS: "37.0.0"
+          NDK: "27.1.12297006"
+        run: |
+          sdkmanager --install \
+            "platforms;android-$COMPILE_SDK" \
+            "build-tools;$BUILD_TOOLS" \
+            "ndk;$NDK"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Relative to the run, so the ordering matches .env.example's YYMMDDHH.
+      - name: Write build metadata
+        run: |
+          version=$(node --print "require('./package.json').version")
+          bundle_date=$(date -u +%y%m%d%H)
+          echo "EXPO_PUBLIC_RELEASE_VERSION=$version" >> "$GITHUB_ENV"
+          echo "EXPO_PUBLIC_BUNDLE_DATE=$bundle_date" >> "$GITHUB_ENV"
+
+      # app.config.js points android.googleServicesFile at this path and it is
+      # gitignored, so the checked-in example stands in for a real project.
+      - name: Copy example build settings
+        run: cp google-services.json.example google-services.json
+
+      # Same as `just intl:build`: the fork has no nightly catalog job, so the
+      # committed .po files drift and a build would otherwise ship message IDs.
+      - name: Build translations
+        run: pnpm intl:build
+
+      # Same as the justfile's `prebuild-android`. android/ is gitignored, so
+      # the native project is generated from app.config.js on every run.
+      - name: Prebuild native project
+        run: pnpm exec expo prebuild -p android
+        env:
+          EXPO_NO_GIT_STATUS: "1"
+
+      # Same as the justfile's `build-android-gradle`. android/gradle.properties
+      # builds all four ABIs by default; --architectures narrows that, which is
+      # usually worth it since x86/x86_64 only matter to emulators.
+      - name: Build
+        working-directory: android
+        env:
+          ARCHITECTURES: ${{ inputs.architectures }}
+        run: |
+          args=()
+          if [ -n "$ARCHITECTURES" ]; then
+            args+=("-PreactNativeArchitectures=$ARCHITECTURES")
+          fi
+          ./gradlew app:assembleRelease "${args[@]}"
+
+      - name: Rename APK
+        run: |
+          apk=android/app/build/outputs/apk/release/app-release.apk
+          test -f "$apk"
+          mv "$apk" "android/app/build/outputs/apk/release/witchsky-v${{ github.run_number }}.apk"
+          ls -lh android/app/build/outputs/apk/release/witchsky-v${{ github.run_number }}.apk
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android
+          if-no-files-found: error
+          path: android/app/build/outputs/apk/release/witchsky-v${{ github.run_number }}.apk
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_name == 'main'
+        with:
+          name: Witchsky v${{ github.run_number }}
+          tag_name: witchsky-v${{ github.run_number }}
+          files: android/app/build/outputs/apk/release/witchsky-v${{ github.run_number }}.apk
