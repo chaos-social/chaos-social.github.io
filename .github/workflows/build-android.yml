@@ -56,32 +56,32 @@ jobs:
       # There is no Sentry auth token here, and the upload task fails without
       # one. See the sideload-android EAS profile and the local build script.
       SENTRY_DISABLE_AUTO_UPLOAD: "true"
-      # React Native asks for CMake 3.30.5 (CMAKE_VERSION in
-      # ReactAndroid/build.gradle.kts), which neither the SDK repository nor the
-      # runner image ships. 3.31.5 is installed with the SDK and is a drop-in.
-      CMAKE_VERSION: "3.31.5"
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # package.json requires node >=24.22.1 and devEngines pins pnpm 11.28.5.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 11.28.5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24.22.1
           cache: pnpm
 
       # React Native and the app target Java 17 (see ReactAndroid's
       # sourceCompatibility); Gradle 9.4 supports it.
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 17
 
-      - uses: gradle/actions/setup-gradle@v4
+      # `cache-provider: basic` keeps this on @actions/cache. The default in v6
+      # is gradle-actions-caching, which is licensed separately from the action.
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
 
       # A from-source React Native build does not fit in the default runner
       # disk, so drop toolchains this build has no use for.
@@ -97,24 +97,35 @@ jobs:
           sudo docker image prune --all --force || true
           df -h /
 
+      # The runner image installs the SDK but does not put cmdline-tools on
+      # PATH, so `sdkmanager` is not a command until we add it.
+      - name: Add sdkmanager to PATH
+        run: |
+          bin="$ANDROID_HOME/cmdline-tools/latest/bin"
+          if [ ! -x "$bin/sdkmanager" ]; then
+            bin=$(dirname "$(find "$ANDROID_HOME/cmdline-tools" -maxdepth 3 \
+              -name sdkmanager -type f | head -1)")
+          fi
+          test -x "$bin/sdkmanager"
+          echo "$bin" >> "$GITHUB_PATH"
+
       - name: Accept SDK licenses
         run: yes | sdkmanager --licenses > /dev/null || true
 
       # React Native resolves its NDK from `ext.ndkVersion`, which the Expo
       # Gradle plugin fills in from its version catalog (27.1.12297006 for this
       # React Native release). The runner image ships 27.3, 29 and 30 instead.
-      # API 37 platforms are published per minor version, and compileSdk 37 is
-      # satisfied only by "android-37.0".
+      # API 37 platforms are published per minor version and compileSdk 37 is
+      # satisfied only by "android-37.0". CMake is pinned to the version
+      # ReactAndroid/build.gradle.kts asks for; the image has 3.31.5, and AGP
+      # fails rather than substituting when the requested one is missing.
       - name: Install Android SDK packages
-        env:
-          COMPILE_SDK: "37.0"
-          BUILD_TOOLS: "37.0.0"
-          NDK: "27.1.12297006"
         run: |
           sdkmanager --install \
-            "platforms;android-$COMPILE_SDK" \
-            "build-tools;$BUILD_TOOLS" \
-            "ndk;$NDK"
+            "platforms;android-37.0" \
+            "build-tools;37.0.0" \
+            "ndk;27.1.12297006" \
+            "cmake;3.30.5"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -145,17 +156,19 @@ jobs:
           EXPO_NO_GIT_STATUS: "1"
 
       # Same as the justfile's `build-android-gradle`. android/gradle.properties
-      # builds all four ABIs by default; --architectures narrows that, which is
-      # usually worth it since x86/x86_64 only matter to emulators.
+      # builds all four ABIs by default, which is hours of extra native
+      # compilation; x86/x86_64 only matter to emulators, so default to the arm
+      # pair and let the dispatch input override it.
       - name: Build
         working-directory: android
         env:
-          ARCHITECTURES: ${{ inputs.architectures }}
+          ARCHITECTURES: ${{ inputs.architectures || 'armeabi-v7a,arm64-v8a' }}
         run: |
           args=()
           if [ -n "$ARCHITECTURES" ]; then
             args+=("-PreactNativeArchitectures=$ARCHITECTURES")
           fi
+          chmod +x gradlew
           ./gradlew app:assembleRelease "${args[@]}"
 
       - name: Rename APK
@@ -166,14 +179,14 @@ jobs:
           ls -lh android/app/build/outputs/apk/release/witchsky-v${{ github.run_number }}.apk
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: android
           if-no-files-found: error
           path: android/app/build/outputs/apk/release/witchsky-v${{ github.run_number }}.apk
 
       - name: Publish release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         if: github.ref_name == 'main'
         with:
           name: Witchsky v${{ github.run_number }}
