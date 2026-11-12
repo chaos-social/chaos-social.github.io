@@ -5,6 +5,9 @@ name: Build Android
 # on main publish a GitHub release.
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       architectures:
